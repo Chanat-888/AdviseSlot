@@ -28,6 +28,7 @@ Theme 1: Appointment and Scheduling System. Team ID digits 1 and 9.
 | D-22 | The 12-hour student cancellation limit plus the booking deadline rule are the team's answer to the brief's "cancellation limits". No TA question needed. |
 | D-23 | An advisor cannot create a late slot that starts 2 hours or less from now (at or after its BR-16 cutoff), because it could never be booked. The request is rejected with 422 `SLOT_UNBOOKABLE`. So every late slot that is created is bookable at creation, and the late-slot notification is never sent for an unbookable slot. |
 | D-24 | One status vocabulary everywhere. Slot statuses: Open (future, unbooked, before its booking deadline), Booked (has an active booking), Closed (future, unbooked, booking deadline passed), Passed (slot has ended). Booking statuses shown to users: Upcoming (active, slot not ended), Passed (active, slot ended), Cancelled. |
+| D-25 | Local development runs PostgreSQL 17 in Docker via `docker compose` (`docker-compose.yml` at the repo root, named volume for data). The server and client run on the host with `npm run dev`. The full application Dockerfile is built in Lab 5. |
 
 Team:
 - Chanat Dachkhumhang (Pan), 67070503409, GitHub @Chanat-888
