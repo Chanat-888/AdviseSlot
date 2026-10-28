@@ -30,6 +30,7 @@ docker-compose.yml   Local PostgreSQL 17 for development
    ```bash
    cd server
    cp .env.example .env
+   cp .env.test.example .env.test
    npm install
    npx prisma migrate dev
    ```
@@ -55,11 +56,16 @@ The page at http://localhost:5173 shows "API ok, database up" when everything is
 
 ## Test
 
-The database must be running.
+The database container must be running.
 
 ```bash
 cd server && npm test
 ```
+
+Tests use a separate database, `adviseslot_test`, set in `server/.env.test`, so they
+never touch your development data. Before the tests run, `prisma migrate deploy`
+creates that database if needed and applies all migrations. The tests refuse to run
+if the database name does not end in `_test`.
 
 ## Stop the database
 
