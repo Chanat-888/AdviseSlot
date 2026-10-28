@@ -15,6 +15,7 @@
 |---|---|---|---|
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First draft from team decisions D-01 to D-13. Awaiting team review. |
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Applied decisions D-14 to D-22: weekdays only, :00/:30 starts, late-slot exception and in-app notification (FR-19), "Passed" status, advisor cancels until start, 2-hour session. Closed Q-01 to Q-03. |
+| 0.3 | 2026-10-28 | Chanat (drafted with an AI agent) | Answered review on PR #1. FR-17 adds the open count (D-20). BR-15 checks BR-07 as if the old booking were released. BR-13 uses the BR-06 or BR-16 deadline. NFR-07 defines the Sprint 3 check. One status vocabulary in FR-05, BR-07 and A-04 (D-24). BR-16 rejects a late slot starting 2 hours or less from now with `SLOT_UNBOOKABLE`, and FR-19 notifies only for created late slots (D-23). A-06 moved after A-05. |
 
 ## 1. Stakeholder problem and context
 
@@ -64,7 +65,7 @@ There is no administrator role. User accounts are created by the seed script (D-
 | FR-02 | A logged-in user logs out. The system ends the session so later requests with it are rejected. | 1 |
 | FR-03 | A logged-in user retrieves their own identity (id, name, email, role). | 1 |
 | FR-04 | An advisor creates a slot by choosing a date and a start time. The system sets the end time to start + 30 minutes. | 1 |
-| FR-05 | An advisor lists their own slots, each with its status (open, booked, past) and, when booked, the booking student's name. | 1 |
+| FR-05 | An advisor lists their own slots, each with its status and, when Booked, the booking student's name. Slot statuses: Open (future, unbooked, before its booking deadline), Booked (has an active booking), Closed (future, unbooked, booking deadline passed), Passed (slot has ended). | 1 |
 | FR-06 | A student lists all currently bookable slots of all advisors, showing advisor name, start, end and booking deadline. | 1 |
 | FR-07 | A student books a bookable slot. | 1 |
 | FR-08 | A student lists their own bookings (upcoming and past) and opens one booking's detail. | 1 |
@@ -76,9 +77,9 @@ There is no administrator role. User accounts are created by the seed script (D-
 | FR-14 | A student reschedules their active booking to another bookable slot in one action. | 2 |
 | FR-15 | An advisor creates several consecutive 30-minute slots for one date and time range in one action. | 2 |
 | FR-16 | A student filters bookable slots by advisor and by date. | 3 |
-| FR-17 | An advisor views an appointment summary for a chosen date range: number of slots, booked, cancelled, and upcoming appointments. | 3 |
+| FR-17 | An advisor views an appointment summary for a chosen date range: counts of slots, booked, cancelled and open, plus the list of upcoming appointments. | 3 |
 | FR-18 | A student and an advisor see cancelled bookings in their history with who cancelled and the reason. | 3 |
-| FR-19 | When an advisor creates a late slot (BR-16), every student gets an in-app notification with the advisor, date and time. A student lists their notifications and marks them as read. | 3 |
+| FR-19 | When an advisor creates a late slot (BR-16), every student gets an in-app notification with the advisor, date and time. The notification is sent only for late slots that are created, so the slot is always bookable at creation. A student lists their notifications and marks them as read. | 3 |
 
 ## 5. Business rules (BR)
 
@@ -93,16 +94,16 @@ All times are evaluated in the Asia/Bangkok time zone (UTC+7) and stored in UTC.
 | BR-04 | An advisor's slots cannot overlap each other. | D-05 | 1 |
 | BR-05 | A slot holds at most one active booking. When two students book the same slot at the same time, exactly one succeeds. | D-04 | 1 |
 | BR-06 | Booking deadline: for a slot starting before 12:00, booking closes at 18:00 on the previous day. For a slot starting at 12:00 or later, booking closes 2 hours before the start. A booking at or after the deadline is rejected. Exception: BR-16. | D-07 | 1 |
-| BR-07 | A student holds at most one active booking in total, across all advisors. An active booking has status ACTIVE and a slot end time in the future. A booking whose slot has ended no longer counts and is shown as "Passed". | D-10, D-17 | 1 |
+| BR-07 | A student holds at most one active booking in total, across all advisors. An active booking has status ACTIVE and a slot end time in the future, and is shown as "Upcoming". A booking whose slot has ended no longer counts and is shown as "Passed". A cancelled booking is shown as "Cancelled". | D-10, D-17, D-24 | 1 |
 | BR-08 | Only advisors create and maintain slots, and only their own. | D-09, D-11 | 1 |
 | BR-09 | A student sees only their own bookings. An advisor sees only bookings on their own slots. The bookable-slot list never reveals who booked a slot. | D-11 | 1 |
 | BR-10 | A session expires 2 hours after login, with no renewal. Logout ends it immediately. | D-21 | 1 |
 | BR-11 | A student can cancel their booking only if the slot starts at least 12 hours from now. | D-08 | 2 |
 | BR-12 | An advisor can cancel a booking on their own slot until the slot starts, with a non-empty reason (1 to 500 characters). The student sees the reason. | D-08, D-18 | 2 |
-| BR-13 | A cancelled booking frees its slot, so the slot becomes bookable again if its deadline has not passed. | D-08 | 2 |
+| BR-13 | A cancelled booking frees its slot. The slot becomes bookable again only if its applicable deadline (BR-06, or BR-16 for a late slot) has not passed. | D-08 | 2 |
 | BR-14 | A slot with an active booking cannot be edited or deleted. The booking must be cancelled first. | D-09 | 2 |
-| BR-15 | A reschedule succeeds only if cancelling the old booking satisfies BR-11 and booking the new slot satisfies BR-05 and BR-06. It is all-or-nothing: on failure, the original booking stays unchanged. | D-08 | 2 |
-| BR-16 | Late slot: a slot created at or after its normal BR-06 deadline is still allowed. It stays bookable until 2 hours before its start. Its creation triggers the FR-19 notification. | D-16 | 1 (rule), 3 (notification) |
+| BR-15 | A reschedule succeeds only if cancelling the old booking satisfies BR-11 and booking the new slot satisfies BR-05 and BR-06 (or BR-16 for a late slot). BR-07 is checked as if the old booking were already released, so a student with one active booking can reschedule. It is all-or-nothing: on failure, the original booking stays unchanged. | D-08 | 2 |
+| BR-16 | Late slot: a slot created at or after its normal BR-06 deadline is still allowed if it starts more than 2 hours from now. It stays bookable until 2 hours before its start. A late slot that would start 2 hours or less from now could never be booked, so its creation is rejected with 422 `SLOT_UNBOOKABLE`. The creation of a late slot triggers the FR-19 notification. | D-16, D-23 | 1 (rule), 3 (notification) |
 
 ## 6. Non-functional requirements (NFR)
 
@@ -114,7 +115,7 @@ All times are evaluated in the Asia/Bangkok time zone (UTC+7) and stored in UTC.
 | NFR-04 | Data integrity | 10 concurrent booking requests for the same open slot create exactly 1 active booking. | Integration test with parallel requests against the real database. | 1 |
 | NFR-05 | Correctness | Rule time calculations use Asia/Bangkok local time, including the 18:00 previous-day boundary. | Unit tests at the boundaries (17:59 accepted, 18:00 rejected; 2 h 01 min accepted, exactly 2 h rejected; a late slot follows the 2-hour rule; Saturday rejected). | 1 |
 | NFR-06 | Persistence | Data survives an application restart and a redeployment. | Sprint 1: manual restart check of the local server. Sprint 2: post-deployment check on GCP (Lab 5). | 1, 2 |
-| NFR-07 | Error handling | Every rejected request returns a 4xx status with a machine-readable code and a readable message. No stack trace or SQL error reaches the client. The UI shows the message. | API tests assert the error shape. E2E test shows the message in the UI. | 1, 3 |
+| NFR-07 | Error handling | Every rejected request returns a 4xx status with a machine-readable code and a readable message. No stack trace or SQL error reaches the client. The UI shows the message. | Sprint 1: API tests assert the error shape. E2E test shows the message in the UI. Sprint 3: E2E tests confirm the UI shows the server's error message for the Sprint 2 and 3 rejection cases: cancel window passed (BR-11), failed reschedule (BR-15) and unbookable late slot (BR-16). | 1, 3 |
 | NFR-08 | Configuration | No secret is committed to Git or shipped in client code. All configuration comes from environment variables. | Review checklist on each PR; secret scan of the repo before each release. | 1 |
 | NFR-09 | Deployability | The application runs from a Docker image with configuration supplied by environment variables. | Fresh Docker build and run in Lab 5. | 2 |
 | NFR-10 | Performance | The bookable-slot list returns in under 500 ms (p95 of 50 requests) with 1,000 seeded slots, on the deployed GCP service. | Scripted measurement in Sprint 3. | 3 |
@@ -126,9 +127,9 @@ All times are evaluated in the Asia/Bangkok time zone (UTC+7) and stored in UTC.
 | A-01 | All users are in the Asia/Bangkok time zone. The UI displays local time. |
 | A-02 | Replaced in v0.2 by BR-02 (weekdays only). |
 | A-03 | Replaced in v0.2 by BR-16 (late slots). |
-| A-04 | A past booking with status ACTIVE is shown as "Passed". The system does not record attendance. |
-| A-06 | Public holidays are not blocked. Advisors simply do not create slots on those days. |
+| A-04 | A booking with status ACTIVE whose slot has ended is shown as "Passed" (D-24). The system does not record attendance. |
 | A-05 | Seeded demo data is synthetic. No real student or advisor data is used. |
+| A-06 | Public holidays are not blocked. Advisors simply do not create slots on those days. |
 
 ## 8. Decisions
 
