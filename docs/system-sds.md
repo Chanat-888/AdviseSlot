@@ -13,6 +13,7 @@
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First draft for Jeerasak to review and take over. |
 | 0.2 | 2026-10-28 | Jeerasak (with an AI agent) | Took ownership. Aligned with SRS v0.2: BR-02 and BR-16 in the domain module, `Slot.createdAt` and `Slot.isLate` for late slots, `Notification` entity, endpoints and screen for FR-19, new error codes. Fixed the exclusion constraint SQL (quoted identifiers, `timestamptz` columns). Merged duplicate role-matrix rows. Added open items. |
 | 0.3 | 2026-10-28 | Jeerasak (with an AI agent) | Aligned with SRS v0.3. One status vocabulary for slots and bookings (D-24). Late slots starting 2 hours or less from now are rejected with 422 `SLOT_UNBOOKABLE` (D-23). History endpoint for FR-18. Closed O-01 and O-02. |
+| 0.4 | 2026-10-28 | Jeerasak (with an AI agent) | Applied D-25: local PostgreSQL 17 in Docker on port 5433 (section 3.3), `DATABASE_URL` example matches the skeleton (section 8), app image built in Lab 5 (section 9). |
 
 ## 1. Stack and rationale
 
@@ -134,6 +135,7 @@ zone) would make the exclusion constraint below fail, because casting it to
 
 ### 3.3 Database setup, migrations and seed
 
+- Local development (D-25): `docker compose up -d db` starts PostgreSQL 17 from `docker-compose.yml` at the repo root, on host port 5433 (so it does not clash with a locally installed PostgreSQL on 5432), with a named volume for data. The server and client run on the host with `npm run dev`.
 - `npx prisma migrate dev` applies all migrations locally. `npx prisma migrate deploy` applies them in Docker and on GCP.
 - Raw SQL migrations add the `btree_gist` extension, the CHECK constraint, the exclusion constraint and the partial unique index.
 - `npx prisma db seed` runs `server/prisma/seed.ts`. It is idempotent and creates synthetic data: 2 advisors, 3 students and a set of future slots, some already booked. The demo password is defined in the seed for local use only and is listed in the README, not in the PDF.
@@ -258,7 +260,7 @@ This design is the same as the TokTickIT Lab 3 authentication, adapted to two ro
 
 | Variable | Used by | Example (local) |
 |---|---|---|
-| `DATABASE_URL` | Server | `postgresql://adviseslot:CHANGE_ME@localhost:5432/adviseslot?schema=public` |
+| `DATABASE_URL` | Server | `postgresql://adviseslot:adviseslot_dev@localhost:5433/adviseslot?schema=public` (local Docker database only) |
 | `PORT` | Server | `3000` |
 | `CLIENT_ORIGIN` | Server (CORS in development) | `http://localhost:5173` |
 | `NODE_ENV` | Server | `development` or `production` |
@@ -270,6 +272,9 @@ This design is the same as the TokTickIT Lab 3 authentication, adapted to two ro
 - On GCP, `DATABASE_URL` is stored in Secret Manager and injected into the service at runtime.
 
 ## 9. Deployment design (implemented in Lab 5)
+
+Until Lab 5, only the database runs in Docker (D-25, section 3.3). The application
+image below is built in Lab 5, which also covers NFR-09.
 
 | Component | Plan |
 |---|---|
