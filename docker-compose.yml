@@ -1,0 +1,21 @@
+# Local development database only. Real credentials never go in this file.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: adviseslot
+      POSTGRES_PASSWORD: adviseslot_dev
+      POSTGRES_DB: adviseslot
+    ports:
+      # 5433 on the host so it does not clash with a locally installed PostgreSQL on 5432.
+      - "5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adviseslot -d adviseslot"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  db-data:
