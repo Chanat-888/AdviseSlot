@@ -205,8 +205,8 @@ The backend checks every row in this table. Hiding a button in the UI does not c
 
 - **Passwords:** hashed with bcrypt, cost 12. Plaintext is never stored or logged.
 - **Login:** `POST /api/auth/login` with `{ email, password }`. An unknown email and a wrong password return the same 401 `INVALID_CREDENTIALS`, with similar timing (a dummy bcrypt compare runs for unknown emails).
-- **Session creation:** the server generates a random 32-byte token, stores only its SHA-256 hash in `Session` with `expiresAt` = now + 12 hours, and sets a cookie `sid` with `HttpOnly`, `SameSite=Lax`, `Secure` in production and `Path=/`.
-- **Expiry:** absolute 12 hours (BR-10), no sliding renewal. An expired session returns 401.
+- **Session creation:** the server generates a random 32-byte token, stores only its SHA-256 hash in `Session` with `expiresAt` = now + 2 hours, and sets a cookie `sid` with `HttpOnly`, `SameSite=Lax`, `Secure` in production and `Path=/`.
+- **Expiry:** absolute 2 hours (BR-10), no sliding renewal. An expired session returns 401.
 - **Current user:** `requireAuth` hashes the cookie token, finds the session, checks expiry, and attaches the user to the request. `GET /api/auth/me` returns `{ id, name, email, role }`.
 - **Logout:** `POST /api/auth/logout` deletes the session row and clears the cookie. A request with the old token then returns 401.
 - **Roles:** `requireRole("ADVISOR")` or `requireRole("STUDENT")` returns 403 for the other role.
