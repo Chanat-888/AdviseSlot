@@ -4,13 +4,14 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Owner of this document | Chanat Dachkhumhang (reviewer: Jeerasak Phisawong) |
-| Related documents | `docs/srs.md` (v0.2), `docs/features.md`, `docs/decisions.md` |
+| Related documents | `docs/srs.md` (v0.3), `docs/features.md`, `docs/decisions.md` |
 
 ## Version history
 
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First matrix covering all FR, BR and NFR of SRS v0.2. Awaiting team review. |
+| 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Aligned with SRS v0.3 after review on PR #2: added AC-F04-07 (late slot 2 h or less rejected, D-23) and AC-F05-03 (Closed status, D-24), D-24 status names in AC-F05-01, v0.2 to v0.3 changes in section 6, findings in section 7 marked resolved. |
 
 ## 1. How to read this matrix
 
@@ -34,7 +35,7 @@
 | FR-02 | F-02 Log out | 1 | AC-F02-01 | TEST-F02-01 | Planned |
 | FR-03 | F-03 Current user | 1 | AC-F03-01 | TEST-F03-01 | Planned |
 | FR-04 | F-04 Create slot | 1 | AC-F04-01 | TEST-F04-01 | Planned |
-| FR-05 | F-05 View own slots | 1 | AC-F05-01 | TEST-F05-01 | Planned |
+| FR-05 | F-05 View own slots | 1 | AC-F05-01, AC-F05-03 | TEST-F05-01, TEST-F05-03 | Planned |
 | FR-06 | F-06 View bookable slots | 1 | AC-F06-01 | TEST-F06-01 | Planned |
 | FR-07 | F-07 Book slot | 1 | AC-F07-01 | TEST-F07-01 | Planned |
 | FR-08 | F-08 View own bookings, F-09 Booking detail | 1 | AC-F08-01, AC-F09-01 | TEST-F08-01, TEST-F09-01 | Planned |
@@ -69,7 +70,7 @@
 | BR-13 | F-10, F-11 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | BR-14 | F-12, F-13 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | BR-15 | F-14 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| BR-16 | Rule: F-04, F-06, F-07; later F-15. Notification: F-19 | 1 (rule); 2 (batch); 3 (notification) | AC-F04-06, AC-F06-02, AC-F07-05; later parts defined in Sprint 2/3 contracts | TEST-F04-06, TEST-F06-02, TEST-F07-05 | Planned |
+| BR-16 | Rule: F-04, F-06, F-07; later F-15. Notification: F-19 | 1 (rule); 2 (batch); 3 (notification) | AC-F04-06, AC-F04-07, AC-F06-02, AC-F07-05; later parts defined in Sprint 2/3 contracts | TEST-F04-06, TEST-F04-07, TEST-F06-02, TEST-F07-05 | Planned |
 
 ### 2.3 Non-functional requirements
 
@@ -104,9 +105,11 @@ expected results.
 | AC-F04-03 | A start time in the past is rejected. | BR-03 |
 | AC-F04-04 | A slot overlapping another of the advisor's own slots is rejected. | BR-04 |
 | AC-F04-05 | A student creating a slot gets 403. | BR-08, NFR-03 |
-| AC-F04-06 | A slot created at or after its normal BR-06 deadline is accepted (late slot). | BR-16 |
-| AC-F05-01 | Advisor sees only their own slots, each with status and the student's name when booked. | FR-05, BR-09 |
+| AC-F04-06 | A slot created at or after its normal BR-06 deadline, starting more than 2 hours from now, is accepted (late slot). | BR-16 |
+| AC-F04-07 | A late slot that starts 2 hours or less from now is rejected with 422 `SLOT_UNBOOKABLE` and no slot is stored. | BR-16 (D-23) |
+| AC-F05-01 | Advisor sees only their own slots, each with a D-24 status (Open, Booked, Closed, Passed) and the student's name when Booked. | FR-05, BR-09 |
 | AC-F05-02 | A student requesting the advisor slot list gets 403. | BR-08, NFR-03 |
+| AC-F05-03 | An unbooked future slot whose booking deadline has passed shows as Closed, not Open. | FR-05 (D-24) |
 | AC-F06-01 | Student sees bookable slots of all advisors with advisor name, start, end and deadline. | FR-06 |
 | AC-F06-02 | Booked slots, past slots and slots past their deadline are excluded; a late slot stays listed until 2 h before start. | BR-06, BR-16, NFR-05 |
 | AC-F06-03 | The bookable-slot response contains no booker identity. | BR-09 |
@@ -130,7 +133,7 @@ expected results.
 
 ## 4. Coverage check
 
-| Type | In SRS v0.2 | Mapped to a feature or responsibility | With Sprint 1 AC/test IDs | Allocated to Sprint 2/3 only | Uncovered |
+| Type | In SRS v0.3 | Mapped to a feature or responsibility | With Sprint 1 AC/test IDs | Allocated to Sprint 2/3 only | Uncovered |
 |---|---|---|---|---|---|
 | FR | 19 (FR-01 to FR-19) | 19 | 9 (FR-01 to FR-09) | 10 (FR-10 to FR-19) | 0 |
 | BR | 16 (BR-01 to BR-16) | 16 | 11 (BR-01 to BR-10, BR-16 rule) | 5 (BR-11 to BR-15) | 0 |
@@ -142,7 +145,7 @@ requirement, so no feature exists without a requirement.
 
 ## 5. Uncovered requirements
 
-None. Every FR, BR and NFR in SRS v0.2 is mapped to a feature or responsibility and a sprint.
+None. Every FR, BR and NFR in SRS v0.3 is mapped to a feature or responsibility and a sprint.
 
 ## 6. Approved changes (SRS v0.1 to v0.2)
 
@@ -161,26 +164,31 @@ Approved by the team on 2026-10-28 and recorded in `docs/decisions.md`. Question
 | 12-hour cancel limit plus deadline rule answer "cancellation limits" | D-22 | Q-03 closed; no requirement change | none |
 | Public holidays not blocked | none (team note) | A-06 added | none |
 
+### 6.1 SRS v0.2 to v0.3
+
+Approved on 2026-10-28 in the review of PR #1.
+
+| Change | Decision | Effect on requirements | Effect on features |
+|---|---|---|---|
+| Late slot starting 2 h or less from now is rejected | D-23 | BR-16 extended with `SLOT_UNBOOKABLE`; FR-19 notifies only for created late slots | F-04 (AC-F04-07), F-19 |
+| One status vocabulary | D-24 | FR-05, BR-07, A-04 use Open/Booked/Closed/Passed and Upcoming/Passed/Cancelled | F-05 (AC-F05-03), F-08 |
+| Summary includes the open count | D-20 | FR-17 updated | F-17 |
+| Reschedule checks BR-07 as if the old booking were released | none (clarification) | BR-15 | F-14 |
+| Freed slot uses the BR-06 or BR-16 deadline | none (clarification) | BR-13 | F-10, F-11 |
+| NFR-07 Sprint 3 check defined | none (clarification) | NFR-07 | R-02 |
+| PostgreSQL runs in Docker for local development | D-25 | No requirement change | R-04 |
+
 ## 7. Findings for SRS owner
 
-Items found while building the matrix. `docs/srs.md` was not edited.
+All eight findings from v0.1 of this matrix are resolved.
 
-1. **FR-17 vs D-20 (summary counts).** D-20 lists counts "slots, booked, cancelled, open";
-   FR-17 lists "slots, booked, cancelled" and omits "open", and was not updated in v0.2. Decide whether an open count is required.
-2. **BR-15 does not mention BR-07.** A reschedule moves the student's only active booking.
-   BR-15 should say that BR-07 is checked after the old booking is released, otherwise a
-   literal reading rejects every reschedule.
-3. **BR-13 and late slots.** BR-13 frees a cancelled slot "if its deadline has not passed".
-   For a late slot the effective deadline is BR-16 (2 h before start). Suggest wording
-   "if its BR-06 or BR-16 deadline has not passed".
-4. **NFR-07 Sprint 3 scope.** NFR-07 is allocated to Sprints 1 and 3, but the SRS does not
-   say what Sprint 3 adds. Assumed here: re-verification of the error shape on Sprint 3
-   endpoints and screens. Please confirm.
-5. **FR-05 status "open".** A future slot whose booking deadline has passed is neither
-   bookable nor booked. Clarify whether it shows as "open" or another status.
-6. **Booking status names.** The SRS uses "upcoming" and "Passed"; SDS section 4.1 lists the
-   student's bookings as "upcoming, completed, cancelled". Align on one set of names.
-7. **SDS gaps for Sprint 3 (for the SDS owner).** SDS v0.1 has no Notification entity,
-   endpoint or screen for FR-19, and no history endpoint for FR-18. Not needed for Sprint 1,
-   but the SDS should cover them before Sprint 3.
-8. **Minor.** In SRS section 7, A-06 is listed before A-05.
+| # | Finding | Resolution |
+|---|---|---|
+| 1 | FR-17 omitted the open count from D-20. | Fixed in SRS v0.3: FR-17 lists slots, booked, cancelled and open. |
+| 2 | BR-15 did not say how BR-07 applies to a reschedule. | Fixed in SRS v0.3: BR-07 is checked as if the old booking were released. |
+| 3 | BR-13 did not cover the late-slot deadline. | Fixed in SRS v0.3: the BR-06 or BR-16 deadline applies. |
+| 4 | NFR-07 Sprint 3 scope was undefined. | Fixed in SRS v0.3: E2E checks of error messages for Sprint 2 and 3 rejections. |
+| 5 | FR-05 status for a future slot past its deadline was unclear. | Fixed in SRS v0.3 (D-24): new Closed status, covered by AC-F05-03. |
+| 6 | SRS "Passed" vs SDS "completed". | Fixed in SRS v0.3 and SDS v0.3 (D-24). |
+| 7 | SDS lacked the Notification design (FR-19) and a history endpoint (FR-18). | Fixed in SDS v0.3 by the SDS owner. |
+| 8 | A-06 listed before A-05. | Fixed in SRS v0.3. |
