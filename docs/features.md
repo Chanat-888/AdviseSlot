@@ -4,13 +4,14 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Owner of this document | Chanat Dachkhumhang (reviewer: Jeerasak Phisawong) |
-| Related documents | `docs/srs.md` (v0.2), `docs/system-sds.md`, `docs/traceability.md`, `docs/decisions.md` |
+| Related documents | `docs/srs.md` (v0.3), `docs/system-sds.md`, `docs/traceability.md`, `docs/decisions.md` |
 
 ## Version history
 
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First feature inventory from SRS v0.2. Awaiting team review. |
+| 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Aligned with SRS v0.3: F-04 rejects a late slot starting 2 h or less from now (D-23), F-05 uses D-24 statuses, F-17 includes the open count. |
 
 ## 1. Conventions
 
@@ -34,8 +35,8 @@ and both see the saved booking, with every rule and ownership check enforced on 
 | F-01 | Log in | Log in with email and password. Creates a server-side session (httpOnly cookie) that expires 2 hours after login. Returns name and role. | FR-01, BR-10, NFR-01, NFR-02 | none | Anyone |
 | F-02 | Log out | End the current session immediately. Later requests with it get 401. | FR-02, BR-10 | F-01 | Any |
 | F-03 | Current user | Return the logged-in user's id, name, email and role. The client uses it for routing. | FR-03, NFR-02 | F-01 | Any |
-| F-04 | Create slot | Advisor picks a date and start time. Server sets end = start + 30 min and checks weekday, :00/:30, 08:00-18:00, not past, no overlap. A slot created after its normal deadline is accepted as a late slot. | FR-04, BR-01, BR-02, BR-03, BR-04, BR-08, BR-16 (rule), NFR-03, NFR-05 | F-01 | Advisor |
-| F-05 | View own slots | Advisor lists their own slots with status (open, booked, past) and the booking student's name when booked. | FR-05, BR-08, BR-09, NFR-03 | F-04 | Advisor |
+| F-04 | Create slot | Advisor picks a date and start time. Server sets end = start + 30 min and checks weekday, :00/:30, 08:00-18:00, not past, no overlap. A slot created after its normal deadline is accepted as a late slot if it starts more than 2 hours from now; otherwise it is rejected (`SLOT_UNBOOKABLE`). | FR-04, BR-01, BR-02, BR-03, BR-04, BR-08, BR-16 (rule), NFR-03, NFR-05 | F-01 | Advisor |
+| F-05 | View own slots | Advisor lists their own slots with status (Open, Booked, Closed, Passed, per D-24) and the booking student's name when booked. | FR-05, BR-08, BR-09, NFR-03 | F-04 | Advisor |
 | F-06 | View bookable slots | Student lists every currently bookable slot of all advisors: advisor name, start, end, booking deadline. No booker identity is exposed. | FR-06, BR-06, BR-09, BR-16 (rule), NFR-03, NFR-05, NFR-10 (Sprint 3) | F-04 | Student |
 | F-07 | Book slot | Student books a bookable slot. Enforces one active booking per slot (also under concurrency), the booking deadline (including late slots) and one active booking per student. | FR-07, BR-05, BR-06, BR-07, BR-09, BR-16 (rule), NFR-03, NFR-04, NFR-05 | F-06 | Student |
 | F-08 | View own bookings | Student lists their own bookings, upcoming and past. An ended ACTIVE booking is shown as "Passed". | FR-08, BR-07, BR-09 | F-07 | Student |
@@ -57,7 +58,7 @@ and both see the saved booking, with every rule and ownership check enforced on 
 | ID | Feature | Description | Related requirements | Depends on | Primary role |
 |---|---|---|---|---|---|
 | F-16 | Filter bookable slots | Student filters the bookable-slot list by advisor and by date. | FR-16 | F-06 | Student |
-| F-17 | Appointment summary | Advisor views, for a chosen date range on their own slots, the number of slots, booked and cancelled bookings, and the list of upcoming appointments. | FR-17, BR-08 | F-05, F-10, F-11 | Advisor |
+| F-17 | Appointment summary | Advisor views, for a chosen date range on their own slots, the number of slots, booked, cancelled and open, and the list of upcoming appointments. | FR-17, BR-08 | F-05, F-10, F-11 | Advisor |
 | F-18 | Cancellation history | Student and advisor see cancelled bookings in their history with who cancelled and the reason. | FR-18, BR-09 | F-08, F-10, F-11 | Student, Advisor |
 | F-19 | Late-slot notification | Creating a late slot sends every student an in-app notification with advisor, date and time. A student lists notifications and marks them as read. No external messaging. | FR-19, BR-16 (notification) | F-04, F-15 | Student |
 
