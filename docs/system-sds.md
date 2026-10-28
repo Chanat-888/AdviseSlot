@@ -12,6 +12,7 @@
 |---|---|---|---|
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First draft for Jeerasak to review and take over. |
 | 0.2 | 2026-10-28 | Jeerasak (with an AI agent) | Took ownership. Aligned with SRS v0.2: BR-02 and BR-16 in the domain module, `Slot.createdAt` and `Slot.isLate` for late slots, `Notification` entity, endpoints and screen for FR-19, new error codes. Fixed the exclusion constraint SQL (quoted identifiers, `timestamptz` columns). Merged duplicate role-matrix rows. Added open items. |
+| 0.3 | 2026-10-28 | Jeerasak (with an AI agent) | Aligned with SRS v0.3. One status vocabulary for slots and bookings (D-24). Late slots starting 2 hours or less from now are rejected with 422 `SLOT_UNBOOKABLE` (D-23). History endpoint for FR-18. Closed O-01 and O-02. |
 
 ## 1. Stack and rationale
 
@@ -120,7 +121,7 @@ zone) would make the exclusion constraint below fail, because casting it to
 | No overlapping slots per advisor | BR-04 | Service check in a transaction, plus an exclusion constraint `EXCLUDE USING gist ("advisorId" WITH =, tstzrange("startAt", "endAt") WITH &&) WHERE ("deletedAt" IS NULL)` (needs `CREATE EXTENSION IF NOT EXISTS btree_gist`). Identifiers are quoted because Prisma creates camelCase column names. |
 | One ACTIVE booking per slot | BR-05 | Partial unique index `CREATE UNIQUE INDEX ON "Booking"("slotId") WHERE status = 'ACTIVE'`. A second concurrent insert fails, and the service returns 409 `SLOT_TAKEN`. |
 | One active booking per student | BR-07 | Depends on the current time, so a static index cannot express it. The booking transaction first locks the student's `User` row (`SELECT ... FOR UPDATE`), then counts active bookings. Two parallel requests by one student run one after the other. |
-| Late slot flag | BR-06, BR-16 | When a slot is created, the service compares the server's "now" with the slot's normal BR-06 deadline and stores `isLate`. The booking deadline is then the normal BR-06 deadline if `isLate` is false, and start - 2 hours if it is true. The flag is stored so the deadline does not change later. |
+| Late slot flag | BR-06, BR-16 | When a slot is created, the service compares the server's "now" with the slot's normal BR-06 deadline and stores `isLate`. A late slot that starts 2 hours or less from now is rejected with 422 `SLOT_UNBOOKABLE` (D-23), so no notification is sent for it. The booking deadline is then the normal BR-06 deadline if `isLate` is false, and start - 2 hours if it is true. The flag is stored so the deadline does not change later. |
 | One notification per student per late slot | FR-19 | Unique index on `Notification("studentId", "slotId")`. The late slot and one `Notification` row per student are inserted in the same transaction. |
 | Foreign keys | Ownership links | `Slot.advisorId`, `Booking.slotId`, `Booking.studentId`, `Booking.cancelledById`, `Notification.studentId`, `Notification.slotId` reference their parents. Deletes are restricted. |
 
@@ -145,9 +146,10 @@ zone) would make the exclusion constraint below fail, because casting it to
 |---|---|---|---|
 | `/login` | Anyone | Email and password form | 1 |
 | `/slots` | Student | Bookable slots grouped by date, with advisor, time, deadline and a Book button | 1 (filters in 3) |
-| `/bookings` | Student | My bookings: upcoming, completed, cancelled | 1 |
+| `/bookings` | Student | My bookings: Upcoming, Passed, Cancelled (with who cancelled and the reason from Sprint 3) | 1 |
 | `/bookings/:id` | Student, Advisor | Booking detail | 1 |
-| `/schedule` | Advisor | My schedule: create-slot form (weekday date, start time from 08:00 to 17:30 in 30-minute steps) and list of own slots with status and student name | 1 |
+| `/schedule` | Advisor | My schedule: create-slot form (weekday date, start time from 08:00 to 17:30 in 30-minute steps) and list of own slots with status (Open, Booked, Closed, Passed) and student name | 1 |
+| `/history` | Advisor | Cancelled and passed bookings on own slots, with who cancelled and the reason | 3 |
 | `/summary` | Advisor | Appointment summary for a date range | 3 |
 | `/notifications` | Student | Late-slot notifications, newest first, with a Mark as read button | 3 |
 
@@ -163,6 +165,17 @@ client calls `GET /api/auth/me` and sends students to `/slots` and advisors to
 - **Error:** a Bootstrap alert showing the server's `message`. A 401 response sends the user to `/login`.
 - **Validation:** required fields are checked in the form, but the server's response is authoritative.
 - **Time:** all times are shown in Asia/Bangkok local time, format `Wed 4 Nov 2026, 14:00-14:30`.
+- **Statuses (D-24):** the server computes display statuses from stored data and the current time, and the client shows them as received. They are not stored columns.
+
+| Shown status | Applies to | Condition |
+|---|---|---|
+| Open | Slot | Future, no active booking, before its booking deadline (BR-06, or BR-16 if late) |
+| Booked | Slot | Has an active booking, slot not ended |
+| Closed | Slot | Future, no active booking, booking deadline passed |
+| Passed | Slot | `endAt` is in the past |
+| Upcoming | Booking | `status = ACTIVE`, slot not ended |
+| Passed | Booking | `status = ACTIVE`, slot ended |
+| Cancelled | Booking | `status = CANCELLED` |
 
 ## 5. API conventions
 
@@ -181,7 +194,7 @@ client calls `GET /api/auth/me` and sends students to `/slots` and advisors to
 | 403 | Logged in, but the role may not do this | `FORBIDDEN_ROLE` |
 | 404 | Not found, or belongs to someone else (do not reveal it exists) | `NOT_FOUND` |
 | 409 | Conflict with existing data | `SLOT_TAKEN`, `SLOT_OVERLAP`, `ACTIVE_BOOKING_LIMIT`, `SLOT_HAS_ACTIVE_BOOKING` (Sprint 2) |
-| 422 | Valid input that breaks a business rule | `SLOT_OUTSIDE_HOURS`, `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_IN_PAST`, `BOOKING_DEADLINE_PASSED`, `CANCEL_WINDOW_PASSED` (Sprint 2) |
+| 422 | Valid input that breaks a business rule | `SLOT_OUTSIDE_HOURS`, `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_IN_PAST`, `SLOT_UNBOOKABLE`, `BOOKING_DEADLINE_PASSED`, `CANCEL_WINDOW_PASSED` (Sprint 2) |
 | 500 | Unexpected error. Generic message only; details go to the server log. | `INTERNAL_ERROR` |
 
 ### 5.1 Endpoint overview
@@ -206,6 +219,7 @@ Detailed request and response shapes belong in each feature contract.
 | `POST /api/slots/batch` | Advisor | Create consecutive slots | 2 |
 | `GET /api/advisors` | Student | Advisor list for filtering | 3 |
 | `GET /api/summary?from=&to=` | Advisor | Appointment summary | 3 |
+| `GET /api/bookings/history` | Student, Advisor | Cancelled and passed bookings with who cancelled and the reason (FR-18). Student: own bookings. Advisor: bookings on own slots. | 3 |
 | `GET /api/notifications` | Student | Own notifications, newest first, with unread count | 3 |
 | `POST /api/notifications/:id/read` | Student owner | Mark one notification as read | 3 |
 
@@ -223,6 +237,7 @@ Detailed request and response shapes belong in each feature contract.
 | Cancel booking (Sprint 2) | Own, BR-11 | Own slots, BR-12 | As above |
 | Reschedule (Sprint 2) | Own | No (403) | As above |
 | Appointment summary (Sprint 3) | No (403) | Yes | Only own slots |
+| Booking history (Sprint 3) | Own | Own slots | Student: `studentId` = current user. Advisor: bookings on own slots. |
 | List and mark notifications (Sprint 3) | Yes | No (403) | Only notifications where `studentId` = current user, otherwise 404 |
 
 The backend checks every row in this table. Hiding a button in the UI does not count as authorization.
@@ -288,6 +303,6 @@ teammate review before a merge.
 
 | ID | Item | Waiting on |
 |---|---|---|
-| O-01 | A late slot created less than 2 hours before its start can never be booked, but would still notify every student. Reject its creation, or create it without notifications? | SRS review comment on BR-16 |
-| O-02 | Slot status names for `/schedule` (FR-05): is an unbooked slot past its booking deadline "open" or "closed"? | SRS review comment on FR-05 |
+| O-01 | A late slot created less than 2 hours before its start can never be booked, but would still notify every student. Reject its creation, or create it without notifications? | Closed in v0.3: rejected with `SLOT_UNBOOKABLE` (D-23) |
+| O-02 | Slot status names for `/schedule` (FR-05): is an unbooked slot past its booking deadline "open" or "closed"? | Closed in v0.3: "Closed" (D-24, section 4.2) |
 | O-03 | Does editing a slot's start time (FR-12) recompute `isLate`? | Team decision in Sprint 2 |
