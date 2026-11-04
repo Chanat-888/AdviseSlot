@@ -15,6 +15,7 @@
 | 0.3 | 2026-10-28 | Jeerasak (with an AI agent) | Aligned with SRS v0.3. One status vocabulary for slots and bookings (D-24). Late slots starting 2 hours or less from now are rejected with 422 `SLOT_UNBOOKABLE` (D-23). History endpoint for FR-18. Closed O-01 and O-02. |
 | 0.4 | 2026-10-28 | Jeerasak (with an AI agent) | Applied D-25: local PostgreSQL 17 in Docker on port 5433 (section 3.3), `DATABASE_URL` example matches the skeleton (section 8), app image built in Lab 5 (section 9). |
 | 0.5 | 2026-11-04 | Chanat (drafted with an AI agent) | Section 7 (from the F-01 to F-03 contracts): the `sid` cookie gets `Max-Age=7200`; the login email is trimmed and lowercased (D-26); a 401 from `requireAuth` clears the cookie but does not delete the expired row (no session cleanup in Sprint 1). For the SDS owner to review. |
+| 0.6 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): section 3.1 and 3.3 add the `User.email` lowercase CHECK constraint (D-26), written as raw SQL in the F-01 migration. For the SDS owner to review. |
 
 ## 1. Stack and rationale
 
@@ -118,6 +119,7 @@ zone) would make the exclusion constraint below fail, because casting it to
 | Constraint | Protects | How |
 |---|---|---|
 | `User.email` unique | Login identity | Prisma `@unique` |
+| `User.email` lowercase | Login identity (D-26) | `CHECK ("email" = lower("email"))` in a raw SQL migration (added by F-01). With the unique constraint, two users cannot differ only by case. |
 | `Session.tokenHash` unique | Session lookup | Prisma `@unique` |
 | `Slot.endAt = startAt + 30 min` | BR-01 | Computed by the service. `CHECK ("endAt" = "startAt" + interval '30 minutes')` in a raw SQL migration. |
 | No overlapping slots per advisor | BR-04 | Service check in a transaction, plus an exclusion constraint `EXCLUDE USING gist ("advisorId" WITH =, tstzrange("startAt", "endAt") WITH &&) WHERE ("deletedAt" IS NULL)` (needs `CREATE EXTENSION IF NOT EXISTS btree_gist`). Identifiers are quoted because Prisma creates camelCase column names. |
@@ -138,7 +140,7 @@ zone) would make the exclusion constraint below fail, because casting it to
 
 - Local development (D-25): `docker compose up -d db` starts PostgreSQL 17 from `docker-compose.yml` at the repo root, on host port 5433 (so it does not clash with a locally installed PostgreSQL on 5432), with a named volume for data. The server and client run on the host with `npm run dev`.
 - `npx prisma migrate dev` applies all migrations locally. `npx prisma migrate deploy` applies them in Docker and on GCP.
-- Raw SQL migrations add the `btree_gist` extension, the CHECK constraint, the exclusion constraint and the partial unique index.
+- Raw SQL migrations add the `btree_gist` extension, the CHECK constraints (`Slot` duration, `User.email` lowercase), the exclusion constraint and the partial unique index.
 - `npx prisma db seed` runs `server/prisma/seed.ts`. It is idempotent and creates synthetic data: 2 advisors, 3 students and a set of future slots, some already booked. The demo password is defined in the seed for local use only and is listed in the README, not in the PDF.
 
 ## 4. UI structure and conventions

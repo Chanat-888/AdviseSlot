@@ -13,6 +13,7 @@
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First matrix covering all FR, BR and NFR of SRS v0.2. Awaiting team review. |
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Aligned with SRS v0.3 after review on PR #2: added AC-F04-07 (late slot 2 h or less rejected, D-23) and AC-F05-03 (Closed status, D-24), D-24 status names in AC-F05-01, v0.2 to v0.3 changes in section 6, findings in section 7 marked resolved. |
 | 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Sprint 1 contracts F-01 to F-03: added AC-F01-05 (login validation, 400) and AC-F02-02 (logout ends only the current session), with TEST-F01-05 and TEST-F02-02. Added section 6.2 (D-26, D-27). No change to requirement text. |
+| 0.4 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): added AC-F01-06 (the database rejects an uppercase `User` email, D-26) with TEST-F01-06 to the FR-01 row, the Sprint 1 AC list and section 6.2. No change to requirement text. |
 
 ## 1. How to read this matrix
 
@@ -32,7 +33,7 @@
 
 | Req | Feature / responsibility | Sprint | AC | Test | Status |
 |---|---|---|---|---|---|
-| FR-01 | F-01 Log in | 1 | AC-F01-01, AC-F01-02, AC-F01-05 | TEST-F01-01, TEST-F01-02, TEST-F01-05 | Planned |
+| FR-01 | F-01 Log in | 1 | AC-F01-01, AC-F01-02, AC-F01-05, AC-F01-06 | TEST-F01-01, TEST-F01-02, TEST-F01-05, TEST-F01-06 | Planned |
 | FR-02 | F-02 Log out | 1 | AC-F02-01, AC-F02-02 | TEST-F02-01, TEST-F02-02 | Planned |
 | FR-03 | F-03 Current user | 1 | AC-F03-01 | TEST-F03-01 | Planned |
 | FR-04 | F-04 Create slot | 1 | AC-F04-01 | TEST-F04-01 | Planned |
@@ -100,6 +101,7 @@ expected results.
 | AC-F01-03 | The seeded user's stored password is a bcrypt hash (cost 12), never the plaintext. | NFR-01 |
 | AC-F01-04 | A session is rejected (401) once 2 hours have passed since login. | BR-10 |
 | AC-F01-05 | A login body that fails validation is rejected with 400 `VALIDATION_ERROR`, with no session. | FR-01, NFR-07 |
+| AC-F01-06 | The database rejects a `User` whose email has uppercase letters, so two users cannot differ only by case (D-26). | FR-01 |
 | AC-F02-01 | After logout, a request with the old session cookie returns 401. | FR-02, BR-10 |
 | AC-F02-02 | Logout ends only the current session; other sessions of the same user stay valid. | FR-02, BR-10 |
 | AC-F03-01 | A logged-in user gets their own id, name, email and role. | FR-03 |
@@ -187,7 +189,7 @@ Recorded while writing the Sprint 1 contracts.
 
 | Change | Decision | Effect on requirements | Effect on features |
 |---|---|---|---|
-| Login email is trimmed and lowercased | D-26 | No requirement change | F-01 (AC-F01-01) |
+| Login email is trimmed and lowercased | D-26 | No requirement change | F-01 (AC-F01-01, AC-F01-06) |
 | Cut line if the Sprint 1 release is at risk | D-27 | No requirement change | F-08, F-09 (UI screens only) |
 
 ## 7. Findings for SRS owner

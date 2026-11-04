@@ -29,7 +29,7 @@ Theme 1: Appointment and Scheduling System. Team ID digits 1 and 9.
 | D-23 | An advisor cannot create a late slot that starts 2 hours or less from now (at or after its BR-16 cutoff), because it could never be booked. The request is rejected with 422 `SLOT_UNBOOKABLE`. So every late slot that is created is bookable at creation, and the late-slot notification is never sent for an unbookable slot. |
 | D-24 | One status vocabulary everywhere. Slot statuses: Open (future, unbooked, before its booking deadline), Booked (has an active booking), Closed (future, unbooked, booking deadline passed), Passed (slot has ended). Booking statuses shown to users: Upcoming (active, slot not ended), Passed (active, slot ended), Cancelled. |
 | D-25 | Local development runs PostgreSQL 17 in Docker via `docker compose` (`docker-compose.yml` at the repo root, host port 5433 to avoid clashing with a local PostgreSQL on 5432, named volume for data). The server and client run on the host with `npm run dev`. The full application Dockerfile is built in Lab 5. |
-| D-26 | The login email is trimmed and lowercased before the lookup (F-01). Seed emails are stored in lowercase. No requirement text changes. |
+| D-26 | The login email is trimmed and lowercased before the lookup (F-01). Seed emails are stored in lowercase, and this is enforced by a CHECK constraint on `User.email` (`"email" = lower("email")`, raw SQL in the F-01 migration). No requirement text changes. |
 | D-27 | Sprint 1 cut line: if the Sprint 1 release is at risk, the UI screens of F-08 and F-09 are cut before the API, rules or tests. The cut is disclosed in the release notes and in Part F. |
 
 Team:

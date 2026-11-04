@@ -17,6 +17,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-04 | Chanat (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
 | 0.2 | 2026-11-04 | Chanat (drafted with an AI agent) | Team answers applied: AC-F01-05 and TEST-F01-05 for the 400 validation case; cookie `Max-Age=7200`; login returns `{ id, name, email, role }` like `/me`; email is trimmed and lowercased (D-26); expired rows are not cleaned up (known limitation); STS notes on the test clock. |
+| 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): the F-01 migration adds `CHECK ("email" = lower("email"))` on `User` as raw SQL (D-26 is enforced by the database, not only by the seed). Section 6 wording changed. Added AC-F01-06 and TEST-F01-06. |
 
 ## 1. Linked requirements
 
@@ -162,9 +163,9 @@ Screen `/login` (SDS section 4.1), role: anyone.
 
 | Layer | Change |
 |---|---|
-| Existing | `User` (id, name, email unique, passwordHash, role, createdAt) and `Role` already exist in `server/prisma/schema.prisma`. F-01 does not change them except to add the relation field below. |
+| Existing | `User` (id, name, email unique, passwordHash, role, createdAt) and `Role` already exist in `server/prisma/schema.prisma`. F-01 does not change the Prisma models except to add the relation field below. It adds one database constraint on `User.email` (see Migration). |
 | New model | `Session` is added on top of `User` and `Role`. |
-| Migration | A new Prisma migration creates the `Session` table (for example `prisma migrate dev --name add_session`). It is a normal migration, no raw SQL needed. |
+| Migration | A new Prisma migration creates the `Session` table (for example `prisma migrate dev --name add_session`). The same migration adds `ALTER TABLE "User" ADD CONSTRAINT "User_email_lowercase_check" CHECK ("email" = lower("email"))`, written as raw SQL inside the Prisma migration file (the same approach as the SDS slot exclusion constraint), because Prisma cannot express a CHECK constraint (D-26). |
 | Seed | Needs the seeded users (a separate Issue). Passwords are stored as bcrypt cost 12 hashes. |
 
 Planned Prisma model (SDS section 3):
@@ -187,6 +188,7 @@ model Session {
 | `tokenHash` | Unique (SDS section 3.1). SHA-256 hex of the raw token. The raw token is never stored. |
 | `expiresAt` | `timestamptz(3)`, set to login time + 2 hours. |
 | `userId` | Foreign key to `User`, delete restricted (SDS section 3.1). |
+| `User.email` | Already unique. F-01 adds `CHECK ("email" = lower("email"))`, so a mixed-case email cannot be stored and two users cannot differ only by case (D-26, AC-F01-06). |
 
 New dependency for the implementation: a bcrypt library (cost 12) and cookie handling. These are
 implementation details of the F-01 PR, not requirements.
@@ -200,6 +202,7 @@ implementation details of the F-01 PR, not requirements.
 | AC-F01-03 | The seeded user's stored password is a bcrypt hash (cost 12), never the plaintext. | The `passwordHash` of a seeded user matches `^\$2[aby]\$12\$`, is not equal to the demo password, and `bcrypt.compare(demoPassword, passwordHash)` is true. |
 | AC-F01-04 | A session is rejected (401) once 2 hours have passed since login. | After login, a protected request at login + 1 h 59 min 59 s returns 200; at login + 2 h 00 min 00 s it returns 401 `UNAUTHENTICATED` and no user data. |
 | AC-F01-05 | A login body that fails validation is rejected with 400 `VALIDATION_ERROR`. | An empty body, a missing or empty `email` or `password`, or a non-string value returns 400 with `code` `VALIDATION_ERROR` and a readable `message`. No `sid` cookie is set and no `Session` row is created. No stack trace or SQL text in the body. |
+| AC-F01-06 | The database rejects a `User` whose email has uppercase letters, so two users cannot differ only by case. | Inserting a `User` with an email such as `Student1@Example.test` fails with a check constraint violation, and no row is created. Inserting `student1@example.test` still works. With `student1@example.test` already stored, a second insert of `STUDENT1@example.test` also fails. |
 
 ## 8. Software Test Specification (STS)
 
@@ -216,6 +219,7 @@ working. `expiresAt` is computed in JavaScript (`new Date(Date.now() + 2 h)`), n
 | TEST-F01-03 | AC-F01-03 | API (database) | Seed has been run. Demo password from the seed config. | Read the seeded `User` row with Prisma. | `passwordHash` matches `^\$2[aby]\$12\$`, differs from the plaintext, and `bcrypt.compare` returns true. |
 | TEST-F01-04 | AC-F01-04 | API (database, clock) | A user logs in at time T (`vi.setSystemTime(T)`). | Call a protected endpoint (`GET /api/auth/me`) with the cookie at T + 1 h 59 min 59 s, then at T + 2 h. | First call 200. Second call 401 `UNAUTHENTICATED` with no user fields. |
 | TEST-F01-05 | AC-F01-05 | API | Invalid login bodies: empty body, missing `password`, missing `email`, `email: 123`, `password: ""`. `Session` count noted. | `POST /api/auth/login` once per body. | Each: 400, `error.code` is `VALIDATION_ERROR`, `error.message` is a non-empty string, no `Set-Cookie`, `Session` count unchanged, body has no stack trace or SQL text. |
+| TEST-F01-06 | AC-F01-06 | Integration (database) | Test database migrated (the migration includes the CHECK). No user with the emails below. | Using Prisma against the `_test` database: 1. Create a `User` with email `Student1@Example.test`. 2. Create a `User` with email `student1@example.test`. 3. Create a `User` with email `STUDENT1@example.test`. | 1: rejected with a check constraint violation, no row. 2: created. 3: rejected with a check constraint violation, and the `User` count is still 1. |
 
 UI/E2E: the Playwright journey (separate Issue) logs in through `/login` as an advisor and as a
 student and checks the redirect to `/schedule` and `/slots`, and shows the alert message for a
