@@ -14,6 +14,7 @@
 | 0.2 | 2026-10-28 | Jeerasak (with an AI agent) | Took ownership. Aligned with SRS v0.2: BR-02 and BR-16 in the domain module, `Slot.createdAt` and `Slot.isLate` for late slots, `Notification` entity, endpoints and screen for FR-19, new error codes. Fixed the exclusion constraint SQL (quoted identifiers, `timestamptz` columns). Merged duplicate role-matrix rows. Added open items. |
 | 0.3 | 2026-10-28 | Jeerasak (with an AI agent) | Aligned with SRS v0.3. One status vocabulary for slots and bookings (D-24). Late slots starting 2 hours or less from now are rejected with 422 `SLOT_UNBOOKABLE` (D-23). History endpoint for FR-18. Closed O-01 and O-02. |
 | 0.4 | 2026-10-28 | Jeerasak (with an AI agent) | Applied D-25: local PostgreSQL 17 in Docker on port 5433 (section 3.3), `DATABASE_URL` example matches the skeleton (section 8), app image built in Lab 5 (section 9). |
+| 0.5 | 2026-11-04 | Chanat (drafted with an AI agent) | Section 7 (from the F-01 to F-03 contracts): the `sid` cookie gets `Max-Age=7200`; the login email is trimmed and lowercased (D-26); a 401 from `requireAuth` clears the cookie but does not delete the expired row (no session cleanup in Sprint 1). For the SDS owner to review. |
 
 ## 1. Stack and rationale
 
@@ -247,9 +248,9 @@ The backend checks every row in this table. Hiding a button in the UI does not c
 ## 7. Authentication and sessions
 
 - **Passwords:** hashed with bcrypt, cost 12. Plaintext is never stored or logged.
-- **Login:** `POST /api/auth/login` with `{ email, password }`. An unknown email and a wrong password return the same 401 `INVALID_CREDENTIALS`, with similar timing (a dummy bcrypt compare runs for unknown emails).
-- **Session creation:** the server generates a random 32-byte token, stores only its SHA-256 hash in `Session` with `expiresAt` = now + 2 hours, and sets a cookie `sid` with `HttpOnly`, `SameSite=Lax`, `Secure` in production and `Path=/`.
-- **Expiry:** absolute 2 hours (BR-10), no sliding renewal. An expired session returns 401.
+- **Login:** `POST /api/auth/login` with `{ email, password }`. The email is trimmed and lowercased before the lookup (D-26). An unknown email and a wrong password return the same 401 `INVALID_CREDENTIALS`, with similar timing (a dummy bcrypt compare runs for unknown emails).
+- **Session creation:** the server generates a random 32-byte token, stores only its SHA-256 hash in `Session` with `expiresAt` = now + 2 hours, and sets a cookie `sid` with `Max-Age=7200` (2 hours, equal to the session lifetime), `HttpOnly`, `SameSite=Lax`, `Secure` in production and `Path=/`.
+- **Expiry:** absolute 2 hours (BR-10), no sliding renewal. An expired session returns 401 and the response clears the cookie. The expired row is not deleted in Sprint 1 (no cleanup job).
 - **Current user:** `requireAuth` hashes the cookie token, finds the session, checks expiry, and attaches the user to the request. `GET /api/auth/me` returns `{ id, name, email, role }`.
 - **Logout:** `POST /api/auth/logout` deletes the session row and clears the cookie. A request with the old token then returns 401.
 - **Roles:** `requireRole("ADVISOR")` or `requireRole("STUDENT")` returns 403 for the other role.

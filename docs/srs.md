@@ -16,6 +16,7 @@
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First draft from team decisions D-01 to D-13. Awaiting team review. |
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Applied decisions D-14 to D-22: weekdays only, :00/:30 starts, late-slot exception and in-app notification (FR-19), "Passed" status, advisor cancels until start, 2-hour session. Closed Q-01 to Q-03. |
 | 0.3 | 2026-10-28 | Chanat (drafted with an AI agent) | Answered review on PR #1. FR-17 adds the open count (D-20). BR-15 checks BR-07 as if the old booking were released. BR-13 uses the BR-06 or BR-16 deadline. NFR-07 defines the Sprint 3 check. One status vocabulary in FR-05, BR-07 and A-04 (D-24). BR-16 rejects a late slot starting 2 hours or less from now with `SLOT_UNBOOKABLE`, and FR-19 notifies only for created late slots (D-23). A-06 moved after A-05. |
+| 0.4 | 2026-11-04 | Chanat (drafted with an AI agent) | Section 8 lists decisions D-01 to D-27 (added D-23 to D-27). No change to FR, BR or NFR text. |
 
 ## 1. Stakeholder problem and context
 
@@ -133,7 +134,7 @@ All times are evaluated in the Asia/Bangkok time zone (UTC+7) and stored in UTC.
 
 ## 8. Decisions
 
-Decisions D-01 to D-22 are recorded in `docs/decisions.md`. Summary:
+Decisions D-01 to D-27 are recorded in `docs/decisions.md`. Summary:
 
 | ID | Decision |
 |---|---|
@@ -159,6 +160,11 @@ Decisions D-01 to D-22 are recorded in `docs/decisions.md`. Summary:
 | D-20 | Summary: counts plus upcoming appointments. |
 | D-21 | 2-hour session. |
 | D-22 | Cancellation limits resolved by the team (no TA question). |
+| D-23 | A late slot starting 2 hours or less from now is rejected with 422 `SLOT_UNBOOKABLE`. |
+| D-24 | One status vocabulary: slots Open, Booked, Closed, Passed; bookings Upcoming, Passed, Cancelled. |
+| D-25 | Local PostgreSQL 17 in Docker on port 5433. |
+| D-26 | The login email is trimmed and lowercased before the lookup. Seed emails are stored in lowercase. |
+| D-27 | Sprint 1 cut line: if the release is at risk, the UI screens of F-08 and F-09 are cut before the API, rules or tests, and the cut is disclosed. |
 
 ## 9. Questions and resolution
 

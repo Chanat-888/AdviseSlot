@@ -4,7 +4,7 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Owner of this document | Chanat Dachkhumhang (reviewer: Jeerasak Phisawong) |
-| Related documents | `docs/srs.md` (v0.3), `docs/features.md`, `docs/decisions.md` |
+| Related documents | `docs/srs.md` (v0.4), `docs/features.md`, `docs/decisions.md` |
 
 ## Version history
 
@@ -12,6 +12,7 @@
 |---|---|---|---|
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First matrix covering all FR, BR and NFR of SRS v0.2. Awaiting team review. |
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Aligned with SRS v0.3 after review on PR #2: added AC-F04-07 (late slot 2 h or less rejected, D-23) and AC-F05-03 (Closed status, D-24), D-24 status names in AC-F05-01, v0.2 to v0.3 changes in section 6, findings in section 7 marked resolved. |
+| 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Sprint 1 contracts F-01 to F-03: added AC-F01-05 (login validation, 400) and AC-F02-02 (logout ends only the current session), with TEST-F01-05 and TEST-F02-02. Added section 6.2 (D-26, D-27). No change to requirement text. |
 
 ## 1. How to read this matrix
 
@@ -31,8 +32,8 @@
 
 | Req | Feature / responsibility | Sprint | AC | Test | Status |
 |---|---|---|---|---|---|
-| FR-01 | F-01 Log in | 1 | AC-F01-01, AC-F01-02 | TEST-F01-01, TEST-F01-02 | Planned |
-| FR-02 | F-02 Log out | 1 | AC-F02-01 | TEST-F02-01 | Planned |
+| FR-01 | F-01 Log in | 1 | AC-F01-01, AC-F01-02, AC-F01-05 | TEST-F01-01, TEST-F01-02, TEST-F01-05 | Planned |
+| FR-02 | F-02 Log out | 1 | AC-F02-01, AC-F02-02 | TEST-F02-01, TEST-F02-02 | Planned |
 | FR-03 | F-03 Current user | 1 | AC-F03-01 | TEST-F03-01 | Planned |
 | FR-04 | F-04 Create slot | 1 | AC-F04-01 | TEST-F04-01 | Planned |
 | FR-05 | F-05 View own slots | 1 | AC-F05-01, AC-F05-03 | TEST-F05-01, TEST-F05-03 | Planned |
@@ -64,7 +65,7 @@
 | BR-07 | F-07, F-08; later F-14 | 1; 2 | AC-F07-06, AC-F08-01; Sprint 2 part defined in Sprint 2 contract | TEST-F07-06, TEST-F08-01 | Planned |
 | BR-08 | R-01, F-04, F-05; later F-12, F-13, F-15, F-17 | 1; 2, 3 | AC-F04-05, AC-F05-02; later parts defined in Sprint 2/3 contracts | TEST-F04-05, TEST-F05-02 | Planned |
 | BR-09 | R-01, F-05, F-06, F-07, F-08, F-09; later F-18 | 1; 3 | AC-F05-01, AC-F06-03, AC-F07-07, AC-F08-01, AC-F09-03; Sprint 3 part defined in Sprint 3 contract | TEST-F05-01, TEST-F06-03, TEST-F07-07, TEST-F08-01, TEST-F09-03 | Planned |
-| BR-10 | R-01, F-01, F-02 | 1 | AC-F01-04, AC-F02-01 | TEST-F01-04, TEST-F02-01 | Planned |
+| BR-10 | R-01, F-01, F-02 | 1 | AC-F01-04, AC-F02-01, AC-F02-02 | TEST-F01-04, TEST-F02-01, TEST-F02-02 | Planned |
 | BR-11 | F-10, F-14 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | BR-12 | F-11 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | BR-13 | F-10, F-11 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
@@ -82,7 +83,7 @@
 | NFR-04 | F-07 | 1 | AC-F07-03 | TEST-F07-03 | Planned |
 | NFR-05 | F-04, F-06, F-07 | 1 | AC-F04-02, AC-F06-02, AC-F07-04, AC-F07-05 | TEST-F04-02, TEST-F06-02, TEST-F07-04, TEST-F07-05 | Planned |
 | NFR-06 | R-04 | 1 (local); 2 (GCP) | AC-R04-01; Sprint 2 part defined in Sprint 2 contract | TEST-R04-01 (manual restart check) | Planned |
-| NFR-07 | R-02 | 1; 3 | AC-R02-01, AC-R02-02; Sprint 3 part defined in Sprint 3 contract | TEST-R02-01, TEST-R02-02 (E2E) | Planned |
+| NFR-07 | R-02 | 1; 3 | AC-F01-02, AC-F01-05, AC-R02-01, AC-R02-02; Sprint 3 part defined in Sprint 3 contract | TEST-F01-02, TEST-F01-05, TEST-R02-01, TEST-R02-02 (E2E) | Planned |
 | NFR-08 | R-03 | 1 | AC-R03-01 | TEST-R03-01 (PR checklist and secret scan) | Planned |
 | NFR-09 | R-04 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | NFR-10 | F-06, R-04 | 3 | AC/test defined in Sprint 3 contract | | Allocated |
@@ -98,7 +99,9 @@ expected results.
 | AC-F01-02 | Wrong password or unknown email returns 401 with the same generic message and no session. | FR-01, NFR-07 |
 | AC-F01-03 | The seeded user's stored password is a bcrypt hash (cost 12), never the plaintext. | NFR-01 |
 | AC-F01-04 | A session is rejected (401) once 2 hours have passed since login. | BR-10 |
+| AC-F01-05 | A login body that fails validation is rejected with 400 `VALIDATION_ERROR`, with no session. | FR-01, NFR-07 |
 | AC-F02-01 | After logout, a request with the old session cookie returns 401. | FR-02, BR-10 |
+| AC-F02-02 | Logout ends only the current session; other sessions of the same user stay valid. | FR-02, BR-10 |
 | AC-F03-01 | A logged-in user gets their own id, name, email and role. | FR-03 |
 | AC-F04-01 | Advisor creates a slot from a start time; end is start + 30 min, and any client-sent end is ignored. | FR-04, BR-01 |
 | AC-F04-02 | Saturday/Sunday, a start not on :00/:30, a start before 08:00 or an end after 18:00 is rejected. | BR-02, NFR-05 |
@@ -133,7 +136,7 @@ expected results.
 
 ## 4. Coverage check
 
-| Type | In SRS v0.3 | Mapped to a feature or responsibility | With Sprint 1 AC/test IDs | Allocated to Sprint 2/3 only | Uncovered |
+| Type | In SRS v0.4 | Mapped to a feature or responsibility | With Sprint 1 AC/test IDs | Allocated to Sprint 2/3 only | Uncovered |
 |---|---|---|---|---|---|
 | FR | 19 (FR-01 to FR-19) | 19 | 9 (FR-01 to FR-09) | 10 (FR-10 to FR-19) | 0 |
 | BR | 16 (BR-01 to BR-16) | 16 | 11 (BR-01 to BR-10, BR-16 rule) | 5 (BR-11 to BR-15) | 0 |
@@ -145,7 +148,7 @@ requirement, so no feature exists without a requirement.
 
 ## 5. Uncovered requirements
 
-None. Every FR, BR and NFR in SRS v0.3 is mapped to a feature or responsibility and a sprint.
+None. Every FR, BR and NFR in SRS v0.4 is mapped to a feature or responsibility and a sprint.
 
 ## 6. Approved changes (SRS v0.1 to v0.2)
 
@@ -177,6 +180,15 @@ Approved on 2026-10-28 in the review of PR #1.
 | Freed slot uses the BR-06 or BR-16 deadline | none (clarification) | BR-13 | F-10, F-11 |
 | NFR-07 Sprint 3 check defined | none (clarification) | NFR-07 | R-02 |
 | PostgreSQL runs in Docker for local development | D-25 | No requirement change | R-04 |
+
+### 6.2 Contract-time decisions (2026-11-04)
+
+Recorded while writing the Sprint 1 contracts.
+
+| Change | Decision | Effect on requirements | Effect on features |
+|---|---|---|---|
+| Login email is trimmed and lowercased | D-26 | No requirement change | F-01 (AC-F01-01) |
+| Cut line if the Sprint 1 release is at risk | D-27 | No requirement change | F-08, F-09 (UI screens only) |
 
 ## 7. Findings for SRS owner
 

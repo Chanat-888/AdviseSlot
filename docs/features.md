@@ -4,7 +4,7 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Owner of this document | Chanat Dachkhumhang (reviewer: Jeerasak Phisawong) |
-| Related documents | `docs/srs.md` (v0.3), `docs/system-sds.md`, `docs/traceability.md`, `docs/decisions.md` |
+| Related documents | `docs/srs.md` (v0.4), `docs/system-sds.md`, `docs/traceability.md`, `docs/decisions.md` |
 
 ## Version history
 
@@ -12,6 +12,7 @@
 |---|---|---|---|
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First feature inventory from SRS v0.2. Awaiting team review. |
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Aligned with SRS v0.3: F-04 rejects a late slot starting 2 h or less from now (D-23), F-05 uses D-24 statuses, F-17 includes the open count. |
+| 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Related documents point to SRS v0.4 (decision list D-01 to D-27). No feature changes. |
 
 ## 1. Conventions
 
