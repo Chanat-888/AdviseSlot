@@ -13,6 +13,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-04 | Chanat (drafted with an AI agent) | First Product DoD from Deliverable 1 section 3.5. Awaiting team review. |
 | 0.2 | 2026-11-04 | Chanat (drafted with an AI agent) | Row 3 states the test file layout for all Sprint 1 features. |
+| 0.3 | 2026-11-05 | Jeerasak (drafted with an AI agent) | Section 3.1: steps for the R4 restart check (TEST-R04-01). Row 8 evidence names the secret scan file. Issue #17. |
 
 ## 1. Rule
 
@@ -32,7 +33,7 @@ gap is written in the PR description and in the Known limitations of the release
 | 5 | **TDD evidence for rule work.** For rule logic (for example BR-05, BR-06, BR-07, BR-10, BR-16) the intended-behavior test is shown failing before the fix and passing after it. | Failing run and passing run, with commit IDs. |
 | 6 | **Access control enforced on the server.** Unauthenticated requests return 401, wrong role 403, other users' records 404 (SDS section 6), with no private data. The user id and role come from the session, never from the request. | API tests for 401, 403, 404 cases (TEST-R01-01 and the feature's own). |
 | 7 | **Errors use the SDS format.** Rejections return 4xx with `code` and `message`, with no stack trace or SQL error. The UI shows the server's message. | API shape test (TEST-R02-01), E2E check (TEST-R02-02). |
-| 8 | **No secrets.** No real password, token or key in Git or client code. Configuration comes from environment variables, with `.env.example` placeholders. | PR checklist, secret scan (TEST-R03-01). |
+| 8 | **No secrets.** No real password, token or key in Git or client code. Configuration comes from environment variables, with `.env.example` placeholders. | PR checklist (`.github/pull_request_template.md`), secret scan (TEST-R03-01, `server/tests/r03.secrets.test.ts`). |
 | 9 | **Build passes.** Server and client build without errors. | `npm run build` output. |
 | 10 | **Reviewed by the teammate.** The PR into `sprint-1` has a teammate review with at least one specific check, question or finding, and every comment is answered. The author does not approve their own PR. | PR link, review comment. |
 | 11 | **Integrated by the reviewer.** The reviewer merges the PR into `sprint-1` (`docs/workflow.md`). The branch was updated from `sprint-1` and the tests were green before the merge. | Merge commit on `sprint-1`. |
@@ -53,6 +54,36 @@ The release (`sprint-1` into `main`) is Done when, in addition:
 | R5 | A fresh clone can follow the README to run the app with the documented seed accounts. | README steps tried by the reviewer. |
 | R6 | The release PR is reviewed by the teammate and merged into `main` by the reviewer. The release is tagged and the tag and commit are recorded. | Tag name, commit ID. |
 | R7 | Both students have meaningful participation, shown in Issues, PRs and the contribution table. AI use is declared briefly. | Contribution table. |
+
+### 3.1 R4 restart check (TEST-R04-01, AC-R04-01, NFR-06)
+
+Manual, on the release commit, against the dev database (`docker compose`, port 5433).
+It shows that a booking is stored in PostgreSQL, not in server memory, and survives both a
+server restart and a database container restart.
+
+1. Start the database and the server (README "Setup" and "Run"). Seed if needed:
+   `cd server && npx prisma db seed`.
+2. Log in as a student who has a booking and save the cookie. The seed gives `student2` one.
+
+   ```bash
+   curl -s -c jar.txt -H "Content-Type: application/json" \
+     -d '{"email":"student2@example.test","password":"AdviseSlot-demo-2026"}' \
+     http://localhost:3000/api/auth/login
+   curl -s -b jar.txt http://localhost:3000/api/bookings/mine > before.json
+   ```
+
+   Note the booking `id` in `before.json` and get its detail:
+   `curl -s -b jar.txt http://localhost:3000/api/bookings/<id> > detail-before.json`.
+3. Stop the server (Ctrl+C in its terminal). Restart the database container:
+   `docker compose restart db`, and wait until `docker compose ps` shows it healthy.
+4. Start the server again (`cd server && npm run dev`).
+5. Log in again (same command as step 2, the session may also still be valid) and repeat the
+   two requests into `after.json` and `detail-after.json`.
+6. Pass if `before.json` equals `after.json` and `detail-before.json` equals
+   `detail-after.json` (`diff` prints nothing). Delete `jar.txt` afterwards.
+
+Record in the release evidence (`evidence/r04-restart.txt`): date, commit ID, the booking id,
+the commands run and the `diff` output.
 
 ## 4. What "Done" does not mean
 

@@ -1,0 +1,72 @@
+=== npm test at 593425f (2026-11-05T17:16:57+07:00) ===
+
+ RUN  v2.1.5 C:/Users/Pedpro/AdviseSlot/server
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+4 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 400 VALIDATION_ERROR for a body that is not valid JSON
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 400 VALIDATION_ERROR for invalid fields (login and create slot)
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 401 INVALID_CREDENTIALS and 401 UNAUTHENTICATED
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 403 FORBIDDEN_ROLE
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 400 and 404 on booking routes (bad id, missing slot, missing booking)
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 404 NOT_FOUND for an unknown API path, in the same shape (not Express's HTML page)
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 409 SLOT_OVERLAP, including when the database constraint is what stops it
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 422 for a business rule
+ ✓ tests/r02.errors.test.ts > TEST-R02-01 (AC-R02-01): every rejection uses the SDS error shape > 500 INTERNAL_ERROR hides the cause: no stack, SQL or Prisma text
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > the protected list covers every registered route that is not public
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/auth/me' > returns 401 UNAUTHENTICATED with no cookie and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/auth/me' > returns 401 UNAUTHENTICATED with an unknown token and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/auth/me' > returns 401 UNAUTHENTICATED with an empty sid and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/auth/me' > returns 401 UNAUTHENTICATED with an expired session and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/auth/logout' > returns 401 UNAUTHENTICATED with no cookie and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/auth/logout' > returns 401 UNAUTHENTICATED with an unknown token and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/auth/logout' > returns 401 UNAUTHENTICATED with an empty sid and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/auth/logout' > returns 401 UNAUTHENTICATED with an expired session and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/slots' > returns 401 UNAUTHENTICATED with no cookie and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/slots' > returns 401 UNAUTHENTICATED with an unknown token and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/slots' > returns 401 UNAUTHENTICATED with an empty sid and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/slots' > returns 401 UNAUTHENTICATED with an expired session and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/slots/mine' > returns 401 UNAUTHENTICATED with no cookie and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/slots/mine' > returns 401 UNAUTHENTICATED with an unknown token and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/slots/mine' > returns 401 UNAUTHENTICATED with an empty sid and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/slots/mine' > returns 401 UNAUTHENTICATED with an expired session and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/slots/bookable' > returns 401 UNAUTHENTICATED with no cookie and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/slots/bookable' > returns 401 UNAUTHENTICATED with an unknown token and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/slots/bookable' > returns 401 UNAUTHENTICATED with an empty sid and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/slots/bookable' > returns 401 UNAUTHENTICATED with an expired session and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/bookings' > returns 401 UNAUTHENTICATED with no cookie and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/bookings' > returns 401 UNAUTHENTICATED with an unknown token and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/bookings' > returns 401 UNAUTHENTICATED with an empty sid and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'post' '/api/bookings' > returns 401 UNAUTHENTICATED with an expired session and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/bookings/mine' > returns 401 UNAUTHENTICATED with no cookie and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/bookings/mine' > returns 401 UNAUTHENTICATED with an unknown token and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/bookings/mine' > returns 401 UNAUTHENTICATED with an empty sid and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/bookings/mine' > returns 401 UNAUTHENTICATED with an expired session and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/bookings/1' > returns 401 UNAUTHENTICATED with no cookie and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/bookings/1' > returns 401 UNAUTHENTICATED with an unknown token and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/bookings/1' > returns 401 UNAUTHENTICATED with an empty sid and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > 'get' '/api/bookings/1' > returns 401 UNAUTHENTICATED with an expired session and no private data
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > a logged-out cookie is refused on every protected endpoint (AC-F02-01)
+ ✓ tests/r01.auth.test.ts > TEST-R01-01 (AC-R01-01): every protected endpoint needs a session > a protected request without a session writes nothing (no Slot or Booking row)
+ ✓ tests/r03.secrets.test.ts > TEST-R03-01 (AC-R03-01): no secret in Git or the client bundle > only .env.example files are tracked, never a real .env
+ ✓ tests/r03.secrets.test.ts > TEST-R03-01 (AC-R03-01): no secret in Git or the client bundle > no tracked file contains a key, token or private key
+ ✓ tests/r03.secrets.test.ts > TEST-R03-01 (AC-R03-01): no secret in Git or the client bundle > every database URL in Git uses the local dev password only
+ ✓ tests/r03.secrets.test.ts > TEST-R03-01 (AC-R03-01): no secret in Git or the client bundle > the client reads only public VITE_ variables, so nothing secret reaches the bundle
+ ✓ tests/r03.secrets.test.ts > TEST-R03-01 (AC-R03-01): no secret in Git or the client bundle > server configuration comes from environment variables, not from source
+
+ Test Files  3 passed (3)
+      Tests  49 passed (49)
+   Start at  17:16:58
+   Duration  5.71s (transform 76ms, setup 0ms, collect 882ms, tests 3.12s, environment 0ms, prepare 202ms)
+
+exit: 0
+
+=== full suite ===
+ Test Files  15 passed (15)
+      Tests  165 passed (165)

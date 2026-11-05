@@ -27,6 +27,11 @@ app.use("/api/auth", authRouter);
 app.use("/api/slots", slotsRouter);
 app.use("/api/bookings", bookingsRouter);
 
+// R-02: an unknown /api path (or wrong method) gets the SDS error shape, not Express's HTML page.
+app.use("/api", (_req, res) => {
+  sendError(res, 404, "NOT_FOUND", "Not found.");
+});
+
 // SDS section 5: every error uses { error: { code, message } }. No stack trace in the body.
 app.use((err: { status?: number; type?: string }, _req: Request, res: Response, _next: NextFunction) => {
   if (err.type === "entity.parse.failed") {
