@@ -1,0 +1,25 @@
+# TEST-R04-01 / AC-R04-01 / NFR-06: booking survives a server restart and a database container restart
+# Procedure: docs/sprints/sprint-1/definition-of-done.md section 3.1
+# Date: 2026-11-05T17:33:25+07:00   Commit: aa87c4a (sprint-1 after PR #29)   DB: docker compose service db, port 5433, seeded
+# Booking id: 1 (student2, Advisor One). Cookie jar deleted afterwards.
+
+# 2. log in as student2, list bookings
+login -> {"id":4,"name":"Student Two","email":"student2@example.test","role":"STUDENT"}
+before.json: [{"id":1,"status":"Upcoming","createdAt":"2026-11-05T10:32:39.486Z","slot":{"id":1,"startAt":"2026-11-09T02:00:00.000Z","endAt":"2026-11-09T02:30:00.000Z"},"advisor":{"id":1,"name":"Advisor One"}}]
+booking id: 1
+detail-before.json: {"id":1,"status":"Upcoming","createdAt":"2026-11-05T10:32:39.486Z","slot":{"id":1,"startAt":"2026-11-09T02:00:00.000Z","endAt":"2026-11-09T02:30:00.000Z"},"advisor":{"id":1,"name":"Advisor One"},"student":{"id":4,"name":"Student Two"}}
+# 3. stop server, restart db container
+server pid on 3000: 32432
+server stopped (no answer)
+ Container adviseslot-db-1 Restarting 
+ Container adviseslot-db-1 Started 
+db health: healthy
+# 4. start server again
+health: {"status":"ok","db":"up"}
+# 5. log in again, repeat requests
+login -> {"id":4,"name":"Student Two","email":"student2@example.test","role":"STUDENT"}
+# 6. diff
+mine: identical
+detail: identical
+
+# Result: PASS (both diffs printed nothing)

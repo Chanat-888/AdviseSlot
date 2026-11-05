@@ -14,6 +14,7 @@
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Aligned with SRS v0.3 after review on PR #2: added AC-F04-07 (late slot 2 h or less rejected, D-23) and AC-F05-03 (Closed status, D-24), D-24 status names in AC-F05-01, v0.2 to v0.3 changes in section 6, findings in section 7 marked resolved. |
 | 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Sprint 1 contracts F-01 to F-03: added AC-F01-05 (login validation, 400) and AC-F02-02 (logout ends only the current session), with TEST-F01-05 and TEST-F02-02. Added section 6.2 (D-26, D-27). No change to requirement text. |
 | 0.4 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): added AC-F01-06 (the database rejects an uppercase `User` email, D-26) with TEST-F01-06 to the FR-01 row, the Sprint 1 AC list and section 6.2. No change to requirement text. |
+| 0.5 | 2026-11-05 | Chanat (drafted with an AI agent) | Release of Sprint 1: statuses of the Sprint 1 rows changed from Planned to Verified. No change to requirement text, AC or test IDs. Issue #14. |
 
 ## 1. How to read this matrix
 
@@ -24,7 +25,7 @@
   in that sprint's contract.
 - A requirement that spans sprints lists the Sprint 1 part with IDs and the later part as
   "defined in Sprint N contract".
-- Status: **Planned** = AC and test IDs assigned, not yet implemented. **Allocated** =
+- Status: **Verified (Sprint 1)** = implemented and its Sprint 1 tests pass (release evidence in `evidence/`). **Verified (Sprint 1 part)** = the same for the Sprint 1 part of a requirement that continues in Sprint 2 or 3. **Planned** = AC and test IDs assigned, not yet implemented. **Allocated** =
   feature and sprint assigned, AC not yet written. Status is updated at each sprint review.
 
 ## 2. Matrix
@@ -33,15 +34,15 @@
 
 | Req | Feature / responsibility | Sprint | AC | Test | Status |
 |---|---|---|---|---|---|
-| FR-01 | F-01 Log in | 1 | AC-F01-01, AC-F01-02, AC-F01-05, AC-F01-06 | TEST-F01-01, TEST-F01-02, TEST-F01-05, TEST-F01-06 | Planned |
-| FR-02 | F-02 Log out | 1 | AC-F02-01, AC-F02-02 | TEST-F02-01, TEST-F02-02 | Planned |
-| FR-03 | F-03 Current user | 1 | AC-F03-01 | TEST-F03-01 | Planned |
-| FR-04 | F-04 Create slot | 1 | AC-F04-01 | TEST-F04-01 | Planned |
-| FR-05 | F-05 View own slots | 1 | AC-F05-01, AC-F05-03 | TEST-F05-01, TEST-F05-03 | Planned |
-| FR-06 | F-06 View bookable slots | 1 | AC-F06-01 | TEST-F06-01 | Planned |
-| FR-07 | F-07 Book slot | 1 | AC-F07-01 | TEST-F07-01 | Planned |
-| FR-08 | F-08 View own bookings, F-09 Booking detail | 1 | AC-F08-01, AC-F09-01 | TEST-F08-01, TEST-F09-01 | Planned |
-| FR-09 | F-09 Booking detail | 1 | AC-F09-02 | TEST-F09-02 | Planned |
+| FR-01 | F-01 Log in | 1 | AC-F01-01, AC-F01-02, AC-F01-05, AC-F01-06 | TEST-F01-01, TEST-F01-02, TEST-F01-05, TEST-F01-06 | Verified (Sprint 1) |
+| FR-02 | F-02 Log out | 1 | AC-F02-01, AC-F02-02 | TEST-F02-01, TEST-F02-02 | Verified (Sprint 1) |
+| FR-03 | F-03 Current user | 1 | AC-F03-01 | TEST-F03-01 | Verified (Sprint 1) |
+| FR-04 | F-04 Create slot | 1 | AC-F04-01 | TEST-F04-01 | Verified (Sprint 1) |
+| FR-05 | F-05 View own slots | 1 | AC-F05-01, AC-F05-03 | TEST-F05-01, TEST-F05-03 | Verified (Sprint 1) |
+| FR-06 | F-06 View bookable slots | 1 | AC-F06-01 | TEST-F06-01 | Verified (Sprint 1) |
+| FR-07 | F-07 Book slot | 1 | AC-F07-01 | TEST-F07-01 | Verified (Sprint 1) |
+| FR-08 | F-08 View own bookings, F-09 Booking detail | 1 | AC-F08-01, AC-F09-01 | TEST-F08-01, TEST-F09-01 | Verified (Sprint 1) |
+| FR-09 | F-09 Booking detail | 1 | AC-F09-02 | TEST-F09-02 | Verified (Sprint 1) |
 | FR-10 | F-10 Student cancels booking | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | FR-11 | F-11 Advisor cancels booking | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | FR-12 | F-12 Edit slot | 2 | AC/test defined in Sprint 2 contract | | Allocated |
@@ -57,35 +58,35 @@
 
 | Req | Feature / responsibility | Sprint | AC | Test | Status |
 |---|---|---|---|---|---|
-| BR-01 | F-04; later F-12, F-15 | 1; 2 | AC-F04-01; Sprint 2 part defined in Sprint 2 contract | TEST-F04-01 | Planned |
-| BR-02 | F-04; later F-12, F-15 | 1; 2 | AC-F04-02; Sprint 2 part defined in Sprint 2 contract | TEST-F04-02 | Planned |
-| BR-03 | F-04; later F-12, F-15 | 1; 2 | AC-F04-03; Sprint 2 part defined in Sprint 2 contract | TEST-F04-03 | Planned |
-| BR-04 | F-04; later F-12, F-15 | 1; 2 | AC-F04-04; Sprint 2 part defined in Sprint 2 contract | TEST-F04-04 | Planned |
-| BR-05 | F-07; later F-14 | 1; 2 | AC-F07-02, AC-F07-03; Sprint 2 part defined in Sprint 2 contract | TEST-F07-02, TEST-F07-03 | Planned |
-| BR-06 | F-06, F-07; later F-14 | 1; 2 | AC-F06-02, AC-F07-04; Sprint 2 part defined in Sprint 2 contract | TEST-F06-02, TEST-F07-04 | Planned |
-| BR-07 | F-07, F-08; later F-14 | 1; 2 | AC-F07-06, AC-F08-01; Sprint 2 part defined in Sprint 2 contract | TEST-F07-06, TEST-F08-01 | Planned |
-| BR-08 | R-01, F-04, F-05; later F-12, F-13, F-15, F-17 | 1; 2, 3 | AC-F04-05, AC-F05-02; later parts defined in Sprint 2/3 contracts | TEST-F04-05, TEST-F05-02 | Planned |
-| BR-09 | R-01, F-05, F-06, F-07, F-08, F-09; later F-18 | 1; 3 | AC-F05-01, AC-F06-03, AC-F07-07, AC-F08-01, AC-F09-03; Sprint 3 part defined in Sprint 3 contract | TEST-F05-01, TEST-F06-03, TEST-F07-07, TEST-F08-01, TEST-F09-03 | Planned |
-| BR-10 | R-01, F-01, F-02 | 1 | AC-F01-04, AC-F02-01, AC-F02-02 | TEST-F01-04, TEST-F02-01, TEST-F02-02 | Planned |
+| BR-01 | F-04; later F-12, F-15 | 1; 2 | AC-F04-01; Sprint 2 part defined in Sprint 2 contract | TEST-F04-01 | Verified (Sprint 1 part) |
+| BR-02 | F-04; later F-12, F-15 | 1; 2 | AC-F04-02; Sprint 2 part defined in Sprint 2 contract | TEST-F04-02 | Verified (Sprint 1 part) |
+| BR-03 | F-04; later F-12, F-15 | 1; 2 | AC-F04-03; Sprint 2 part defined in Sprint 2 contract | TEST-F04-03 | Verified (Sprint 1 part) |
+| BR-04 | F-04; later F-12, F-15 | 1; 2 | AC-F04-04; Sprint 2 part defined in Sprint 2 contract | TEST-F04-04 | Verified (Sprint 1 part) |
+| BR-05 | F-07; later F-14 | 1; 2 | AC-F07-02, AC-F07-03; Sprint 2 part defined in Sprint 2 contract | TEST-F07-02, TEST-F07-03 | Verified (Sprint 1 part) |
+| BR-06 | F-06, F-07; later F-14 | 1; 2 | AC-F06-02, AC-F07-04; Sprint 2 part defined in Sprint 2 contract | TEST-F06-02, TEST-F07-04 | Verified (Sprint 1 part) |
+| BR-07 | F-07, F-08; later F-14 | 1; 2 | AC-F07-06, AC-F08-01; Sprint 2 part defined in Sprint 2 contract | TEST-F07-06, TEST-F08-01 | Verified (Sprint 1 part) |
+| BR-08 | R-01, F-04, F-05; later F-12, F-13, F-15, F-17 | 1; 2, 3 | AC-F04-05, AC-F05-02; later parts defined in Sprint 2/3 contracts | TEST-F04-05, TEST-F05-02 | Verified (Sprint 1 part) |
+| BR-09 | R-01, F-05, F-06, F-07, F-08, F-09; later F-18 | 1; 3 | AC-F05-01, AC-F06-03, AC-F07-07, AC-F08-01, AC-F09-03; Sprint 3 part defined in Sprint 3 contract | TEST-F05-01, TEST-F06-03, TEST-F07-07, TEST-F08-01, TEST-F09-03 | Verified (Sprint 1 part) |
+| BR-10 | R-01, F-01, F-02 | 1 | AC-F01-04, AC-F02-01, AC-F02-02 | TEST-F01-04, TEST-F02-01, TEST-F02-02 | Verified (Sprint 1) |
 | BR-11 | F-10, F-14 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | BR-12 | F-11 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | BR-13 | F-10, F-11 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | BR-14 | F-12, F-13 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | BR-15 | F-14 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| BR-16 | Rule: F-04, F-06, F-07; later F-15. Notification: F-19 | 1 (rule); 2 (batch); 3 (notification) | AC-F04-06, AC-F04-07, AC-F06-02, AC-F07-05; later parts defined in Sprint 2/3 contracts | TEST-F04-06, TEST-F04-07, TEST-F06-02, TEST-F07-05 | Planned |
+| BR-16 | Rule: F-04, F-06, F-07; later F-15. Notification: F-19 | 1 (rule); 2 (batch); 3 (notification) | AC-F04-06, AC-F04-07, AC-F06-02, AC-F07-05; later parts defined in Sprint 2/3 contracts | TEST-F04-06, TEST-F04-07, TEST-F06-02, TEST-F07-05 | Verified (Sprint 1 part) |
 
 ### 2.3 Non-functional requirements
 
 | Req | Feature / responsibility | Sprint | AC | Test | Status |
 |---|---|---|---|---|---|
-| NFR-01 | R-01, F-01 | 1 | AC-F01-03 | TEST-F01-03 | Planned |
-| NFR-02 | R-01 (all protected endpoints) | 1; extended in 2, 3 | AC-R01-01; new endpoints defined in Sprint 2/3 contracts | TEST-R01-01 | Planned |
-| NFR-03 | R-01, F-04, F-05, F-06, F-07, F-09; later F-10 to F-14, F-17, F-18 | 1; extended in 2, 3 | AC-F04-05, AC-F05-02, AC-F06-04, AC-F07-07, AC-F09-03; later parts defined in Sprint 2/3 contracts | TEST-F04-05, TEST-F05-02, TEST-F06-04, TEST-F07-07, TEST-F09-03 | Planned |
-| NFR-04 | F-07 | 1 | AC-F07-03 | TEST-F07-03 | Planned |
-| NFR-05 | F-04, F-06, F-07 | 1 | AC-F04-02, AC-F06-02, AC-F07-04, AC-F07-05 | TEST-F04-02, TEST-F06-02, TEST-F07-04, TEST-F07-05 | Planned |
-| NFR-06 | R-04 | 1 (local); 2 (GCP) | AC-R04-01; Sprint 2 part defined in Sprint 2 contract | TEST-R04-01 (manual restart check) | Planned |
-| NFR-07 | R-02 | 1; 3 | AC-F01-02, AC-F01-05, AC-R02-01, AC-R02-02; Sprint 3 part defined in Sprint 3 contract | TEST-F01-02, TEST-F01-05, TEST-R02-01, TEST-R02-02 (E2E) | Planned |
-| NFR-08 | R-03 | 1 | AC-R03-01 | TEST-R03-01 (PR checklist and secret scan) | Planned |
+| NFR-01 | R-01, F-01 | 1 | AC-F01-03 | TEST-F01-03 | Verified (Sprint 1) |
+| NFR-02 | R-01 (all protected endpoints) | 1; extended in 2, 3 | AC-R01-01; new endpoints defined in Sprint 2/3 contracts | TEST-R01-01 | Verified (Sprint 1 part) |
+| NFR-03 | R-01, F-04, F-05, F-06, F-07, F-09; later F-10 to F-14, F-17, F-18 | 1; extended in 2, 3 | AC-F04-05, AC-F05-02, AC-F06-04, AC-F07-07, AC-F09-03; later parts defined in Sprint 2/3 contracts | TEST-F04-05, TEST-F05-02, TEST-F06-04, TEST-F07-07, TEST-F09-03 | Verified (Sprint 1 part) |
+| NFR-04 | F-07 | 1 | AC-F07-03 | TEST-F07-03 | Verified (Sprint 1) |
+| NFR-05 | F-04, F-06, F-07 | 1 | AC-F04-02, AC-F06-02, AC-F07-04, AC-F07-05 | TEST-F04-02, TEST-F06-02, TEST-F07-04, TEST-F07-05 | Verified (Sprint 1) |
+| NFR-06 | R-04 | 1 (local); 2 (GCP) | AC-R04-01; Sprint 2 part defined in Sprint 2 contract | TEST-R04-01 (manual restart check) | Verified (Sprint 1 part) |
+| NFR-07 | R-02 | 1; 3 | AC-F01-02, AC-F01-05, AC-R02-01, AC-R02-02; Sprint 3 part defined in Sprint 3 contract | TEST-F01-02, TEST-F01-05, TEST-R02-01, TEST-R02-02 (E2E) | Verified (Sprint 1 part) |
+| NFR-08 | R-03 | 1 | AC-R03-01 | TEST-R03-01 (PR checklist and secret scan) | Verified (Sprint 1) |
 | NFR-09 | R-04 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
 | NFR-10 | F-06, R-04 | 3 | AC/test defined in Sprint 3 contract | | Allocated |
 
