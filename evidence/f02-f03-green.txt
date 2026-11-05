@@ -1,0 +1,30 @@
+
+> adviseslot-server@0.1.0 test
+> vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.5 [39m[90mC:/Users/Pan/Desktop/Software project/AdviseSlot/server[39m
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+2 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+ [32m✓[39m tests/auth.login.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 2128[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F01-01 (AC-F01-01): valid login creates a session[2m > [22mstep 1: logs in each user and sets the sid cookie [33m429[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F01-01 (AC-F01-01): valid login creates a session[2m > [22mstep 3: a second login gives a new cookie and the first cookie still works [33m405[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F01-02 (AC-F01-02): bad credentials[2m > [22mreturns the same 401 for a wrong password and an unknown email, with no session [33m396[2mms[22m[39m
+ [32m✓[39m tests/auth.logout.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 908[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F02-02 (AC-F02-02): logout ends only the current session[2m > [22mkeeps the other session of the same user valid [33m428[2mms[22m[39m
+ [32m✓[39m tests/auth.me.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 682[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F03-01 (AC-F03-01): own identity[2m > [22mreturns exactly { id, name, email, role } for each logged-in user [33m434[2mms[22m[39m
+ [32m✓[39m tests/health.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 31[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 07:24:25
+[2m   Duration [22m 7.51s[2m (transform 67ms, setup 0ms, collect 1.62s, tests 3.75s, environment 0ms, prepare 279ms)[22m
+

@@ -3,7 +3,7 @@ import { Router } from "express";
 import { prisma } from "../db.js";
 import { sendError } from "../errors.js";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { hashToken, newToken, SESSION_MS, setSessionCookie } from "../session.js";
+import { clearSessionCookie, hashToken, newToken, readSessionCookie, SESSION_MS, setSessionCookie } from "../session.js";
 
 export const authRouter = Router();
 
@@ -35,7 +35,18 @@ authRouter.post("/login", async (req, res, next) => {
   }
 });
 
-// Minimal /me: F-03 owns the full contract. F-01 needs it for TEST-F01-01 step 3 and TEST-F01-04.
+// F-03: own identity. requireAuth selects exactly { id, name, email, role }.
 authRouter.get("/me", requireAuth, (req, res) => {
   res.json(req.user);
+});
+
+// F-02: ends only the session of the cookie sent (AC-F02-02), then clears the cookie.
+authRouter.post("/logout", requireAuth, async (req, res, next) => {
+  try {
+    await prisma.session.delete({ where: { tokenHash: hashToken(readSessionCookie(req)!) } });
+    clearSessionCookie(res);
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
 });
