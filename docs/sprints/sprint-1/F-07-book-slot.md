@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-04 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
+| 0.2 | 2026-11-05 | Jeerasak (drafted with an AI agent) | Review on PR #21: TEST-F07-04 and -05 use advisor B's identical slots for the rejected cases; Prisma `P2002` mapping noted; TEST-F07-03 uses a shared precomputed hash. |
 
 ## 1. Linked requirements
 
@@ -69,6 +70,8 @@ A request that fails validation returns 400 `VALIDATION_ERROR` without touching 
 | 3 | BR-06 / BR-16 deadline | `now >= bookingDeadline(slot)` (this also covers slots that have started or ended) | 422 `BOOKING_DEADLINE_PASSED` |
 | 4 | BR-07 limit | In the transaction, after the lock: the student already has an active booking | 409 `ACTIVE_BOOKING_LIMIT` |
 | 5 | BR-05 race | The insert violates the partial unique index (SQLSTATE `23505`) | 409 `SLOT_TAKEN` |
+
+Through Prisma, the partial unique index violation is expected as `PrismaClientKnownRequestError` with code `P2002`; the implementation maps that (not the raw SQLSTATE) and a test confirms it, so a race never becomes a 500.
 
 Check 2 gives a clear answer in the normal case. Check 5 is what makes BR-05 hold under concurrency: two requests can both pass check 2, but only one insert can succeed.
 
@@ -226,9 +229,9 @@ Test clock: fake `Date` as in F-01. Times are Asia/Bangkok. Unless stated, now =
 |---|---|---|---|---|---|
 | TEST-F07-01 | AC-F07-01 | API | Open slot Tue 10 Nov 09:30 (advisor A). Student S1 logged in, no bookings. | `POST /api/bookings` `{ slotId }`. | 201, body as section 4.2, `status` "Upcoming". One ACTIVE row with `studentId` = S1. |
 | TEST-F07-02 | AC-F07-02 | API | Slot already has an ACTIVE booking by S1. S2 logged in. | S2: `POST /api/bookings` `{ slotId }`. | 409 `SLOT_TAKEN`. One ACTIVE row, `studentId` = S1. |
-| TEST-F07-03 | AC-F07-03 | API (database, concurrency) | One Open slot. 10 students created for this test, each logged in. | Send the 10 `POST` requests together with `Promise.all`. | Exactly one 201 and nine 409 `SLOT_TAKEN`, no 500. `Booking` count with `status` ACTIVE for the slot is 1. |
-| TEST-F07-04 | AC-F07-04 | Unit + API | Slots Tue 10 Nov 09:00 and Tue 10 Nov 14:00, `isLate` false. | Unit: `bookingDeadline` of both. API: book Tue 09:00 at Mon 17:59 (S1) and at Mon 18:00 (S2); book Tue 14:00 at Tue 11:59 (S3) and at Tue 12:00 (S4). | Unit: Mon 18:00 and Tue 12:00. API: 201, 422 `BOOKING_DEADLINE_PASSED`, 201, 422. |
-| TEST-F07-05 | AC-F07-05 | Unit + API | Late slot Wed 11 Nov 09:00 (`isLate` true, created Tue 19:00). | Unit: `bookingDeadline` is Wed 07:00. API: book at Wed 06:59 (S1), and on a second identical late slot at Wed 07:00 (S2). | 201, then 422 `BOOKING_DEADLINE_PASSED`. |
+| TEST-F07-03 | AC-F07-03 | API (database, concurrency) | One Open slot. 10 students created for this test, each logged in. The students share one precomputed bcrypt hash (test helper) so the setup stays within Vitest's timeout. | Send the 10 `POST` requests together with `Promise.all`. | Exactly one 201 and nine 409 `SLOT_TAKEN`, no 500. `Booking` count with `status` ACTIVE for the slot is 1. |
+| TEST-F07-04 | AC-F07-04 | Unit + API | Slots Tue 10 Nov 09:00 and Tue 10 Nov 14:00, `isLate` false, for advisor A, and the same two slots for advisor B (so each rejected case has its own unbooked slot; `Slot_no_overlap` is per advisor). | Unit: `bookingDeadline` of both. API: S1 books A's Tue 09:00 at Mon 17:59; S2 books B's Tue 09:00 at Mon 18:00; S3 books A's Tue 14:00 at Tue 11:59; S4 books B's Tue 14:00 at Tue 12:00. | Unit: Mon 18:00 and Tue 12:00. API: 201, 422 `BOOKING_DEADLINE_PASSED`, 201, 422. |
+| TEST-F07-05 | AC-F07-05 | Unit + API | Late slot Wed 11 Nov 09:00 (`isLate` true, created Tue 19:00) for advisor A, and an identical late slot for advisor B. | Unit: `bookingDeadline` is Wed 07:00. API: S1 books A's slot at Wed 06:59; S2 books B's slot at Wed 07:00. | 201, then 422 `BOOKING_DEADLINE_PASSED`. |
 | TEST-F07-06 | AC-F07-06 | API | S1 has an ACTIVE booking on Tue 10:00. S2 has an ACTIVE booking on Fri 6 Nov 10:00 (ended). Two Open slots. | S1 books an Open slot. S2 books an Open slot. | S1: 409 `ACTIVE_BOOKING_LIMIT`, no new row. S2: 201. |
 | TEST-F07-07 | AC-F07-07 | API | Open slots. Advisor A logged in. S1 and S2 exist, S1 logged in. | A: `POST /api/bookings`. S1: `POST` with `{ slotId, studentId: S2.id }`. | A: 403 `FORBIDDEN_ROLE`, no row. S1: 201 and the row's `studentId` is S1. |
 

@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-04 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
+| 0.2 | 2026-11-05 | Jeerasak (drafted with an AI agent) | Review on PR #21: how `23P01` reaches the code through Prisma; seed demo slots relative to now and idempotent. |
 
 ## 1. Linked requirements
 
@@ -186,7 +187,7 @@ Screen `/schedule` (SDS section 4.1), role: advisor. The slot list on the same s
 | New model | `Slot` (SDS section 3). |
 | Existing | `User` gets the back-relation `slots`. |
 | Migration | A Prisma migration (for example `prisma migrate dev --name add_slot`) creates `Slot`. The same migration file gets raw SQL for the extension and the two constraints below, because Prisma cannot express them. |
-| Seed | When this PR lands, the seed (`server/prisma/seed.ts`, Issue #7) adds future demo slots for the two seeded advisors. |
+| Seed | When this PR lands, the seed (`server/prisma/seed.ts`, Issue #7) adds future demo slots for the two seeded advisors. Dates are computed from "now" (the next weekdays), and the seed skips a slot that already exists, so a second run adds no duplicates and does not hit `Slot_no_overlap`. |
 
 Planned Prisma model:
 
@@ -223,7 +224,7 @@ ALTER TABLE "Slot" ADD CONSTRAINT "Slot_no_overlap"
   WHERE ("deletedAt" IS NULL);
 ```
 
-`tstzrange` is half-open (`[start, end)`), so back-to-back slots are allowed. An exclusion violation (SQLSTATE `23P01`) is mapped to 409 `SLOT_OVERLAP`.
+`tstzrange` is half-open (`[start, end)`), so back-to-back slots are allowed. An exclusion violation (SQLSTATE `23P01`) is mapped to 409 `SLOT_OVERLAP`. Prisma has no code for it, so it is expected as `PrismaClientUnknownRequestError` whose message contains `23P01` / `Slot_no_overlap`; a test confirms which error arrives so a race never becomes a 500.
 
 ## 7. Acceptance criteria
 
