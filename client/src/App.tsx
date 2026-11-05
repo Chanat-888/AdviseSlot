@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, homeFor, RequireLogin, useAuth } from "./auth";
 import { ApiError } from "./api";
 import { Login } from "./Login";
+import { Schedule } from "./Schedule";
 
 // SDS 4.1: name, role and Logout in the top bar, only when logged in.
 function TopBar() {
@@ -31,7 +32,7 @@ function TopBar() {
   );
 }
 
-// Placeholder landing pages. The real /slots (F-08) and /schedule (F-05) come in later features.
+// Placeholder landing page. The real /slots (F-06, F-08) comes in a later feature.
 function Placeholder({ title }: { title: string }) {
   const { user } = useAuth();
   return (
@@ -55,7 +56,7 @@ export function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/slots" element={<RequireLogin><Placeholder title="Slots" /></RequireLogin>} />
-          <Route path="/schedule" element={<RequireLogin><Placeholder title="My schedule" /></RequireLogin>} />
+          <Route path="/schedule" element={<RequireLogin><Schedule /></RequireLogin>} />
           <Route path="*" element={<RequireLogin><Home /></RequireLogin>} />
         </Routes>
       </AuthProvider>

@@ -23,6 +23,7 @@ model User {
   role         Role
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
   sessions     Session[]
+  slots        Slot[]   @relation("AdvisorSlots")
 }
 
 // F-01: server-side login session. Only the SHA-256 hash of the cookie token is stored.
@@ -32,4 +33,19 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
   tokenHash String   @unique
   expiresAt DateTime @db.Timestamptz(3)
+}
+
+// F-04: a 30-minute advising slot (SDS section 3). The duration CHECK and the
+// no-overlap exclusion constraint are raw SQL in the add_slot migration.
+model Slot {
+  id        Int       @id @default(autoincrement())
+  advisorId Int
+  advisor   User      @relation("AdvisorSlots", fields: [advisorId], references: [id], onDelete: Restrict)
+  startAt   DateTime  @db.Timestamptz(3)
+  endAt     DateTime  @db.Timestamptz(3)
+  createdAt DateTime  @db.Timestamptz(3) // set from the server clock, no database default (F-04 section 6)
+  isLate    Boolean
+  deletedAt DateTime? @db.Timestamptz(3) // null unless deleted (Sprint 2, F-13)
+
+  @@index([advisorId, startAt])
 }
