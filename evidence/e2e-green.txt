@@ -1,24 +1,40 @@
+=== npx playwright test, run 1 (2026-11-05T16:39:42+07:00) ===
 Environment variables loaded from .env
 Prisma schema loaded from prisma\schema.prisma
 Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
-
-2 migrations found in prisma/migrations
-
-
+4 migrations found in prisma/migrations
 No pending migrations to apply.
+Script executed successfully.
 Environment variables loaded from .env
 Running seed command `tsx prisma/seed.ts` ...
-Seeded 5 users.
-
+Seeded 5 users; 15 slots in the database.
 The seed command has been executed.
-
 Running 5 tests using 1 worker
-
-  ok 1 [chromium] › tests\journey.spec.ts:8:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (923ms)
-  ok 2 [chromium] › tests\journey.spec.ts:37:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (617ms)
-  -  3 [chromium] › tests\journey.spec.ts:53:8 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking
-  -  4 [chromium] › tests\journey.spec.ts:54:8 › E2E journey (Sprint 1, issue #13) › a rejected booking shows the server's message (TEST-R02-02, AC-R02-02)
-  -  5 [chromium] › tests\journey.spec.ts:55:8 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01)
-
-  3 skipped
-  2 passed (7.7s)
+  ok 1 [chromium] › tests\journey.spec.ts:9:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (978ms)
+  ok 2 [chromium] › tests\journey.spec.ts:38:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (642ms)
+  ok 3 [chromium] › tests\journey.spec.ts:78:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, advisor sees it booked (2.5s)
+  -  4 [chromium] › tests\journey.spec.ts:122:8 › E2E journey (Sprint 1, issue #13) › both open the booking detail (needs F-09)
+  ok 5 [chromium] › tests\journey.spec.ts:125:7 › E2E journey (Sprint 1, issue #13) › a student is refused advisor operations (R-01) (709ms)
+  1 skipped
+  4 passed (13.2s)
+exit: 0
+=== npx playwright test, run 2 (2026-11-05T16:39:57+07:00) ===
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+4 migrations found in prisma/migrations
+No pending migrations to apply.
+Script executed successfully.
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+The seed command has been executed.
+Running 5 tests using 1 worker
+  ok 1 [chromium] › tests\journey.spec.ts:9:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (983ms)
+  ok 2 [chromium] › tests\journey.spec.ts:38:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (627ms)
+  ok 3 [chromium] › tests\journey.spec.ts:78:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, advisor sees it booked (2.4s)
+  -  4 [chromium] › tests\journey.spec.ts:122:8 › E2E journey (Sprint 1, issue #13) › both open the booking detail (needs F-09)
+  ok 5 [chromium] › tests\journey.spec.ts:125:7 › E2E journey (Sprint 1, issue #13) › a student is refused advisor operations (R-01) (707ms)
+  1 skipped
+  4 passed (13.1s)
+exit: 0
