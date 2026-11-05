@@ -79,6 +79,26 @@ never touch your development data. Before the tests run, `prisma migrate deploy`
 creates that database if needed and applies all migrations. The tests refuse to run
 if the database name does not end in `_test`.
 
+## End-to-end test (Playwright)
+
+The database container must be running and `server/.env.test` must exist (see Setup).
+
+```bash
+cd e2e
+npm install
+npx playwright install chromium    # first time only
+npm test
+```
+
+Playwright starts the API (port 3100) and the Vite client (port 5273) itself, so you do
+not need `npm run dev`. It uses the test database `adviseslot_test` from `server/.env.test`
+(never your development data), refuses to run if the name does not end in `_test`, applies
+the migrations and seeds the demo accounts first. The journey logs in as `student1`, checks
+the identity in the top bar, logs out and checks that a protected page and `/api/auth/me`
+are refused, and tries a wrong password. The booking steps (F-04 to F-09) are marked
+`test.fixme` until those features are merged. The HTML report is written to
+`e2e/playwright-report/` (gitignored).
+
 ## Stop the database
 
 ```bash
