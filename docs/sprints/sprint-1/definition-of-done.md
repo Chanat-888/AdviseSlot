@@ -14,6 +14,7 @@
 | 0.1 | 2026-11-04 | Chanat (drafted with an AI agent) | First Product DoD from Deliverable 1 section 3.5. Awaiting team review. |
 | 0.2 | 2026-11-04 | Chanat (drafted with an AI agent) | Row 3 states the test file layout for all Sprint 1 features. |
 | 0.3 | 2026-11-05 | Jeerasak (drafted with an AI agent) | Section 3.1: steps for the R4 restart check (TEST-R04-01). Row 8 evidence names the secret scan file. Issue #17. |
+| 0.4 | 2026-11-05 | Jeerasak (drafted with an AI agent) | Section 3.1 step 3: restart the running database container by name and check the server is really down. On the release run `docker compose restart db` hit a stopped container from another folder. Issue #14. |
 
 ## 1. Rule
 
@@ -74,8 +75,11 @@ server restart and a database container restart.
 
    Note the booking `id` in `before.json` and get its detail:
    `curl -s -b jar.txt http://localhost:3000/api/bookings/<id> > detail-before.json`.
-3. Stop the server (Ctrl+C in its terminal). Restart the database container:
-   `docker compose restart db`, and wait until `docker compose ps` shows it healthy.
+3. Stop the server (Ctrl+C in its terminal) and check that `/api/health` no longer answers.
+   Restart the database container that is actually running on port 5433, by name:
+   `docker ps` to find it, then `docker restart <name>`, and wait until `docker ps` shows it
+   healthy. (`docker compose restart db` only works from the folder that started it.) Note
+   its `docker inspect -f '{{.State.StartedAt}}' <name>` before and after as proof.
 4. Start the server again (`cd server && npm run dev`).
 5. Log in again (same command as step 2, the session may also still be valid) and repeat the
    two requests into `after.json` and `detail-after.json`.
