@@ -1,6 +1,8 @@
 import cors from "cors";
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import { prisma } from "./db.js";
+import { sendError } from "./errors.js";
+import { authRouter } from "./routes/auth.js";
 
 export const app = express();
 
@@ -17,4 +19,15 @@ app.get("/api/health", async (_req, res) => {
   } catch {
     res.status(503).json({ error: { code: "DB_UNAVAILABLE", message: "Database is not reachable." } });
   }
+});
+
+app.use("/api/auth", authRouter);
+
+// SDS section 5: every error uses { error: { code, message } }. No stack trace in the body.
+app.use((err: { status?: number; type?: string }, _req: Request, res: Response, _next: NextFunction) => {
+  if (err.type === "entity.parse.failed") {
+    return sendError(res, 400, "VALIDATION_ERROR", "Request body must be valid JSON.");
+  }
+  console.error(err);
+  sendError(res, 500, "INTERNAL_ERROR", "Something went wrong.");
 });

@@ -1,29 +1,64 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider, homeFor, RequireLogin, useAuth } from "./auth";
+import { ApiError } from "./api";
+import { Login } from "./Login";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+// SDS 4.1: name, role and Logout in the top bar, only when logged in.
+function TopBar() {
+  const { user, signOut } = useAuth();
+  const [busy, setBusy] = useState(false);
+  if (!user) return null;
+  async function onLogout() {
+    setBusy(true);
+    try {
+      await signOut();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Something went wrong.");
+      setBusy(false);
+    }
+  }
+  return (
+    <nav className="navbar navbar-light bg-light border-bottom px-3">
+      <span className="navbar-brand mb-0 h1">AdviseSlot</span>
+      <span className="d-flex align-items-center gap-3">
+        <span>{user.name} ({user.role})</span>
+        <button type="button" className="btn btn-outline-secondary btn-sm" disabled={busy} onClick={onLogout}>
+          Logout
+        </button>
+      </span>
+    </nav>
+  );
+}
 
-type Health = { kind: "loading" } | { kind: "ok"; db: string } | { kind: "error"; message: string };
-
-// Placeholder page: shows that the client can reach the API and the API can reach the database.
-export function App() {
-  const [health, setHealth] = useState<Health>({ kind: "loading" });
-
-  useEffect(() => {
-    fetch(`${API_URL}/api/health`, { credentials: "include" })
-      .then(async (res) => {
-        const body = await res.json();
-        if (res.ok) setHealth({ kind: "ok", db: body.db });
-        else setHealth({ kind: "error", message: body.error?.message ?? `HTTP ${res.status}` });
-      })
-      .catch(() => setHealth({ kind: "error", message: "API is not reachable." }));
-  }, []);
-
+// Placeholder landing pages. The real /slots (F-08) and /schedule (F-05) come in later features.
+function Placeholder({ title }: { title: string }) {
+  const { user } = useAuth();
   return (
     <main className="container py-5">
-      <h1 className="mb-3">AdviseSlot</h1>
-      {health.kind === "loading" && <div className="spinner-border" role="status" />}
-      {health.kind === "ok" && <div className="alert alert-success">API ok, database {health.db}.</div>}
-      {health.kind === "error" && <div className="alert alert-danger">{health.message}</div>}
+      <h1 className="mb-3">{title}</h1>
+      <p>Logged in as {user?.name} ({user?.role}).</p>
     </main>
+  );
+}
+
+function Home() {
+  const { user } = useAuth();
+  return <Navigate to={user ? homeFor(user) : "/login"} replace />;
+}
+
+export function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <TopBar />
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/slots" element={<RequireLogin><Placeholder title="Slots" /></RequireLogin>} />
+          <Route path="/schedule" element={<RequireLogin><Placeholder title="My schedule" /></RequireLogin>} />
+          <Route path="*" element={<RequireLogin><Home /></RequireLogin>} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
