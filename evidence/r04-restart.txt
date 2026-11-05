@@ -1,27 +1,25 @@
-# R-04 restart check (TEST-R04-01, AC-R04-01, NFR-06), DoD section 3.1
-# sprint-1 commit aa87c4a, 2026-11-05T17:38:17+07:00. Dev database adviseslot in container adviseslot-f01-db-1 (localhost:5433).
+# TEST-R04-01 / AC-R04-01 / NFR-06: booking survives a server restart and a database container restart
+# Procedure: docs/sprints/sprint-1/definition-of-done.md section 3.1
+# Date: 2026-11-05T17:33:25+07:00   Commit: aa87c4a (sprint-1 after PR #29)   DB: docker compose service db, port 5433, seeded
+# Booking id: 1 (student2, Advisor One). Cookie jar deleted afterwards.
 
-== step 1: seed (idempotent) and start the server
-Seeded 5 users; 15 slots in the database.
-server pid: 20608, health: {"status":"ok","db":"up"}
+# 2. log in as student2, list bookings
+login -> {"id":4,"name":"Student Two","email":"student2@example.test","role":"STUDENT"}
+before.json: [{"id":1,"status":"Upcoming","createdAt":"2026-11-05T10:32:39.486Z","slot":{"id":1,"startAt":"2026-11-09T02:00:00.000Z","endAt":"2026-11-09T02:30:00.000Z"},"advisor":{"id":1,"name":"Advisor One"}}]
+booking id: 1
+detail-before.json: {"id":1,"status":"Upcoming","createdAt":"2026-11-05T10:32:39.486Z","slot":{"id":1,"startAt":"2026-11-09T02:00:00.000Z","endAt":"2026-11-09T02:30:00.000Z"},"advisor":{"id":1,"name":"Advisor One"},"student":{"id":4,"name":"Student Two"}}
+# 3. stop server, restart db container
+server pid on 3000: 32432
+server stopped (no answer)
+ Container adviseslot-db-1 Restarting 
+ Container adviseslot-db-1 Started 
+db health: healthy
+# 4. start server again
+health: {"status":"ok","db":"up"}
+# 5. log in again, repeat requests
+login -> {"id":4,"name":"Student Two","email":"student2@example.test","role":"STUDENT"}
+# 6. diff
+mine: identical
+detail: identical
 
-== step 2: log in as student2 and read the booking
-login: {"id":4,"name":"Student Two","email":"student2@example.test","role":"STUDENT"}
-GET /api/bookings/mine: [{"id":1,"status":"Upcoming","createdAt":"2026-11-05T10:34:30.944Z","slot":{"id":1,"startAt":"2026-11-09T02:00:00.000Z","endAt":"2026-11-09T02:30:00.000Z"},"advisor":{"id":1,"name":"Advisor One"}}]
-GET /api/bookings/1: {"id":1,"status":"Upcoming","createdAt":"2026-11-05T10:34:30.944Z","slot":{"id":1,"startAt":"2026-11-09T02:00:00.000Z","endAt":"2026-11-09T02:30:00.000Z"},"advisor":{"id":1,"name":"Advisor One"},"student":{"id":4,"name":"Student Two"}}
-
-== step 3: stop the server, restart the database container
-server after stop: no response (stopped)
-db started at (before): 2026-11-05T05:15:46.450835538Z
-docker restart adviseslot-f01-db-1; started at (after): 2026-11-05T10:38:27.302077753Z, health: healthy
-
-== step 4: start the server again
-server pid: 30148 (new process), health: {"status":"ok","db":"up"}
-
-== step 5: log in again and repeat the reads
-login: {"id":4,"name":"Student Two","email":"student2@example.test","role":"STUDENT"}
-GET /api/bookings/mine: [{"id":1,"status":"Upcoming","createdAt":"2026-11-05T10:34:30.944Z","slot":{"id":1,"startAt":"2026-11-09T02:00:00.000Z","endAt":"2026-11-09T02:30:00.000Z"},"advisor":{"id":1,"name":"Advisor One"}}]
-GET /api/bookings/1: {"id":1,"status":"Upcoming","createdAt":"2026-11-05T10:34:30.944Z","slot":{"id":1,"startAt":"2026-11-09T02:00:00.000Z","endAt":"2026-11-09T02:30:00.000Z"},"advisor":{"id":1,"name":"Advisor One"},"student":{"id":4,"name":"Student Two"}}
-
-== step 6: compare
-diff before/after: no differences. PASS: booking 1 survived a server restart and a database restart.
+# Result: PASS (both diffs printed nothing)
