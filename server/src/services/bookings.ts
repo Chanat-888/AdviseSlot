@@ -1,11 +1,11 @@
 import { Prisma, type Booking, type Slot } from "@prisma/client";
 import { prisma } from "../db.js";
-import { bookingDeadline } from "../domain/rules.js";
+import { bookingDeadline, bookingStatus, type BookingDisplayStatus } from "../domain/rules.js";
 
 // The booking as F-07 section 4.2 returns it; F-09 returns the same shape (section 4.2).
 export type BookingDto = {
   id: number;
-  status: "Upcoming" | "Passed" | "Cancelled";
+  status: BookingDisplayStatus;
   createdAt: string;
   slot: { id: number; startAt: string; endAt: string };
   advisor: { id: number; name: string };
@@ -17,12 +17,11 @@ type BookingWithParts = Booking & {
   student: { id: number; name: string };
 };
 
-/** D-24: Cancelled, else Passed once the slot has ended, else Upcoming. */
+/** The detail shape. The display status is bookingStatus (F-08 section 3.2, D-24). */
 export function toBookingDto(b: BookingWithParts, now: Date): BookingDto {
-  const status = b.status === "CANCELLED" ? "Cancelled" : b.slot.endAt.getTime() <= now.getTime() ? "Passed" : "Upcoming";
   return {
     id: b.id,
-    status,
+    status: bookingStatus(b, b.slot, now),
     createdAt: b.createdAt.toISOString(),
     slot: { id: b.slot.id, startAt: b.slot.startAt.toISOString(), endAt: b.slot.endAt.toISOString() },
     advisor: { id: b.slot.advisor.id, name: b.slot.advisor.name },
@@ -77,4 +76,27 @@ export async function createBooking(studentId: number, slotId: number, now: Date
     if (isUniqueViolation(err)) return { ok: false, code: "SLOT_TAKEN" }; // check 5: a parallel insert won
     throw err;
   }
+}
+
+// F-08 section 4.2: the F-09 detail without `student` (the caller is the student).
+export type OwnBookingDto = Omit<BookingDto, "student">;
+
+/** F-08 section 2, steps 4 to 6: Upcoming by start ascending, then the rest by start descending. */
+export async function listOwnBookings(studentId: number, now: Date): Promise<OwnBookingDto[]> {
+  const bookings = await prisma.booking.findMany({ where: { studentId }, include: INCLUDE });
+  const items = bookings.map((b) => toBookingDto(b, now));
+  const start = (b: BookingDto) => Date.parse(b.slot.startAt);
+  const upcoming = items.filter((b) => b.status === "Upcoming").sort((x, y) => start(x) - start(y));
+  const rest = items.filter((b) => b.status !== "Upcoming").sort((x, y) => start(y) - start(x));
+  return [...upcoming, ...rest].map(({ student: _student, ...item }) => item);
+}
+
+/**
+ * F-09 section 2, steps 4 to 6. Returns null when there is no such booking or the caller is
+ * neither its student nor its slot's advisor, so both cases give the same 404 (section 3.3).
+ */
+export async function getBookingFor(userId: number, bookingId: number, now: Date): Promise<BookingDto | null> {
+  const b = await prisma.booking.findUnique({ where: { id: bookingId }, include: INCLUDE });
+  if (!b || (b.studentId !== userId && b.slot.advisorId !== userId)) return null;
+  return toBookingDto(b, now);
 }
