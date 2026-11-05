@@ -14,3 +14,12 @@ export const SEED_USERS = [
   { name: "Student Two", email: "student2@example.test", role: "STUDENT" },
   { name: "Student Three", email: "student3@example.test", role: "STUDENT" },
 ] as const;
+
+// F-04 section 6: demo slots on the next DEMO_SLOT_DAYS weekdays, starting DEMO_SLOT_LEAD_DAYS
+// calendar days after today (Asia/Bangkok), so morning slots are never late when seeded.
+export const DEMO_SLOT_DAYS = 3;
+export const DEMO_SLOT_LEAD_DAYS = 2;
+export const DEMO_SLOT_TIMES: Record<string, string[]> = {
+  "advisor1@example.test": ["09:00", "09:30", "14:00"],
+  "advisor2@example.test": ["10:00", "13:30"],
+};

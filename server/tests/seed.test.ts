@@ -1,14 +1,19 @@
 import bcrypt from "bcryptjs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEMO_PASSWORD, SEED_USERS } from "../prisma/seed-data.js";
-import { seed } from "../prisma/seed.js";
+import { demoSlotDays, seed } from "../prisma/seed.js";
 import { prisma } from "../src/db.js";
+import { checkSlotStart } from "../src/domain/rules.js";
 
 const seedEmails = SEED_USERS.map((u) => u.email);
+const bkk = (local: string) => new Date(`${local}+07:00`);
 
-beforeAll(async () => {
+async function clearSeed() {
+  await prisma.slot.deleteMany({ where: { advisor: { email: { in: seedEmails } } } });
   await prisma.user.deleteMany({ where: { email: { in: seedEmails } } });
-});
+}
+
+beforeAll(clearSeed);
 
 afterAll(async () => {
   await prisma.$disconnect();
@@ -37,5 +42,37 @@ describe("seed", () => {
       expect(user.passwordHash).not.toBe(DEMO_PASSWORD);
       expect(await bcrypt.compare(DEMO_PASSWORD, user.passwordHash)).toBe(true);
     }
+  });
+});
+
+describe("seed demo slots (F-04 section 6)", () => {
+  const now = bkk("2026-11-09T10:00:00"); // Mon 9 Nov
+
+  it("uses the next 3 weekdays from 2 days ahead, skipping the weekend", () => {
+    expect(demoSlotDays(now)).toEqual(["2026-11-11", "2026-11-12", "2026-11-13"]);
+    expect(demoSlotDays(bkk("2026-11-12T23:30:00"))).toEqual(["2026-11-16", "2026-11-17", "2026-11-18"]);
+  });
+
+  it("creates future slots that F-04 would accept, and a second run adds none", async () => {
+    await prisma.slot.deleteMany({ where: { advisor: { email: { in: seedEmails } } } });
+    await seed(prisma, now);
+    const first = await prisma.slot.findMany({ orderBy: [{ advisorId: "asc" }, { startAt: "asc" }] });
+
+    await seed(prisma, now);
+    const second = await prisma.slot.findMany({ orderBy: [{ advisorId: "asc" }, { startAt: "asc" }] });
+
+    expect(first).toHaveLength(15); // 3 days x (3 + 2) times
+    expect(second).toEqual(first);
+    for (const slot of first) {
+      expect(checkSlotStart(slot.startAt, now)).toBeNull();
+      expect(slot.isLate).toBe(false);
+      expect(slot.endAt.getTime() - slot.startAt.getTime()).toBe(30 * 60 * 1000);
+    }
+  });
+
+  it("a run on a later day keeps the old slots and adds only the new days", async () => {
+    const before = await prisma.slot.count();
+    await seed(prisma, bkk("2026-11-10T10:00:00")); // Tue: days 12, 13, 16
+    expect(await prisma.slot.count()).toBe(before + 5); // only Mon 16 is new
   });
 });
