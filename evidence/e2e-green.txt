@@ -1,0 +1,40 @@
+=== npx playwright test, run 1 (2026-11-05T17:07:06+07:00) ===
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+4 migrations found in prisma/migrations
+No pending migrations to apply.
+Script executed successfully.
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+The seed command has been executed.
+Script executed successfully.
+Running 5 tests using 1 worker
+  ok 1 [chromium] › tests\journey.spec.ts:10:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (1.0s)
+  ok 2 [chromium] › tests\journey.spec.ts:39:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (628ms)
+  ok 3 [chromium] › tests\journey.spec.ts:54:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking (3.3s)
+  ok 4 [chromium] › tests\journey.spec.ts:108:7 › E2E journey (Sprint 1, issue #13) › student books a slot, then a second booking shows the server's message (965ms)
+  ok 5 [chromium] › tests\journey.spec.ts:135:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (673ms)
+  5 passed (17.0s)
+exit: 0
+=== npx playwright test, run 2 (2026-11-05T17:07:25+07:00) ===
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+4 migrations found in prisma/migrations
+No pending migrations to apply.
+Script executed successfully.
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+The seed command has been executed.
+Script executed successfully.
+Running 5 tests using 1 worker
+  ok 1 [chromium] › tests\journey.spec.ts:10:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (976ms)
+  ok 2 [chromium] › tests\journey.spec.ts:39:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (624ms)
+  ok 3 [chromium] › tests\journey.spec.ts:54:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking (3.3s)
+  ok 4 [chromium] › tests\journey.spec.ts:108:7 › E2E journey (Sprint 1, issue #13) › student books a slot, then a second booking shows the server's message (962ms)
+  ok 5 [chromium] › tests\journey.spec.ts:135:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (690ms)
+  5 passed (15.7s)
+exit: 0

@@ -1,0 +1,74 @@
+// Data model from SDS section 3. Further models are added by the feature branches
+// (F-01 onward). All DateTime fields use @db.Timestamptz(3) (SDS section 3).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADVISOR
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  sessions     Session[]
+  slots        Slot[]    @relation("AdvisorSlots")
+  bookings     Booking[] @relation("StudentBookings")
+}
+
+// F-01: server-side login session. Only the SHA-256 hash of the cookie token is stored.
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  tokenHash String   @unique
+  expiresAt DateTime @db.Timestamptz(3)
+}
+
+// F-04: a 30-minute advising slot (SDS section 3). The duration CHECK and the
+// no-overlap exclusion constraint are raw SQL in the add_slot migration.
+model Slot {
+  id        Int       @id @default(autoincrement())
+  advisorId Int
+  advisor   User      @relation("AdvisorSlots", fields: [advisorId], references: [id], onDelete: Restrict)
+  startAt   DateTime  @db.Timestamptz(3)
+  endAt     DateTime  @db.Timestamptz(3)
+  createdAt DateTime  @db.Timestamptz(3) // set from the server clock, no database default (F-04 section 6)
+  isLate    Boolean
+  deletedAt DateTime? @db.Timestamptz(3) // null unless deleted (Sprint 2, F-13)
+  bookings  Booking[]
+
+  @@index([advisorId, startAt])
+  @@index([startAt]) // F-06 section 6: keeps the bookable list fast
+}
+
+enum BookingStatus {
+  ACTIVE
+  CANCELLED
+}
+
+// F-07: a student's booking of a slot (SDS section 3). The partial unique index
+// "Booking_one_active_per_slot" is raw SQL in the add_booking migration. The cancel fields
+// are added by F-10 and F-11 in Sprint 2.
+model Booking {
+  id        Int           @id @default(autoincrement())
+  slotId    Int
+  slot      Slot          @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  studentId Int
+  student   User          @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Restrict)
+  status    BookingStatus @default(ACTIVE)
+  createdAt DateTime      @db.Timestamptz(3) // set from the server clock, no database default
+
+  @@index([studentId])
+}

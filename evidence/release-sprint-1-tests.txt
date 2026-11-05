@@ -1,0 +1,88 @@
+# Sprint 1 release checks (DoD R3) on sprint-1 commit aa87c4a, 2026-11-05T17:32:40+07:00
+# node v25.8.0, npm 11.11.0, Docker version 29.4.0, build 9d7ad9f
+
+=== cd server && npm test ===
+ ✓ tests/bookings.create.test.ts (24 tests) 7957ms
+   ✓ TEST-F07-01 (AC-F07-01): student books an open slot > makes the slot Booked for its advisor in F-05, with the student's id and name 410ms
+   ✓ TEST-F07-03 (AC-F07-03, NFR-04): 10 parallel requests for one slot > gives exactly one 201 and nine 409 SLOT_TAKEN, no 500, and one ACTIVE row 1949ms
+   ✓ TEST-F07-04 (AC-F07-04): deadline boundaries for morning and afternoon slots > accepts Mon 17:59 and rejects Mon 18:00 (morning); accepts Tue 11:59 and rejects Tue 12:00 (afternoon) 815ms
+   ✓ TEST-F07-05 (AC-F07-05): a late slot is bookable until 2 h before start > accepts Wed 06:59 and rejects Wed 07:00 423ms
+   ✓ TEST-F07-06 (AC-F07-06, BR-07): one active booking per student > rejects S1 (active booking on a future slot) and accepts S2 (only booking has ended) 411ms
+ ✓ tests/auth.login.test.ts (13 tests) 2068ms
+   ✓ TEST-F01-01 (AC-F01-01): valid login creates a session > step 1: logs in each user and sets the sid cookie 420ms
+   ✓ TEST-F01-01 (AC-F01-01): valid login creates a session > step 3: a second login gives a new cookie and the first cookie still works 394ms
+   ✓ TEST-F01-02 (AC-F01-02): bad credentials > returns the same 401 for a wrong password and an unknown email, with no session 386ms
+ ✓ tests/slots.create.test.ts (16 tests) 3565ms
+   ✓ TEST-F04-04 (AC-F04-04): BR-04 no overlap with own slots > rejects the same time for the same advisor, accepts back-to-back and another advisor 413ms
+ ✓ tests/slots.bookable.test.ts (8 tests) 2887ms
+   ✓ TEST-F06-02 (AC-F06-02): booked, ended and past-deadline slots are excluded > applies the deadline boundaries to the morning, afternoon and late slots 1203ms
+ ✓ tests/r02.errors.test.ts (9 tests) 962ms
+ ✓ tests/domain.rules.test.ts (20 tests) 3ms
+ ✓ tests/bookings.mine.test.ts (7 tests) 1915ms
+   ✓ F-08 sections 2 and 3.3: order, boundaries and empty list > a booking whose slot ends at 10:30 is Upcoming at 10:29:59 and Passed at 10:30:00 407ms
+ ✓ tests/slots.mine.test.ts (6 tests) 1291ms
+ ✓ tests/r01.auth.test.ts (35 tests) 2100ms
+ ✓ tests/bookings.detail.test.ts (10 tests) 8425ms
+   ✓ TEST-F09-01 (AC-F09-01): the booking's student opens the detail > returns 200 with exactly the section 4.2 body 805ms
+   ✓ TEST-F09-02 (AC-F09-02): the slot's advisor opens the detail > returns 200 and the same body as the student gets 792ms
+   ✓ TEST-F09-03 (AC-F09-03): anyone else gets the same 404 as a missing booking > another student, another advisor and a non-existent id get identical 404 bodies 786ms
+   ✓ F-09 section 3: validation, status and session > returns 400 VALIDATION_ERROR for id abc 778ms
+   ✓ F-09 section 3: validation, status and session > returns 400 VALIDATION_ERROR for id 0 780ms
+   ✓ F-09 section 3: validation, status and session > returns 400 VALIDATION_ERROR for id -1 775ms
+   ✓ F-09 section 3: validation, status and session > returns 400 VALIDATION_ERROR for id 1.5 775ms
+   ✓ F-09 section 3: validation, status and session > returns 400 VALIDATION_ERROR for id 1e3 773ms
+   ✓ F-09 section 3: validation, status and session > shows Passed once the slot has ended 963ms
+   ✓ F-09 section 3: validation, status and session > returns 401 without a session 783ms
+ ✓ tests/r03.secrets.test.ts (5 tests) 23ms
+ ✓ tests/seed.test.ts (6 tests) 4073ms
+   ✓ seed > creates 2 advisors and 3 students, and running it twice gives the same rows 1023ms
+   ✓ seed > stores lowercase emails and bcrypt cost 12 hashes, never the plaintext 953ms
+   ✓ seed demo slots (F-04 section 6) > creates future slots that F-04 would accept, and a second run adds none 1023ms
+   ✓ seed demo slots (F-04 section 6) > books one demo slot each for Student Two and Three, none for Student One, and a second run adds none 1011ms
+ ✓ tests/auth.logout.test.ts (3 tests) 871ms
+   ✓ TEST-F02-02 (AC-F02-02): logout ends only the current session > keeps the other session of the same user valid 400ms
+ ✓ tests/auth.me.test.ts (2 tests) 638ms
+   ✓ TEST-F03-01 (AC-F03-01): own identity > returns exactly { id, name, email, role } for each logged-in user 414ms
+ ✓ tests/health.test.ts (1 test) 35ms
+ Test Files  15 passed (15)
+      Tests  165 passed (165)
+exit: 0
+
+=== cd server && npm run build ===
+
+> adviseslot-server@0.1.0 build
+> tsc
+
+exit: 0
+
+=== cd client && npm run build ===
+
+> adviseslot-client@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v5.4.11 building for production...
+transforming...
+✓ 42 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.27 kB
+dist/assets/index-DnVUw_vK.css  231.93 kB │ gzip: 30.70 kB
+dist/assets/index-e3QbV9vs.js   179.48 kB │ gzip: 57.86 kB
+✓ built in 535ms
+exit: 0
+
+=== cd e2e && npx playwright test (run 1) ===
+  ok 1 [chromium] › tests\journey.spec.ts:10:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (961ms)
+  ok 2 [chromium] › tests\journey.spec.ts:39:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (597ms)
+  ok 3 [chromium] › tests\journey.spec.ts:54:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking (3.2s)
+  ok 4 [chromium] › tests\journey.spec.ts:108:7 › E2E journey (Sprint 1, issue #13) › student books a slot, then a second booking shows the server's message (965ms)
+  ok 5 [chromium] › tests\journey.spec.ts:135:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (659ms)
+  5 passed (16.0s)
+
+=== cd e2e && npx playwright test (run 2) ===
+  ok 1 [chromium] › tests\journey.spec.ts:10:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (942ms)
+  ok 2 [chromium] › tests\journey.spec.ts:39:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (584ms)
+  ok 3 [chromium] › tests\journey.spec.ts:54:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking (3.3s)
+  ok 4 [chromium] › tests\journey.spec.ts:108:7 › E2E journey (Sprint 1, issue #13) › student books a slot, then a second booking shows the server's message (949ms)
+  ok 5 [chromium] › tests\journey.spec.ts:135:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (657ms)
+  5 passed (14.8s)
