@@ -14,7 +14,7 @@ export type SlotDto = {
   bookingId: number | null;
 };
 
-// The ACTIVE booking of a slot, if any. Booking arrives with F-07 (Issue #11); until then it is always null.
+// The ACTIVE booking of a slot, if any (F-07).
 export type ActiveBooking = { id: number; student: { id: number; name: string } } | null;
 
 export function toSlotDto(slot: Slot, booking: ActiveBooking, now: Date): SlotDto {
@@ -70,7 +70,40 @@ export async function listOwnSlots(advisorId: number, now: Date): Promise<SlotDt
   const slots = await prisma.slot.findMany({
     where: { advisorId, deletedAt: null },
     orderBy: { startAt: "asc" },
+    // The ACTIVE booking and its student's id and name, in the same query (no N+1).
+    include: {
+      bookings: { where: { status: "ACTIVE" }, take: 1, select: { id: true, student: { select: { id: true, name: true } } } },
+    },
   });
-  // F-07 adds the ACTIVE booking and its student's id and name to this query (one query, no N+1).
-  return slots.map((slot) => toSlotDto(slot, null, now));
+  return slots.map((slot) => toSlotDto(slot, slot.bookings[0] ?? null, now));
+}
+
+// F-06 response item: no status, student or booking field (BR-09).
+export type BookableSlotDto = {
+  id: number;
+  startAt: string;
+  endAt: string;
+  isLate: boolean;
+  bookingDeadline: string;
+  advisor: { id: number; name: string };
+};
+
+/** F-06 section 3.2: slots of all advisors with status Open, sorted by start. */
+export async function listBookableSlots(now: Date): Promise<BookableSlotDto[]> {
+  const slots = await prisma.slot.findMany({
+    where: { deletedAt: null, endAt: { gt: now }, bookings: { none: { status: "ACTIVE" } } },
+    orderBy: { startAt: "asc" },
+    include: { advisor: { select: { id: true, name: true } } },
+  });
+  // The same rule as F-07: bookable exactly while now < bookingDeadline.
+  return slots
+    .filter((slot) => slotStatus(slot, false, now) === "Open")
+    .map((slot) => ({
+      id: slot.id,
+      startAt: slot.startAt.toISOString(),
+      endAt: slot.endAt.toISOString(),
+      isLate: slot.isLate,
+      bookingDeadline: bookingDeadline(slot).toISOString(),
+      advisor: slot.advisor,
+    }));
 }

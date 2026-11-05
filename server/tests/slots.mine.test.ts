@@ -8,8 +8,7 @@ import { createUsers, loginCookie, resetUsers, type Fixture } from "./helpers.js
 // docs/sprints/sprint-1/F-05-view-own-slots.md (v0.1, section 8).
 // The unit part of TEST-F05-03 is in domain.rules.test.ts.
 //
-// The Booking model arrives with F-07 (Issue #11). Until then no slot can be Booked
-// (F-05 section 6), so the Booked item of TEST-F05-01 is a todo that F-07 completes.
+// The Booked item of TEST-F05-01 was a todo until the Booking model arrived with F-07 (Issue #11).
 
 const bkk = (local: string) => new Date(`${local}+07:00`);
 const iso = (local: string) => bkk(local).toISOString();
@@ -97,7 +96,27 @@ describe("TEST-F05-01 (AC-F05-01): advisor sees only their own slots with status
     expect(res.body).toEqual([]);
   });
 
-  it.todo("shows a Booked slot with student { id, name } and bookingId (needs Booking, F-07 / Issue #11)");
+  it("shows a Booked slot with student { id, name } and bookingId, and ignores a CANCELLED booking", async () => {
+    const booked = await insertSlot(advisor.id, "2026-11-10T09:00:00");
+    const cancelled = await insertSlot(advisor.id, "2026-11-10T09:30:00");
+    const booking = await prisma.booking.create({
+      data: { slotId: booked.id, studentId: student.id, status: "ACTIVE", createdAt: bkk("2026-11-02T09:00:00") },
+    });
+    await prisma.booking.create({
+      data: { slotId: cancelled.id, studentId: student.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00") },
+    });
+
+    const res = await mine(await loginCookie(advisor.email));
+    expect(res.status).toBe(200);
+    expect(res.body[0]).toMatchObject({
+      id: booked.id,
+      status: "Booked",
+      student: { id: student.id, name: student.name },
+      bookingId: booking.id,
+    });
+    expect(res.body[1]).toMatchObject({ id: cancelled.id, status: "Open", student: null, bookingId: null });
+    expect(JSON.stringify(res.body)).not.toMatch(/@|email/i);
+  });
 });
 
 describe("TEST-F05-02 (AC-F05-02): students cannot list advisor slots", () => {

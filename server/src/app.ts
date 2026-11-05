@@ -3,6 +3,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import { prisma } from "./db.js";
 import { sendError } from "./errors.js";
 import { authRouter } from "./routes/auth.js";
+import { bookingsRouter } from "./routes/bookings.js";
 import { slotsRouter } from "./routes/slots.js";
 
 export const app = express();
@@ -24,6 +25,7 @@ app.get("/api/health", async (_req, res) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/slots", slotsRouter);
+app.use("/api/bookings", bookingsRouter);
 
 // SDS section 5: every error uses { error: { code, message } }. No stack trace in the body.
 app.use((err: { status?: number; type?: string }, _req: Request, res: Response, _next: NextFunction) => {

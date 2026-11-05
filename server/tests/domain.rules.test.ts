@@ -10,6 +10,7 @@ import {
 // Unit tests of the pure rule functions (SDS section 2, server/src/domain/rules.ts):
 // - TEST-F04-02 and TEST-F04-06 (unit part), docs/sprints/sprint-1/F-04-create-slot.md section 8
 // - TEST-F05-03 (unit part), docs/sprints/sprint-1/F-05-view-own-slots.md section 8
+// - TEST-F07-04 and TEST-F07-05 (unit part), docs/sprints/sprint-1/F-07-book-slot.md section 8
 // All times are Asia/Bangkok (UTC+7, NFR-05).
 
 const bkk = (local: string) => new Date(`${local}+07:00`);
@@ -86,5 +87,16 @@ describe("TEST-F05-03 (AC-F05-03): slot status (D-24)", () => {
     expect(slotStatus(slot, true, bkk("2026-11-10T09:15:00"))).toBe("Booked"); // started, not ended
     expect(slotStatus(slot, true, bkk("2026-11-09T10:00:00"))).toBe("Booked");
     expect(slotStatus(slot, false, bkk("2026-11-10T09:15:00"))).toBe("Closed"); // started, unbooked
+  });
+});
+
+describe("TEST-F07-04 / TEST-F07-05 (unit part): bookingDeadline at the contract's slots", () => {
+  it("Tue 10 Nov 09:00 closes Mon 18:00 and Tue 14:00 closes Tue 12:00 (AC-F07-04)", () => {
+    expect(bookingDeadline({ startAt: bkk("2026-11-10T09:00:00"), isLate: false })).toEqual(bkk("2026-11-09T18:00:00"));
+    expect(bookingDeadline({ startAt: bkk("2026-11-10T14:00:00"), isLate: false })).toEqual(bkk("2026-11-10T12:00:00"));
+  });
+
+  it("a late Wed 11 Nov 09:00 slot closes Wed 07:00 (AC-F07-05)", () => {
+    expect(bookingDeadline({ startAt: bkk("2026-11-11T09:00:00"), isLate: true })).toEqual(bkk("2026-11-11T07:00:00"));
   });
 });

@@ -47,6 +47,10 @@ docker-compose.yml   Local PostgreSQL 17 for development
    | `student2@example.test` | Student |
    | `student3@example.test` | Student |
 
+   It also adds demo slots for the next three weekdays and books one of them each for
+   `student2` and `student3` (a student holds one upcoming booking, BR-07). `student1` has
+   none, so you can book as `student1` at http://localhost:5173/slots.
+
 3. Set up the client.
 
    ```bash
@@ -95,8 +99,10 @@ not need `npm run dev`. It uses the test database `adviseslot_test` from `server
 (never your development data), refuses to run if the name does not end in `_test`, applies
 the migrations and seeds the demo accounts first. The journey logs in as `student1`, checks
 the identity in the top bar, logs out and checks that a protected page and `/api/auth/me`
-are refused, and tries a wrong password. The booking steps (F-04 to F-09) are marked
-`test.fixme` until those features are merged. The HTML report is written to
+are refused, and tries a wrong password. It also books the first slot on `/slots` as
+`student1` and checks that a second booking shows the server's message (F-06, F-07). It clears
+the `Booking` table of the test database first, so it can run again. The advisor-side steps
+(F-09) are marked `test.fixme` until that feature is merged. The HTML report is written to
 `e2e/playwright-report/` (gitignored).
 
 ## Stop the database

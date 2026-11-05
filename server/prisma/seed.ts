@@ -2,10 +2,11 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { pathToFileURL } from "node:url";
-import { checkSlotStart, isLateSlot, SLOT_MS } from "../src/domain/rules.js";
+import { checkSlotStart, isLateSlot, SLOT_MS, slotStatus } from "../src/domain/rules.js";
 import {
   BCRYPT_COST,
   DEMO_PASSWORD,
+  DEMO_BOOKINGS,
   DEMO_SLOT_DAYS,
   DEMO_SLOT_LEAD_DAYS,
   DEMO_SLOT_TIMES,
@@ -29,7 +30,7 @@ export async function seed(prisma: PrismaClient, now: Date = new Date()) {
     }
   }
   await seedDemoSlots(prisma, now);
-  // Demo bookings are added here once the Booking model exists (F-07, Issue #11).
+  await seedDemoBookings(prisma, now);
 }
 
 // "2026-11-10" for the Asia/Bangkok calendar day of an instant (UTC+7, no DST).
@@ -72,6 +73,28 @@ async function seedDemoSlots(prisma: PrismaClient, now: Date) {
         });
       }
     }
+  }
+}
+
+// F-07 section 6: book some demo slots for seeded students. Idempotent: a student who already
+// has an upcoming ACTIVE booking, or a slot that is taken, is skipped. Student One is left
+// without a booking so the E2E journey and a first manual try can book. Each booking takes the
+// advisor's first bookable slot (the same rule as F-06), so it never needs a deadline override.
+async function seedDemoBookings(prisma: PrismaClient, now: Date) {
+  for (const [studentEmail, advisorEmail] of Object.entries(DEMO_BOOKINGS)) {
+    const student = await prisma.user.findUniqueOrThrow({ where: { email: studentEmail } });
+    const advisor = await prisma.user.findUniqueOrThrow({ where: { email: advisorEmail } });
+    const holds = await prisma.booking.count({
+      where: { studentId: student.id, status: "ACTIVE", slot: { endAt: { gt: now } } },
+    });
+    if (holds > 0) continue;
+    const slots = await prisma.slot.findMany({
+      where: { advisorId: advisor.id, deletedAt: null, endAt: { gt: now }, bookings: { none: { status: "ACTIVE" } } },
+      orderBy: { startAt: "asc" },
+    });
+    const slot = slots.find((sl) => slotStatus(sl, false, now) === "Open");
+    if (!slot) continue;
+    await prisma.booking.create({ data: { slotId: slot.id, studentId: student.id, status: "ACTIVE", createdAt: now } });
   }
 }
 
