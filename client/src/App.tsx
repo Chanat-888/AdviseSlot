@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
+import { BrowserRouter, Navigate, NavLink, Route, Routes } from "react-router-dom";
 import { AuthProvider, homeFor, RequireLogin, useAuth } from "./auth";
 import { ApiError } from "./api";
+import { BookingDetail } from "./BookingDetail";
+import { Bookings } from "./Bookings";
 import { Login } from "./Login";
 import { Schedule } from "./Schedule";
 import { Slots } from "./Slots";
@@ -23,6 +25,17 @@ function TopBar() {
   return (
     <nav className="navbar navbar-light bg-light border-bottom px-3">
       <span className="navbar-brand mb-0 h1">AdviseSlot</span>
+      {/* SDS 4.1: the screens of the user's role */}
+      <span className="navbar-nav flex-row gap-3 me-auto">
+        {user.role === "STUDENT" ? (
+          <>
+            <NavLink to="/slots" className="nav-link">Slots</NavLink>
+            <NavLink to="/bookings" className="nav-link">My bookings</NavLink>
+          </>
+        ) : (
+          <NavLink to="/schedule" className="nav-link">Schedule</NavLink>
+        )}
+      </span>
       <span className="d-flex align-items-center gap-3">
         <span>{user.name} ({user.role})</span>
         <button type="button" className="btn btn-outline-secondary btn-sm" disabled={busy} onClick={onLogout}>
@@ -30,19 +43,6 @@ function TopBar() {
         </button>
       </span>
     </nav>
-  );
-}
-
-// Stand-in for the booking detail screen (F-09, Issue #12), which replaces it. It only shows
-// the confirmation that F-07 section 5 asks for.
-function BookingPlaceholder() {
-  const { id } = useParams();
-  const confirmed = (useLocation().state as { confirmed?: boolean } | null)?.confirmed;
-  return (
-    <main className="container py-4">
-      {confirmed && <div className="alert alert-success" role="status">Booking confirmed.</div>}
-      <h1 className="h4">Booking {id}</h1>
-    </main>
   );
 }
 
@@ -59,7 +59,8 @@ export function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/slots" element={<RequireLogin><Slots /></RequireLogin>} />
-          <Route path="/bookings/:id" element={<RequireLogin><BookingPlaceholder /></RequireLogin>} />
+          <Route path="/bookings" element={<RequireLogin><Bookings /></RequireLogin>} />
+          <Route path="/bookings/:id" element={<RequireLogin><BookingDetail /></RequireLogin>} />
           <Route path="/schedule" element={<RequireLogin><Schedule /></RequireLogin>} />
           <Route path="*" element={<RequireLogin><Home /></RequireLogin>} />
         </Routes>
