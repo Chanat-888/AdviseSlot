@@ -4,7 +4,7 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Release | `v0.1.0-sprint-1` (tag on `main`, see section 6) |
-| Tested commit | `sprint-1` at `aa87c4a` (merge of PR #29). The release prep PR adds only docs and evidence, no code. |
+| Tested commit | `sprint-1` at `aa87c4a` (merge of PR #29). PR #30 and this release prep PR add only docs and evidence, no code. |
 | Issue | #14 |
 | Related documents | `docs/sprints/sprint-1/definition-of-done.md`, `docs/traceability.md` (v0.5), `docs/sprints/plan.md` |
 
@@ -50,10 +50,10 @@ a rule rejection shows its message (BR-07), a forbidden operation is refused, an
 
 | DoD | Check | Result | Evidence |
 |---|---|---|---|
-| R1 | F-01 to F-09 Done | Issues #4 to #13 and #17 closed, cards in Done | Board |
+| R1 | F-01 to F-09 Done | Issues #4 to #13 and #17 closed, cards in Done. Every Sprint 1 row of `docs/traceability.md` v0.5 is Verified (Sprint 1) or Verified (Sprint 1 part) | Board, traceability matrix |
 | R2 | E2E journey passes | Passed (5/5, twice) | `evidence/release-sprint-1-tests.txt` |
 | R3 | Build and tests on the release commit | Passed on `aa87c4a` | `evidence/release-sprint-1-tests.txt` |
-| R4 | Restart check (TEST-R04-01) | Passed: booking 1 read the same before and after a server stop and a database container restart | `evidence/r04-restart.txt` |
+| R4 | Restart check (TEST-R04-01) | Passed twice, on each of our machines: booking 1 read the same before and after a server stop and a database container restart | `evidence/r04-restart.txt` (Pan, PR #30), `evidence/r04-restart-2.txt` (Jeerasak, with the container start times) |
 | R5 | Fresh clone follows the README | To be done by the reviewer (Pan) on the release PR | Release PR review |
 | R6 | Release PR reviewed and merged by the teammate, tagged | After this PR | Section 6 |
 | R7 | Participation and AI use | Both of us authored and reviewed PRs (section 1). AI use: see section 5 | Deliverable 1 Part F (#15) |
