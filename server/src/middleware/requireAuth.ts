@@ -23,7 +23,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       : null;
     if (!session || session.expiresAt.getTime() <= Date.now()) {
       clearSessionCookie(res);
-      return sendError(res, 401, "UNAUTHENTICATED", "Please log in.");
+      return sendError(res, 401, "UNAUTHENTICATED", "You are not logged in.");
     }
     req.user = session.user;
     next();

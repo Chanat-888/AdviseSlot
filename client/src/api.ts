@@ -24,6 +24,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   } catch {
     throw new ApiError(0, "NETWORK_ERROR", "The server is not reachable.");
   }
+  if (res.status === 204) return undefined as T;
   const body = await res.json().catch(() => null);
   // A 401 on a protected call means the session is gone: send the user to /login (SDS 4.2).
   if (res.status === 401 && body?.error?.code === "UNAUTHENTICATED" && path !== "/api/auth/me") {

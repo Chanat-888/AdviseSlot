@@ -10,6 +10,8 @@ dotenv.config({ path: ".env.test", override: true });
 
 export default defineConfig({
   test: {
+    // Test files share one database and each empties the User table, so run them one at a time.
+    fileParallelism: false,
     globalSetup: ["tests/global-setup.ts"],
   },
 });

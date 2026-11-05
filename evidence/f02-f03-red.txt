@@ -1,0 +1,120 @@
+
+> adviseslot-server@0.1.0 test
+> vitest run
+
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.5 [39m[90mC:/Users/Pan/Desktop/Software project/AdviseSlot/server[39m
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+2 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+ [32m✓[39m tests/auth.login.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 2143[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F01-01 (AC-F01-01): valid login creates a session[2m > [22mstep 1: logs in each user and sets the sid cookie [33m439[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F01-01 (AC-F01-01): valid login creates a session[2m > [22mstep 3: a second login gives a new cookie and the first cookie still works [33m411[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F01-02 (AC-F01-02): bad credentials[2m > [22mreturns the same 401 for a wrong password and an unknown email, with no session [33m394[2mms[22m[39m
+ [31m❯[39m tests/auth.logout.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[33m 927[2mms[22m[39m
+[31m   [31m×[31m TEST-F02-01 (AC-F02-01): old cookie is rejected after logout[2m > [22mlogs out with 204, clears sid, deletes the row, then rejects the old cookie[90m 238[2mms[22m[31m[39m
+[31m     → expected 404 to be 204 // Object.is equality[39m
+[31m   [31m×[31m TEST-F02-01 (AC-F02-01): old cookie is rejected after logout[2m > [22mreturns 401 with the SDS error shape when there is no cookie or the token is unknown[90m 4[2mms[22m[31m[39m
+[31m     → expected 404 to be 401 // Object.is equality[39m
+[31m   [31m×[31m TEST-F02-02 (AC-F02-02): logout ends only the current session[2m > [22mkeeps the other session of the same user valid[33m 415[2mms[22m[31m[39m
+[31m     → expected 404 to be 204 // Object.is equality[39m
+ [31m❯[39m tests/auth.me.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 724[2mms[22m[39m
+   [33m[2m✓[22m[39m TEST-F03-01 (AC-F03-01): own identity[2m > [22mreturns exactly { id, name, email, role } for each logged-in user [33m462[2mms[22m[39m
+[31m   [31m×[31m TEST-F03-01 (AC-F03-01): own identity[2m > [22mreturns the SDS 401 error shape with no user data when there is no valid session[90m 7[2mms[22m[31m[39m
+[31m     → expected { error: { …(2) } } to deeply equal { error: { …(2) } }[39m
+ [32m✓[39m tests/health.test.ts [2m([22m[2m1 test[22m[2m)[22m[90m 64[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 4 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/auth.logout.test.ts[2m > [22mTEST-F02-01 (AC-F02-01): old cookie is rejected after logout[2m > [22mlogs out with 204, clears sid, deletes the row, then rejects the old cookie
+[31m[1mAssertionError[22m: expected 404 to be 204 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 204[39m
+[31m+ 404[39m
+
+[36m [2m❯[22m tests/auth.logout.test.ts:[2m42:24[22m[39m
+    [90m 40| [39m    [90m// Step 1: logout[39m
+    [90m 41| [39m    [35mconst[39m out [33m=[39m [35mawait[39m [34mlogout[39m(cookie)[33m;[39m
+    [90m 42| [39m    [34mexpect[39m(out[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m204[39m)[33m;[39m
+    [90m   | [39m                       [31m^[39m
+    [90m 43| [39m    [34mexpect[39m(out[33m.[39mtext)[33m.[39m[34mtoBe[39m([32m""[39m)[33m;[39m
+    [90m 44| [39m    [35mconst[39m setCookie [33m=[39m ((out[33m.[39mheaders[[32m"set-cookie"[39m] [35mas[39m unknown [35mas[39m string…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/auth.logout.test.ts[2m > [22mTEST-F02-01 (AC-F02-01): old cookie is rejected after logout[2m > [22mreturns 401 with the SDS error shape when there is no cookie or the token is unknown
+[31m[1mAssertionError[22m: expected 404 to be 401 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 401[39m
+[31m+ 404[39m
+
+[36m [2m❯[22m tests/auth.logout.test.ts:[2m68:26[22m[39m
+    [90m 66| [39m  [34mit[39m([32m"returns 401 with the SDS error shape when there is no cookie or [39m…
+    [90m 67| [39m    [35mfor[39m ([35mconst[39m res [35mof[39m [[35mawait[39m [34mlogout[39m()[33m,[39m [35mawait[39m [34mlogout[39m([32m"sid=not-a-real-to[39m…
+    [90m 68| [39m      [34mexpect[39m(res[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m401[39m)[33m;[39m
+    [90m   | [39m                         [31m^[39m
+    [90m 69| [39m      [34mexpect[39m(res[33m.[39mbody)[33m.[39m[34mtoEqual[39m([33mUNAUTHENTICATED[39m)[33m;[39m
+    [90m 70| [39m    }
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/auth.logout.test.ts[2m > [22mTEST-F02-02 (AC-F02-02): logout ends only the current session[2m > [22mkeeps the other session of the same user valid
+[31m[1mAssertionError[22m: expected 404 to be 204 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 204[39m
+[31m+ 404[39m
+
+[36m [2m❯[22m tests/auth.logout.test.ts:[2m82:24[22m[39m
+    [90m 80| [39m
+    [90m 81| [39m    [35mconst[39m out [33m=[39m [35mawait[39m [34mlogout[39m(a)[33m;[39m
+    [90m 82| [39m    [34mexpect[39m(out[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m204[39m)[33m;[39m
+    [90m   | [39m                       [31m^[39m
+    [90m 83| [39m
+    [90m 84| [39m    [34mexpect[39m([35mawait[39m [34mrowFor[39m(a))[33m.[39m[34mtoBeNull[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/auth.me.test.ts[2m > [22mTEST-F03-01 (AC-F03-01): own identity[2m > [22mreturns the SDS 401 error shape with no user data when there is no valid session
+[31m[1mAssertionError[22m: expected { error: { …(2) } } to deeply equal { error: { …(2) } }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Object {[22m
+[2m    "error": Object {[22m
+[2m      "code": "UNAUTHENTICATED",[22m
+[32m-     "message": "You are not logged in.",[39m
+[31m+     "message": "Please log in.",[39m
+[2m    },[22m
+[2m  }[22m
+
+[36m [2m❯[22m tests/auth.me.test.ts:[2m44:23[22m[39m
+    [90m 42| [39m    [35mconst[39m none [33m=[39m [35mawait[39m [34mrequest[39m(app)[33m.[39m[35mget[39m([32m"/api/auth/me"[39m)[33m;[39m
+    [90m 43| [39m    [34mexpect[39m(none[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m401[39m)[33m;[39m
+    [90m 44| [39m    [34mexpect[39m(none[33m.[39mbody)[33m.[39m[34mtoEqual[39m(expected)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 45| [39m
+    [90m 46| [39m    [35mconst[39m bogus [33m=[39m [35mawait[39m [34mrequest[39m(app)[33m.[39m[35mget[39m([32m"/api/auth/me"[39m)[33m.[39m[35mset[39m([32m"Cookie"[39m[33m,[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m15 passed[39m[22m[90m (19)[39m
+[2m   Start at [22m 07:20:40
+[2m   Duration [22m 7.60s[2m (transform 65ms, setup 0ms, collect 1.62s, tests 3.86s, environment 0ms, prepare 277ms)[22m
+

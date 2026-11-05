@@ -6,6 +6,7 @@ type AuthState = {
   user: User | null;
   loading: boolean; // true until the first GET /api/auth/me has answered
   signIn: (email: string, password: string) => Promise<User>;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -32,7 +33,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return me;
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading, signIn }}>{children}</AuthContext.Provider>;
+  // F-02 section 5: a 401 means the session is already gone, so still clear the state.
+  // api() sends the browser to /login on that 401; on success the route guard does it.
+  const signOut = useCallback(async () => {
+    try {
+      await api<void>("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) throw err;
+    }
+    setUser(null);
+  }, []);
+
+  return <AuthContext.Provider value={{ user, loading, signIn, signOut }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthState {
