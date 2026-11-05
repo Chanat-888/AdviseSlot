@@ -119,16 +119,16 @@ describe("TEST-F06-02 (AC-F06-02): booked, ended and past-deadline slots are exc
     return { morning, booked, ended, afternoon, late };
   }
 
-  async function listedAt(local: string, cookie: string): Promise<number[]> {
+  // Sessions last 2 hours (D-21), so log in at the test time.
+  async function listedAt(local: string): Promise<number[]> {
     at(local);
-    const res = await bookable(cookie);
+    const res = await bookable(await loginCookie(student.email));
     expect(res.status).toBe(200);
     return res.body.map((s: { id: number }) => s.id);
   }
 
   it("applies the deadline boundaries to the morning, afternoon and late slots", async () => {
     const { morning, booked, ended, afternoon, late } = await setup();
-    const cookie = await loginCookie(student.email);
     const checks: [string, number[], number[]][] = [
       ["2026-11-09T17:59:59", [morning.id], []],
       ["2026-11-09T18:00:00", [], [morning.id]],
@@ -138,7 +138,7 @@ describe("TEST-F06-02 (AC-F06-02): booked, ended and past-deadline slots are exc
       ["2026-11-11T07:00:00", [], [late.id]],
     ];
     for (const [when, listed, notListed] of checks) {
-      const ids = await listedAt(when, cookie);
+      const ids = await listedAt(when);
       for (const id of listed) expect(ids, `${when} lists ${id}`).toContain(id);
       for (const id of notListed) expect(ids, `${when} hides ${id}`).not.toContain(id);
       // The booked and the ended slot are never listed.

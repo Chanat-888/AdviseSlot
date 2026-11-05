@@ -23,3 +23,9 @@ export const DEMO_SLOT_TIMES: Record<string, string[]> = {
   "advisor1@example.test": ["09:00", "09:30", "14:00"],
   "advisor2@example.test": ["10:00", "13:30"],
 };
+
+// F-07 section 6: demo bookings, student email -> advisor email. Student One has none on purpose.
+export const DEMO_BOOKINGS: Record<string, string> = {
+  "student2@example.test": "advisor1@example.test",
+  "student3@example.test": "advisor2@example.test",
+};

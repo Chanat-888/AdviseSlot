@@ -51,6 +51,33 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
   // advisor sees the student's name (F-09); a rule rejection shows the server message
   // (AC-R02-02 / TEST-R02-02); a forbidden operation is refused (403/404); logout.
   test.fixme("advisor creates a slot, student books it, both open the booking", async () => {});
-  test.fixme("a rejected booking shows the server's message (TEST-R02-02, AC-R02-02)", async () => {});
+  // F-06 and F-07 in the browser: the student books from /slots, then a second booking is
+  // rejected by BR-07 and the UI shows the server's message (TEST-R02-02 / AC-R02-02).
+  test("student books a slot, then a second booking shows the server's message", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email").fill(student.email);
+    await page.getByLabel("Password").fill(DEMO_PASSWORD);
+    await page.getByRole("button", { name: "Log in" }).click();
+    await expect(page).toHaveURL(/\/slots$/);
+
+    // F-06: the list shows slots with an advisor name and a Book button, and no booker data
+    const rows = page.getByRole("listitem");
+    await expect(rows.first()).toContainText("Advisor");
+    const before = await rows.count();
+
+    // F-07: book the first slot, land on the booking and see the confirmation
+    await page.getByRole("button", { name: "Book" }).first().click();
+    await expect(page).toHaveURL(/\/bookings\/\d+$/);
+    await expect(page.getByText("Booking confirmed.")).toBeVisible();
+
+    // The booked slot is gone from the list
+    await page.goto("/slots");
+    await expect(rows).toHaveCount(before - 1);
+
+    // BR-07: a second booking is refused and the server's message is shown
+    await page.getByRole("button", { name: "Book" }).first().click();
+    await expect(page.getByRole("alert")).toHaveText("You already have an upcoming booking.");
+    await expect(page).toHaveURL(/\/slots$/);
+  });
   test.fixme("a forbidden operation is refused (R-01)", async () => {});
 });

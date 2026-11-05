@@ -3,12 +3,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEMO_PASSWORD, SEED_USERS } from "../prisma/seed-data.js";
 import { demoSlotDays, seed } from "../prisma/seed.js";
 import { prisma } from "../src/db.js";
-import { checkSlotStart } from "../src/domain/rules.js";
+import { bookingDeadline, checkSlotStart } from "../src/domain/rules.js";
 
 const seedEmails = SEED_USERS.map((u) => u.email);
 const bkk = (local: string) => new Date(`${local}+07:00`);
 
 async function clearSeed() {
+  await prisma.booking.deleteMany({ where: { student: { email: { in: seedEmails } } } });
   await prisma.slot.deleteMany({ where: { advisor: { email: { in: seedEmails } } } });
   await prisma.user.deleteMany({ where: { email: { in: seedEmails } } });
 }
@@ -54,7 +55,7 @@ describe("seed demo slots (F-04 section 6)", () => {
   });
 
   it("creates future slots that F-04 would accept, and a second run adds none", async () => {
-    await prisma.slot.deleteMany({ where: { advisor: { email: { in: seedEmails } } } });
+    await clearSeed();
     await seed(prisma, now);
     const first = await prisma.slot.findMany({ orderBy: [{ advisorId: "asc" }, { startAt: "asc" }] });
 
@@ -68,6 +69,20 @@ describe("seed demo slots (F-04 section 6)", () => {
       expect(slot.isLate).toBe(false);
       expect(slot.endAt.getTime() - slot.startAt.getTime()).toBe(30 * 60 * 1000);
     }
+  });
+
+  it("books one demo slot each for Student Two and Three, none for Student One, and a second run adds none", async () => {
+    await clearSeed();
+    await seed(prisma, now);
+    const first = await prisma.booking.findMany({ include: { student: true, slot: true }, orderBy: { studentId: "asc" } });
+    expect(first.map((b) => b.student.email)).toEqual(["student2@example.test", "student3@example.test"]);
+    for (const b of first) {
+      expect(b.status).toBe("ACTIVE");
+      expect(bookingDeadline(b.slot).getTime()).toBeGreaterThan(now.getTime()); // booked while Open
+    }
+
+    await seed(prisma, now);
+    expect(await prisma.booking.count()).toBe(2);
   });
 
   it("a run on a later day keeps the old slots and adds only the new days", async () => {

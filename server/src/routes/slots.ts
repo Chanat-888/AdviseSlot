@@ -2,7 +2,7 @@ import { Router } from "express";
 import { sendError } from "../errors.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
-import { createSlot, listOwnSlots } from "../services/slots.js";
+import { createSlot, listBookableSlots, listOwnSlots } from "../services/slots.js";
 
 export const slotsRouter = Router();
 
@@ -52,6 +52,20 @@ slotsRouter.get(
   async (req, res, next) => {
     try {
       res.json(await listOwnSlots(req.user!.id, new Date()));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// F-06: bookable slots of all advisors, without booker identity (BR-09).
+slotsRouter.get(
+  "/bookable",
+  requireAuth,
+  requireRole("STUDENT", "Only students can view bookable slots."),
+  async (_req, res, next) => {
+    try {
+      res.json(await listBookableSlots(new Date()));
     } catch (err) {
       next(err);
     }

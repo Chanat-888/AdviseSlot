@@ -43,6 +43,12 @@ async function insertBooking(slotId: number, studentId: number) {
 const book = (cookie: string, body: unknown) =>
   request(app).post("/api/bookings").set("Cookie", cookie).send(body as object);
 
+// Sessions last 2 hours (D-21), so a test that moves the clock logs in at the new time first.
+async function bookAt(local: string, email: string, body: unknown) {
+  at(local);
+  return book(await loginCookie(email), body);
+}
+
 const activeCount = (slotId: number) => prisma.booking.count({ where: { slotId, status: "ACTIVE" } });
 
 beforeAll(async () => {
@@ -173,23 +179,18 @@ describe("TEST-F07-04 (AC-F07-04): deadline boundaries for morning and afternoon
     const aAfternoon = await insertSlot(advisor.id, "2026-11-10T14:00:00");
     const bAfternoon = await insertSlot(advisorB.id, "2026-11-10T14:00:00");
     const [s1, s2, s3, s4] = students;
-    const [c1, c2, c3, c4] = await Promise.all([s1, s2, s3, s4].map((s) => loginCookie(s.email)));
 
-    at("2026-11-09T17:59:00");
-    expect((await book(c1, { slotId: aMorning.id })).status).toBe(201);
+    expect((await bookAt("2026-11-09T17:59:00", s1.email, { slotId: aMorning.id })).status).toBe(201);
 
-    at("2026-11-09T18:00:00");
-    const late = await book(c2, { slotId: bMorning.id });
+    const late = await bookAt("2026-11-09T18:00:00", s2.email, { slotId: bMorning.id });
     expect(late.status).toBe(422);
     expect(late.body).toEqual({
       error: { code: "BOOKING_DEADLINE_PASSED", message: "Booking for this slot closed at 18:00 on 9 Nov." },
     });
 
-    at("2026-11-10T11:59:00");
-    expect((await book(c3, { slotId: aAfternoon.id })).status).toBe(201);
+    expect((await bookAt("2026-11-10T11:59:00", s3.email, { slotId: aAfternoon.id })).status).toBe(201);
 
-    at("2026-11-10T12:00:00");
-    const late2 = await book(c4, { slotId: bAfternoon.id });
+    const late2 = await bookAt("2026-11-10T12:00:00", s4.email, { slotId: bAfternoon.id });
     expect(late2.status).toBe(422);
     expect(late2.body.error).toEqual({
       code: "BOOKING_DEADLINE_PASSED",
@@ -212,13 +213,10 @@ describe("TEST-F07-05 (AC-F07-05): a late slot is bookable until 2 h before star
   it("accepts Wed 06:59 and rejects Wed 07:00", async () => {
     const a = await insertSlot(advisor.id, "2026-11-11T09:00:00", true);
     const b = await insertSlot(advisorB.id, "2026-11-11T09:00:00", true);
-    const [c1, c2] = await Promise.all([students[0], students[1]].map((s) => loginCookie(s.email)));
 
-    at("2026-11-11T06:59:00");
-    expect((await book(c1, { slotId: a.id })).status).toBe(201);
+    expect((await bookAt("2026-11-11T06:59:00", students[0].email, { slotId: a.id })).status).toBe(201);
 
-    at("2026-11-11T07:00:00");
-    const res = await book(c2, { slotId: b.id });
+    const res = await bookAt("2026-11-11T07:00:00", students[1].email, { slotId: b.id });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("BOOKING_DEADLINE_PASSED");
     expect(res.body.error.message).toBe("Booking for this slot closed at 07:00 on 11 Nov.");
@@ -311,9 +309,7 @@ describe("F-07 section 3.1 and 3.2: validation and check order", () => {
   it("check 2 before check 3: a booked slot past its deadline answers SLOT_TAKEN", async () => {
     const slot = await insertSlot(advisor.id, "2026-11-10T09:00:00");
     await insertBooking(slot.id, students[0].id);
-    const cookie = await loginCookie(students[1].email);
-    at("2026-11-09T19:00:00");
-    const res = await book(cookie, { slotId: slot.id });
+    const res = await bookAt("2026-11-09T19:00:00", students[1].email, { slotId: slot.id });
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe("SLOT_TAKEN");
   });
@@ -323,9 +319,7 @@ describe("F-07 section 3.1 and 3.2: validation and check order", () => {
     const held = await insertSlot(advisor.id, "2026-11-12T10:00:00");
     await insertBooking(held.id, s1.id);
     const closed = await insertSlot(advisorB.id, "2026-11-10T09:00:00");
-    const cookie = await loginCookie(s1.email);
-    at("2026-11-09T19:00:00");
-    const res = await book(cookie, { slotId: closed.id });
+    const res = await bookAt("2026-11-09T19:00:00", s1.email, { slotId: closed.id });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("BOOKING_DEADLINE_PASSED");
   });

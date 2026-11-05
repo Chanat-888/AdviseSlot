@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { AuthProvider, homeFor, RequireLogin, useAuth } from "./auth";
 import { ApiError } from "./api";
 import { Login } from "./Login";
 import { Schedule } from "./Schedule";
+import { Slots } from "./Slots";
 
 // SDS 4.1: name, role and Logout in the top bar, only when logged in.
 function TopBar() {
@@ -32,13 +33,15 @@ function TopBar() {
   );
 }
 
-// Placeholder landing page. The real /slots (F-06, F-08) comes in a later feature.
-function Placeholder({ title }: { title: string }) {
-  const { user } = useAuth();
+// Stand-in for the booking detail screen (F-09, Issue #12), which replaces it. It only shows
+// the confirmation that F-07 section 5 asks for.
+function BookingPlaceholder() {
+  const { id } = useParams();
+  const confirmed = (useLocation().state as { confirmed?: boolean } | null)?.confirmed;
   return (
-    <main className="container py-5">
-      <h1 className="mb-3">{title}</h1>
-      <p>Logged in as {user?.name} ({user?.role}).</p>
+    <main className="container py-4">
+      {confirmed && <div className="alert alert-success" role="status">Booking confirmed.</div>}
+      <h1 className="h4">Booking {id}</h1>
     </main>
   );
 }
@@ -55,7 +58,8 @@ export function App() {
         <TopBar />
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/slots" element={<RequireLogin><Placeholder title="Slots" /></RequireLogin>} />
+          <Route path="/slots" element={<RequireLogin><Slots /></RequireLogin>} />
+          <Route path="/bookings/:id" element={<RequireLogin><BookingPlaceholder /></RequireLogin>} />
           <Route path="/schedule" element={<RequireLogin><Schedule /></RequireLogin>} />
           <Route path="*" element={<RequireLogin><Home /></RequireLogin>} />
         </Routes>
