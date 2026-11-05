@@ -22,4 +22,14 @@ model User {
   passwordHash String
   role         Role
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  sessions     Session[]
+}
+
+// F-01: server-side login session. Only the SHA-256 hash of the cookie token is stored.
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  tokenHash String   @unique
+  expiresAt DateTime @db.Timestamptz(3)
 }
