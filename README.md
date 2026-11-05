@@ -33,7 +33,19 @@ docker-compose.yml   Local PostgreSQL 17 for development
    cp .env.test.example .env.test
    npm install
    npx prisma migrate dev
+   npx prisma db seed
    ```
+
+   The seed is safe to run again. It creates these synthetic demo accounts, all with
+   the password `AdviseSlot-demo-2026` (local development only, never use it anywhere else):
+
+   | Email | Role |
+   |---|---|
+   | `advisor1@example.test` | Advisor |
+   | `advisor2@example.test` | Advisor |
+   | `student1@example.test` | Student |
+   | `student2@example.test` | Student |
+   | `student3@example.test` | Student |
 
 3. Set up the client.
 
