@@ -34,6 +34,22 @@ export async function createUsers(): Promise<{ student: Fixture; advisor: Fixtur
   };
 }
 
+/**
+ * Creates `count` extra students that share one precomputed bcrypt hash (F-07 v0.2, TEST-F07-03),
+ * so setup stays within Vitest's timeout. Call after createUsers(), which empties the User table.
+ */
+export async function createStudents(count: number, prefix = "extra"): Promise<Fixture[]> {
+  const passwordHash = await bcrypt.hash(PASSWORD, 12);
+  const out: Fixture[] = [];
+  for (let i = 1; i <= count; i++) {
+    const u = await prisma.user.create({
+      data: { name: `Student ${prefix} ${i}`, email: `${prefix}${i}@example.test`, passwordHash, role: "STUDENT" },
+    });
+    out.push({ id: u.id, name: u.name, email: u.email, role: "STUDENT" });
+  }
+  return out;
+}
+
 /** Logs in through the real endpoint and returns the Cookie header value ("sid=..."). */
 export async function loginCookie(email: string): Promise<string> {
   const res = await request(app).post("/api/auth/login").send({ email, password: PASSWORD });
