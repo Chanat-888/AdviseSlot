@@ -14,8 +14,9 @@ export async function resetUsers() {
   await prisma.$executeRawUnsafe('TRUNCATE TABLE "User" RESTART IDENTITY CASCADE');
 }
 
-export async function createUsers(): Promise<{ student: Fixture; advisor: Fixture }> {
+export async function createUsers(): Promise<{ student: Fixture; advisor: Fixture; advisorB: Fixture }> {
   await resetUsers();
+  // One hash shared by every test user, so setup stays fast (bcrypt cost 12 is ~0.2 s per hash).
   const passwordHash = await bcrypt.hash(PASSWORD, 12);
   const s = await prisma.user.create({
     data: { name: "Student One", email: "student1@example.test", passwordHash, role: "STUDENT" },
@@ -23,9 +24,13 @@ export async function createUsers(): Promise<{ student: Fixture; advisor: Fixtur
   const a = await prisma.user.create({
     data: { name: "Dr. Advisor One", email: "advisor1@example.test", passwordHash, role: "ADVISOR" },
   });
+  const b = await prisma.user.create({
+    data: { name: "Dr. Advisor Two", email: "advisor2@example.test", passwordHash, role: "ADVISOR" },
+  });
   return {
     student: { id: s.id, name: s.name, email: s.email, role: "STUDENT" },
     advisor: { id: a.id, name: a.name, email: a.email, role: "ADVISOR" },
+    advisorB: { id: b.id, name: b.name, email: b.email, role: "ADVISOR" },
   };
 }
 
