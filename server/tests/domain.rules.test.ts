@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bookingDeadline,
+  bookingStatus,
   checkSlotStart,
   isLateSlot,
   normalDeadline,
@@ -11,6 +12,7 @@ import {
 // - TEST-F04-02 and TEST-F04-06 (unit part), docs/sprints/sprint-1/F-04-create-slot.md section 8
 // - TEST-F05-03 (unit part), docs/sprints/sprint-1/F-05-view-own-slots.md section 8
 // - TEST-F07-04 and TEST-F07-05 (unit part), docs/sprints/sprint-1/F-07-book-slot.md section 8
+// - TEST-F08-01 (unit part), docs/sprints/sprint-1/F-08-view-own-bookings.md section 8
 // All times are Asia/Bangkok (UTC+7, NFR-05).
 
 const bkk = (local: string) => new Date(`${local}+07:00`);
@@ -98,5 +100,23 @@ describe("TEST-F07-04 / TEST-F07-05 (unit part): bookingDeadline at the contract
 
   it("a late Wed 11 Nov 09:00 slot closes Wed 07:00 (AC-F07-05)", () => {
     expect(bookingDeadline({ startAt: bkk("2026-11-11T09:00:00"), isLate: true })).toEqual(bkk("2026-11-11T07:00:00"));
+  });
+});
+
+describe("TEST-F08-01 (unit part): booking display status (D-24, F-08 section 3.2)", () => {
+  const slot = { endAt: bkk("2026-11-10T10:30:00") };
+
+  it("an ACTIVE booking is Upcoming at 10:29:59 and Passed at 10:30:00 when its slot ends at 10:30", () => {
+    expect(bookingStatus({ status: "ACTIVE" }, slot, bkk("2026-11-10T10:29:59"))).toBe("Upcoming");
+    expect(bookingStatus({ status: "ACTIVE" }, slot, bkk("2026-11-10T10:30:00"))).toBe("Passed");
+  });
+
+  it("a started but not ended slot is still Upcoming (BR-07)", () => {
+    expect(bookingStatus({ status: "ACTIVE" }, slot, bkk("2026-11-10T10:15:00"))).toBe("Upcoming");
+  });
+
+  it("a CANCELLED booking is Cancelled, before and after the slot ends", () => {
+    expect(bookingStatus({ status: "CANCELLED" }, slot, bkk("2026-11-10T09:00:00"))).toBe("Cancelled");
+    expect(bookingStatus({ status: "CANCELLED" }, slot, bkk("2026-11-10T11:00:00"))).toBe("Cancelled");
   });
 });

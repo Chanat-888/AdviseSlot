@@ -100,9 +100,12 @@ not need `npm run dev`. It uses the test database `adviseslot_test` from `server
 the migrations and seeds the demo accounts first. The journey logs in as `student1`, checks
 the identity in the top bar, logs out and checks that a protected page and `/api/auth/me`
 are refused, and tries a wrong password. It also books the first slot on `/slots` as
-`student1` and checks that a second booking shows the server's message (F-06, F-07). It clears
-the `Booking` table of the test database first, so it can run again. The advisor-side steps
-(F-09) are marked `test.fixme` until that feature is merged. The HTML report is written to
+`student1` and checks that a second booking shows the server's message (F-06, F-07). In the
+full journey `advisor1` creates a slot, `student2` books it and opens it from "My bookings",
+`advisor1` opens it from the schedule and sees the student's name, and `advisor2` gets
+"Booking not found." (F-04 to F-09). A student opening `/schedule` gets the 403 message.
+Before each run it empties the `Slot` and `Booking` tables of the test database and re-seeds
+the slots, so it can run again. The HTML report is written to
 `e2e/playwright-report/` (gitignored).
 
 ## Stop the database

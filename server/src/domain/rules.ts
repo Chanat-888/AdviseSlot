@@ -77,3 +77,15 @@ export function slotStatus(
   if (now.getTime() >= bookingDeadline(slot).getTime()) return "Closed";
   return "Open";
 }
+
+export type BookingDisplayStatus = "Upcoming" | "Passed" | "Cancelled";
+
+/** F-08 section 3.2 (D-24): Cancelled, else Passed once the slot has ended, else Upcoming. */
+export function bookingStatus(
+  booking: { status: "ACTIVE" | "CANCELLED" },
+  slot: { endAt: Date },
+  now: Date,
+): BookingDisplayStatus {
+  if (booking.status === "CANCELLED") return "Cancelled";
+  return slot.endAt.getTime() <= now.getTime() ? "Passed" : "Upcoming";
+}

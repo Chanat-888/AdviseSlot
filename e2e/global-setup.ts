@@ -8,14 +8,12 @@ export default function globalSetup() {
   const env = { ...process.env, ...loadTestEnv() };
   const cwd = join(__dirname, "..", "server");
   execSync("npx prisma migrate deploy", { cwd, env, stdio: "inherit" });
-  // Reset bookings and slots first (test database only, the name is checked by loadTestEnv),
-  // then seed, so the test database ends up like dev: the demo slots and the demo bookings of
-  // Student Two and Three stay, Student One has none (BR-07) and no slot of an earlier run is left.
-  execSync("npx prisma db execute --stdin", {
-    cwd,
-    env,
-    input: 'DELETE FROM "Booking"; DELETE FROM "Slot";',
-    stdio: ["pipe", "inherit", "inherit"],
-  });
+  // Test database only (the name is checked by loadTestEnv). Every run starts from the same
+  // slots: the journey's own slot from an earlier run would overlap (BR-04). Cascades to Booking.
+  const sql = (input: string) => execSync("npx prisma db execute --stdin", { cwd, env, input, stdio: ["pipe", "inherit", "inherit"] });
+  sql('TRUNCATE TABLE "Slot" RESTART IDENTITY CASCADE;');
   execSync("npx prisma db seed", { cwd, env, stdio: "inherit" });
+  // The journey books as Student One and Student Two, so no student may already hold one
+  // (BR-07). Clear the seed's demo bookings.
+  sql('DELETE FROM "Booking";');
 }
