@@ -25,7 +25,8 @@ concurrency:
 
 jobs:
   test-and-docker:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright 1.59 does not support.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     # Throw-away PostgreSQL for the tests. These are CI-only values, not real secrets.
