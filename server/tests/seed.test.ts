@@ -1,10 +1,11 @@
 import bcrypt from "bcryptjs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DEMO_PASSWORD, SEED_USERS } from "../prisma/seed-data.js";
-import { demoSlotDays, seed } from "../prisma/seed.js";
+import { SEED_USERS } from "../prisma/seed-data.js";
+import { demoPasswordFromEnv, demoSlotDays, seed } from "../prisma/seed.js";
 import { prisma } from "../src/db.js";
 import { bookingDeadline, checkSlotStart } from "../src/domain/rules.js";
 
+const DEMO_PASSWORD = demoPasswordFromEnv(); // from server/.env.test
 const seedEmails = SEED_USERS.map((u) => u.email);
 const bkk = (local: string) => new Date(`${local}+07:00`);
 
@@ -43,6 +44,17 @@ describe("seed", () => {
       expect(user.passwordHash).not.toBe(DEMO_PASSWORD);
       expect(await bcrypt.compare(DEMO_PASSWORD, user.passwordHash)).toBe(true);
     }
+  });
+});
+
+describe("demoPasswordFromEnv", () => {
+  it("returns the password from SEED_DEMO_PASSWORD", () => {
+    expect(demoPasswordFromEnv({ SEED_DEMO_PASSWORD: "a-long-enough-pass" })).toBe("a-long-enough-pass");
+  });
+
+  it("refuses a missing or short password, so there is no built-in default", () => {
+    expect(() => demoPasswordFromEnv({})).toThrow(/SEED_DEMO_PASSWORD/);
+    expect(() => demoPasswordFromEnv({ SEED_DEMO_PASSWORD: "short" })).toThrow(/SEED_DEMO_PASSWORD/);
   });
 });
 

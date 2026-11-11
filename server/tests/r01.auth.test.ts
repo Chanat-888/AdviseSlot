@@ -25,7 +25,7 @@ const PROTECTED: Endpoint[] = [
 ];
 
 // Routes that are deliberately open (SDS section 5.1).
-const PUBLIC = ["GET /api/health", "POST /api/auth/login"];
+const PUBLIC = ["GET /api/health", "GET /api/ready", "POST /api/auth/login"];
 
 const HOUR = 60 * 60 * 1000;
 const UNAUTHENTICATED = { error: { code: "UNAUTHENTICATED", message: "You are not logged in." } };

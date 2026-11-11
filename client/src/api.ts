@@ -1,4 +1,5 @@
-export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+// Dev: the API runs on port 3000. Production build: Express serves the client, so the API is same-origin.
+export const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? "" : "http://localhost:3000");
 
 export type User = { id: number; name: string; email: string; role: "STUDENT" | "ADVISOR" };
 

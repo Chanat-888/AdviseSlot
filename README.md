@@ -13,7 +13,7 @@ docker-compose.yml   Local PostgreSQL 17 for development
 
 ## Requirements
 
-- Node.js 18 or newer
+- Node.js 24 (the version CI and the Docker image use; `.nvmrc` says 24)
 - Docker Desktop (for the local database)
 
 ## Setup
@@ -36,8 +36,10 @@ docker-compose.yml   Local PostgreSQL 17 for development
    npx prisma db seed
    ```
 
-   The seed is safe to run again. It creates these synthetic demo accounts, all with
-   the password `AdviseSlot-demo-2026` (local development only, never use it anywhere else):
+   The seed is safe to run again. It creates these synthetic demo accounts. They all get
+   the password from `SEED_DEMO_PASSWORD` (12+ characters, set in `server/.env`; the
+   example file has a local-only placeholder). The password is not in the code. An account
+   that already exists keeps its old password. Never use the demo password anywhere else:
 
    | Email | Role |
    |---|---|
@@ -107,6 +109,25 @@ full journey `advisor1` creates a slot, `student2` books it and opens it from "M
 Before each run it empties the `Slot` and `Booking` tables of the test database and re-seeds
 the slots, so it can run again. The HTML report is written to
 `e2e/playwright-report/` (gitignored).
+
+## Production build (one container)
+
+In production Express serves the built client, so the page and the API share one origin
+(the session cookie needs this). `NODE_ENV=production` turns it on.
+
+```bash
+cd client && npm ci && npm run build      # writes client/dist
+cd ../server && npm ci && npm run build   # writes server/dist
+NODE_ENV=production DATABASE_URL=... node dist/index.js
+```
+
+`CLIENT_DIST` overrides where the client build is read from (default `../client/dist`
+relative to `server/dist`). Sessions are stored in PostgreSQL (`Session` table), so any
+number of instances can serve the same user. `GET /api/health` is a liveness check and
+`GET /api/ready` returns 200 only when the database answers (503 otherwise).
+
+Apply migrations and seed a deployed database with `npx prisma migrate deploy` and
+`SEED_DEMO_PASSWORD=... npx prisma db seed` (see `docs/labs/lab-05/deployment.md`).
 
 ## Stop the database
 
