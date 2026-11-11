@@ -68,7 +68,7 @@ server restart and a database container restart.
 
    ```bash
    curl -s -c jar.txt -H "Content-Type: application/json" \
-     -d '{"email":"student2@example.test","password":"AdviseSlot-demo-2026"}' \
+     -d '{"email":"student2@example.test","password":"<your SEED_DEMO_PASSWORD>"}' \
      http://localhost:3000/api/auth/login
    curl -s -b jar.txt http://localhost:3000/api/bookings/mine > before.json
    ```

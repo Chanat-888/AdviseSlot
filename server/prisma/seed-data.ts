@@ -1,7 +1,5 @@
-// Synthetic demo accounts for local development and tests (A-05). No real people.
-// The demo password is for local use only: it is listed in the README, never in the PDF.
-
-export const DEMO_PASSWORD = "AdviseSlot-demo-2026";
+// Synthetic demo accounts (A-05). No real people.
+// The demo password is not in the code: seed.ts reads it from SEED_DEMO_PASSWORD.
 
 // bcrypt cost factor (NFR-01).
 export const BCRYPT_COST = 12;

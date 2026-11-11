@@ -5,7 +5,6 @@ import { pathToFileURL } from "node:url";
 import { checkSlotStart, isLateSlot, SLOT_MS, slotStatus } from "../src/domain/rules.js";
 import {
   BCRYPT_COST,
-  DEMO_PASSWORD,
   DEMO_BOOKINGS,
   DEMO_SLOT_DAYS,
   DEMO_SLOT_LEAD_DAYS,
@@ -13,9 +12,20 @@ import {
   SEED_USERS,
 } from "./seed-data.js";
 
+export const MIN_DEMO_PASSWORD_LENGTH = 12;
+
+/** The demo account password comes only from the environment, so no password lives in the code. */
+export function demoPasswordFromEnv(env: NodeJS.ProcessEnv = process.env): string {
+  const password = env.SEED_DEMO_PASSWORD;
+  if (!password || password.length < MIN_DEMO_PASSWORD_LENGTH) {
+    throw new Error(`SEED_DEMO_PASSWORD must be set to at least ${MIN_DEMO_PASSWORD_LENGTH} characters.`);
+  }
+  return password;
+}
+
 // Idempotent: users are matched by email. An existing user keeps its password hash,
 // so running the seed again gives the same rows.
-export async function seed(prisma: PrismaClient, now: Date = new Date()) {
+export async function seed(prisma: PrismaClient, now: Date = new Date(), demoPassword: string = demoPasswordFromEnv()) {
   for (const user of SEED_USERS) {
     const existing = await prisma.user.findUnique({ where: { email: user.email } });
     if (existing) {
@@ -25,7 +35,7 @@ export async function seed(prisma: PrismaClient, now: Date = new Date()) {
       });
     } else {
       await prisma.user.create({
-        data: { ...user, passwordHash: await bcrypt.hash(DEMO_PASSWORD, BCRYPT_COST) },
+        data: { ...user, passwordHash: await bcrypt.hash(demoPassword, BCRYPT_COST) },
       });
     }
   }

@@ -1,8 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-// The demo password is read from the seed so it is not repeated here.
-import { DEMO_PASSWORD, SEED_USERS } from "../../server/prisma/seed-data";
+import { SEED_USERS } from "../../server/prisma/seed-data";
+import { demoPassword } from "../test-env";
 // The client's own Bangkok formatting, so the test matches what the screens show.
 import { formatDate } from "../../client/src/time";
+
+// The demo password comes from server/.env.test (SEED_DEMO_PASSWORD), the same one the seed used.
+const DEMO_PASSWORD = demoPassword();
 
 const student = SEED_USERS.find((u) => u.email === "student1@example.test")!;
 
