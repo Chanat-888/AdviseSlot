@@ -1,4 +1,7 @@
-# Local development database only. Real credentials never go in this file.
+# Local development only. Real credentials never go in this file.
+#
+#   docker compose up -d                    # database only (normal development, README)
+#   docker compose --profile app up --build # database + the application image on :3000
 services:
   db:
     image: postgres:17
@@ -16,6 +19,27 @@ services:
       interval: 2s
       timeout: 3s
       retries: 15
+
+  # The production image (Dockerfile) run against the local database. Only started with
+  # --profile app, so `docker compose up -d` stays database-only for `npm run dev`.
+  app:
+    profiles: ["app"]
+    build: .
+    # The example file's placeholders are enough to run locally (Lab 5 check C-03).
+    env_file: ./server/.env.example
+    environment:
+      # Inside the compose network the database is `db:5432`, not localhost:5433.
+      DATABASE_URL: postgresql://adviseslot:adviseslot_dev@db:5432/adviseslot?schema=public
+      NODE_ENV: production
+      # Same origin in production, so CORS is not needed.
+      CLIENT_ORIGIN: ""
+    # Apply migrations and the idempotent seed, then start the server.
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed && node dist/index.js"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   db-data:
