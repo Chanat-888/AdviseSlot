@@ -89,7 +89,9 @@ jobs:
         working-directory: ./e2e
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          # No --with-deps: the runner image already has Chromium's libraries, and the
+          # apt step it adds failed when the runner could not reach the Ubuntu mirror.
+          npx playwright install chromium
           npm test
 
       - name: Upload Playwright report on failure
