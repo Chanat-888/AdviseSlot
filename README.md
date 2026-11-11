@@ -129,6 +129,24 @@ number of instances can serve the same user. `GET /api/health` is a liveness che
 Apply migrations and seed a deployed database with `npx prisma migrate deploy` and
 `SEED_DEMO_PASSWORD=... npx prisma db seed` (see `docs/labs/lab-05/deployment.md`).
 
+## Run with Docker (application image)
+
+The root `Dockerfile` builds that same container (Node 24): the client, the server and
+the Prisma client. To run it against the local database, from a fresh clone, with no
+`.env` file needed:
+
+```bash
+docker compose --profile app up --build
+```
+
+This starts the database and the app on http://localhost:3000, applies the migrations
+and runs the seed. The app reads `server/.env.example` (placeholders only), so the demo
+password is the example one. Plain `docker compose up -d` still starts the database only.
+Stop the app's local server (`npm run dev`) first, since both use port 3000.
+
+To build the image alone: `docker build -t adviseslot .` It needs `DATABASE_URL` at
+run time and never contains a `.env` file (`.dockerignore`).
+
 ## Stop the database
 
 ```bash
