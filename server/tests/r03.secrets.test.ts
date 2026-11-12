@@ -53,6 +53,9 @@ describe("TEST-R03-01 (AC-R03-01): no secret in Git or the client bundle", () =>
     const hits: string[] = [];
     for (const file of tracked.filter((f) => !BINARY.test(f))) {
       for (const m of read(file).matchAll(/postgres(?:ql)?:\/\/[^:\s/"'`]+:([^@\s"'`]+)@/g)) {
+        // A shell variable such as ${DB_PASS} (deploy/deploy.sh, Lab 5) is filled in at run time
+        // from a generated value and is not a password in Git. A literal password still fails.
+        if (/^\$\{?\w+\}?$/.test(m[1])) continue;
         if (!ALLOWED_DB_PASSWORDS.has(m[1])) hits.push(`${file}: ${m[0]}`);
       }
     }
