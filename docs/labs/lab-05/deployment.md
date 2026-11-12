@@ -173,7 +173,7 @@ on start.
 |---|---|
 | Local dev database | `npx prisma migrate dev`, then `npx prisma db seed` (in `server/`) |
 | Local test database | Automatic: the Vitest setup runs `prisma migrate deploy`; the Playwright setup runs it and the seed |
-| Cloud SQL | The Cloud Run job `adviseslot-migrate` runs `npx prisma migrate deploy && npx prisma db seed` with the service's `DATABASE_URL` and `SEED_DEMO_PASSWORD` secrets. `deploy/release.sh` runs it on every release before the service is updated, and waits for it |
+| Cloud SQL | The Cloud Run job `adviseslot-migrate` runs `npx prisma migrate deploy && npx prisma db seed` with the job's `DATABASE_URL` and `SEED_DEMO_PASSWORD` secrets (the service gets only `DATABASE_URL`). `deploy/release.sh` runs it on every release before the service is updated, and waits for it |
 
 To run the Cloud SQL job by hand (for example after a manual database change):
 
@@ -218,7 +218,7 @@ Any of these shows the same SHA:
 | The site | Footer of every page: "AdviseSlot version `715cfed`" (hover for the full SHA) |
 | API | `curl https://adviseslot-nfnam6jppq-as.a.run.app/api/version` -> `{"commit":"<full SHA>"}` |
 | GitHub | Actions > "Deploy demo" > the run > Summary: image tag, digest and URL |
-| Google Cloud | Cloud Run > `adviseslot` > Revisions: the serving revision's image is `...adviseslot:<SHA>` and its variable `APP_COMMIT` |
+| Google Cloud | Cloud Run > `adviseslot` > Revisions: the serving revision's variable `APP_COMMIT` (the image is pinned by digest, `...adviseslot@sha256:...`; the `:<SHA>` tag is in Artifact Registry) |
 
 ### Roll back
 
