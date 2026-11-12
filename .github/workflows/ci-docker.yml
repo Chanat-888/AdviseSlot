@@ -103,6 +103,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      # Fake gcloud and mocked HTTP: no GCP access, no cost.
+      - name: Deploy scripts - offline tests
+        run: |
+          bash deploy/tests/test_release_stub.sh
+          python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+
       # Image is built, not pushed (the root Dockerfile from Issue #3).
       - name: Verify production Dockerfile builds
         run: docker build -t adviseslot:ci .
