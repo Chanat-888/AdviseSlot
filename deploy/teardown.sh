@@ -64,6 +64,11 @@ SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 SECRET_DB_URL="adviseslot-database-url"
 SECRET_DEMO_PASS="adviseslot-demo-password"
 
+# Created by deploy/setup-wif.sh (GitHub deploy link). They cost nothing, but are removed
+# too so the project is left clean.
+DEPLOYER_EMAIL="adviseslot-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
+WIF_POOL="github-actions"
+
 echo "=================================================================="
 echo "WARNING: This will permanently delete AdviseSlot resources in:"
 echo "  Project : ${PROJECT_ID}"
@@ -75,6 +80,7 @@ echo "  - Cloud SQL Instance: ${SQL_INSTANCE} (ALL DATABASE DATA WILL BE LOST)"
 echo "  - Artifact Registry : ${REPO_NAME}"
 echo "  - Secrets           : ${SECRET_DB_URL}, ${SECRET_DEMO_PASS}"
 echo "  - Service Account   : ${SA_EMAIL}"
+echo "  - GitHub deploy link: ${DEPLOYER_EMAIL}, Workload Identity pool ${WIF_POOL}"
 echo "=================================================================="
 
 # ------------------------------------------------------------------------------
@@ -98,6 +104,9 @@ run_cmd gcloud artifacts repositories delete "$REPO_NAME" --location "$REGION" -
 run_cmd gcloud secrets delete "$SECRET_DB_URL" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud secrets delete "$SECRET_DEMO_PASS" --project "$PROJECT_ID" --quiet || true
 run_cmd gcloud iam service-accounts delete "$SA_EMAIL" --project "$PROJECT_ID" --quiet || true
+run_cmd gcloud iam service-accounts delete "$DEPLOYER_EMAIL" --project "$PROJECT_ID" --quiet || true
+# A deleted pool stays recoverable for 30 days, then Google removes it.
+run_cmd gcloud iam workload-identity-pools delete "$WIF_POOL" --location=global --project "$PROJECT_ID" --quiet || true
 
 echo "Teardown completed."
 # Each delete above ends with `|| true`, so a failed delete does not stop the others but is easy to miss.
