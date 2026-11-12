@@ -38,8 +38,9 @@ export ROLLBACK=false
 bash "$ROOT/deploy/release.sh"
 grep -q 'run jobs execute .*--wait' "$CALL_LOG"
 grep -q 'run services update .*@sha256:abcdef' "$CALL_LOG"
+grep -q "run services update .*APP_COMMIT=$IMAGE_TAG" "$CALL_LOG"
 grep -q 'SERVICE_URL=https://demo.example.test' "$GITHUB_ENV"
-echo 'PASS normal release uses digest and waits for migration'
+echo 'PASS normal release uses digest, waits for migration, sets APP_COMMIT'
 
 : > "$CALL_LOG"
 export ROLLBACK=true

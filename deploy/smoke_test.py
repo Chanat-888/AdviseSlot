@@ -10,6 +10,8 @@ Checks, in order:
   2. GET /api/ready           -> 200 {"db": "up"}            (the database answers)
   3. GET /                    -> 200 HTML                     (the built React app is served)
   4. GET /api/slots/bookable  -> 401 UNAUTHENTICATED          (API routes and the auth guard work)
+     GET /api/version         -> {"commit": EXPECTED_COMMIT}  (only if EXPECTED_COMMIT is set:
+                                 the service runs the commit that was just released)
   5. Optional login, only if BOTH SMOKE_EMAIL and SMOKE_PASSWORD are set (both or neither):
      POST /api/auth/login, GET /api/auth/me, and for a STUDENT account
      GET /api/slots/bookable must return a non-empty list (migrate and seed worked).
@@ -62,12 +64,16 @@ def is_json(body, **expected):
 
 def check(base):
     # --- Public checks --------------------------------------------------------
-    for path, want_status, predicate in (
+    checks = [
         ('/api/health', 200, lambda b: is_json(b, status='ok')),
         ('/api/ready', 200, lambda b: is_json(b, db='up')),
         ('/', 200, lambda b: b'<html' in b.lower()),
         ('/api/slots/bookable', 401, lambda b: json.loads(b)['error']['code'] == 'UNAUTHENTICATED'),
-    ):
+    ]
+    expected_commit = os.getenv('EXPECTED_COMMIT')
+    if expected_commit:
+        checks.append(('/api/version', 200, lambda b: is_json(b, commit=expected_commit)))
+    for path, want_status, predicate in checks:
         for attempt in range(5):
             try:
                 status, _, body = request(base, path)

@@ -116,6 +116,8 @@ jobs:
           # demo account (for example student1@example.test), never a real person's.
           SMOKE_EMAIL: ${{ vars.SMOKE_EMAIL }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          # GET /api/version must report the commit that was just released (C-06).
+          EXPECTED_COMMIT: ${{ env.IMAGE_TAG }}
         run: python3 deploy/smoke_test.py "$SERVICE_URL"
 
       - name: Record deployment
