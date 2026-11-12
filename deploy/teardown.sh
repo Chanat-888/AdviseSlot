@@ -100,3 +100,6 @@ run_cmd gcloud secrets delete "$SECRET_DEMO_PASS" --project "$PROJECT_ID" --quie
 run_cmd gcloud iam service-accounts delete "$SA_EMAIL" --project "$PROJECT_ID" --quiet || true
 
 echo "Teardown completed."
+# Each delete above ends with `|| true`, so a failed delete does not stop the others but is easy to miss.
+echo "Now check the Console that nothing is left: SQL > Instances, Cloud Run (services and jobs),"
+echo "Artifact Registry and Secret Manager. Cloud SQL keeps billing until its instance is gone."
