@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { prisma } from "./db.js";
@@ -5,6 +6,7 @@ import { sendError } from "./errors.js";
 import { authRouter } from "./routes/auth.js";
 import { bookingsRouter } from "./routes/bookings.js";
 import { slotsRouter } from "./routes/slots.js";
+import { serveClient } from "./static.js";
 
 export const app = express();
 
@@ -23,6 +25,21 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
+// Readiness: for Cloud Run and CI. 200 only when the database answers.
+app.get("/api/ready", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ready", db: "up" });
+  } catch {
+    res.status(503).json({ status: "not ready", db: "down" });
+  }
+});
+
+// Lab 5 (R-07, C-06): the commit this server runs. deploy/release.sh sets APP_COMMIT on Cloud Run.
+app.get("/api/version", (_req, res) => {
+  res.json({ commit: process.env.APP_COMMIT || "dev" });
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/slots", slotsRouter);
 app.use("/api/bookings", bookingsRouter);
@@ -31,6 +48,11 @@ app.use("/api/bookings", bookingsRouter);
 app.use("/api", (_req, res) => {
   sendError(res, 404, "NOT_FOUND", "Not found.");
 });
+
+// Production: serve the built client from the same origin, so the session cookie works.
+if (process.env.NODE_ENV === "production") {
+  serveClient(app, process.env.CLIENT_DIST ?? fileURLToPath(new URL("../../client/dist", import.meta.url)));
+}
 
 // SDS section 5: every error uses { error: { code, message } }. No stack trace in the body.
 app.use((err: { status?: number; type?: string }, _req: Request, res: Response, _next: NextFunction) => {

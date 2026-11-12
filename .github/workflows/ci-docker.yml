@@ -1,0 +1,114 @@
+# CI: "CI & Docker Build" (Lab 5, Issue #4).
+# Runs on every pull request into sprint-1 (our staging branch) and main, and can be
+# reused by deploy.yml (workflow_call) so a deploy only starts after these checks pass.
+# It does not deploy anything.
+#
+# Do not rename the job id `test-and-docker`: it is the required status check in the
+# `main` ruleset (docs/labs/lab-05/ruleset-and-c02-checklist.md).
+#
+# Steps: server (migrate, seed, build, Vitest) -> client build -> Playwright e2e -> Docker build.
+
+name: CI & Docker Build
+
+on:
+  workflow_call:
+  pull_request:
+    branches: [sprint-1, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-docker:
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright 1.59 does not support.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    # Throw-away PostgreSQL for the tests. These are CI-only values, not real secrets.
+    # Host port 5433 and the name adviseslot_test match server/.env.test.example, so the
+    # tests use that file unchanged (the tests refuse a database name not ending in _test).
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: adviseslot
+          POSTGRES_PASSWORD: adviseslot_dev
+          POSTGRES_DB: adviseslot_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U adviseslot -d adviseslot_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://adviseslot:adviseslot_dev@localhost:5433/adviseslot_test?schema=public
+      # Throw-away CI value for the seed (12+ characters). Not a real password.
+      SEED_DEMO_PASSWORD: ci-only-demo-password
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Node 24 everywhere (README, .nvmrc, Docker image).
+      - name: Setup Node.js 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+            e2e/package-lock.json
+
+      - name: Server - install, migrate, seed, build, test (Prisma + Vitest)
+        working-directory: ./server
+        run: |
+          cp .env.test.example .env.test
+          npm ci
+          npx prisma migrate deploy
+          npx prisma db seed
+          npm run build
+          npm test
+
+      - name: Client - install and production build
+        working-directory: ./client
+        run: |
+          npm ci
+          npm run build
+
+      - name: E2E - Playwright journey
+        working-directory: ./e2e
+        run: |
+          npm ci
+          # No --with-deps: the runner image already has Chromium's libraries, and the
+          # apt step it adds failed when the runner could not reach the Ubuntu mirror.
+          npx playwright install chromium
+          npm test
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Fake gcloud and mocked HTTP: no GCP access, no cost.
+      - name: Deploy scripts - offline tests
+        run: |
+          bash deploy/tests/test_release_stub.sh
+          python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+
+      # Image is built, not pushed (the root Dockerfile from Issue #3).
+      - name: Verify production Dockerfile builds
+        run: docker build -t adviseslot:ci .

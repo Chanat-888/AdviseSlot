@@ -19,3 +19,10 @@ export function loadTestEnv(): NodeJS.ProcessEnv {
   }
   return env;
 }
+
+/** The demo account password from server/.env.test (SEED_DEMO_PASSWORD), the one the seed used. */
+export function demoPassword(): string {
+  const password = loadTestEnv().SEED_DEMO_PASSWORD;
+  if (!password) throw new Error("SEED_DEMO_PASSWORD is missing in server/.env.test (see .env.test.example).");
+  return password;
+}
