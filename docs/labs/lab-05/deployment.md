@@ -122,8 +122,111 @@ PROJECT_ID=adviseslot bash deploy/teardown.sh
 
 ## 4. Build, test, run, migrate and seed
 
-(Pan: commands for local development, the test suites, the Docker image, and migrate/seed locally and on Cloud SQL.)
+Node 24 (`.nvmrc`) and Docker. The README has the full setup; these are the commands.
+
+### Local development
+
+```bash
+docker compose up -d db                      # PostgreSQL 17 on host port 5433
+
+cd server
+cp .env.example .env && cp .env.test.example .env.test
+npm install
+npx prisma migrate dev                       # apply migrations to the dev database
+npx prisma db seed                           # demo accounts and slots (safe to re-run)
+npm run dev                                  # API on http://localhost:3000
+
+cd ../client
+cp .env.example .env
+npm install
+npm run dev                                  # UI on http://localhost:5173
+```
+
+The footer shows "AdviseSlot version dev" locally, because `APP_COMMIT` is not set.
+
+### Tests
+
+The same checks run in CI (`ci-docker.yml`, job `test-and-docker`) on every PR into `sprint-1` and `main`.
+
+| Suite | Command | Needs |
+|---|---|---|
+| Server (Vitest, API and rules) | `cd server && npm test` | Database container; uses `adviseslot_test` from `server/.env.test` |
+| Client build (type check + Vite) | `cd client && npm run build` | - |
+| E2E journey (Playwright) | `cd e2e && npm install && npx playwright install chromium && npm test` | Database container and `server/.env.test`; starts its own API (3100) and client (5273) |
+| Deploy scripts (offline) | `bash deploy/tests/test_release_stub.sh`<br>`bash deploy/tests/test_deploy_stub.sh`<br>`python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'` | Nothing: fake `gcloud` and mocked HTTP, no GCP access |
+| Docker image | `docker build -t adviseslot .` | Docker |
+
+### Production container
+
+```bash
+docker compose --profile app up --build      # database + app image on http://localhost:3000
+```
+
+This builds the root `Dockerfile` (client and server builds, Node 24 slim, non-root), then runs
+`prisma migrate deploy`, the seed and `node dist/index.js` with the placeholder values from
+`server/.env.example`. The image itself only runs `node dist/index.js`; it never migrates or seeds
+on start.
+
+### Migrate and seed
+
+| Where | How |
+|---|---|
+| Local dev database | `npx prisma migrate dev`, then `npx prisma db seed` (in `server/`) |
+| Local test database | Automatic: the Vitest setup runs `prisma migrate deploy`; the Playwright setup runs it and the seed |
+| Cloud SQL | The Cloud Run job `adviseslot-migrate` runs `npx prisma migrate deploy && npx prisma db seed` with the service's `DATABASE_URL` and `SEED_DEMO_PASSWORD` secrets. `deploy/release.sh` runs it on every release before the service is updated, and waits for it |
+
+To run the Cloud SQL job by hand (for example after a manual database change):
+
+```bash
+gcloud run jobs execute adviseslot-migrate --wait --region asia-southeast1 --project adviseslot
+```
+
+The seed only adds what is missing. It never changes the password of an account that already
+exists, so a new `adviseslot-demo-password` secret version does not change existing demo
+logins.
 
 ## 5. Release procedure
 
-(Pan: the path from Issue to PR into `sprint-1` to the release PR into `main`, what `deploy.yml` does, how to roll back, and how to find the running commit: the footer, `/api/version`, the deploy run summary and the Cloud Run revision.)
+### From Issue to production
+
+1. **Issue** with label `lab5` (or the sprint's label) on the board.
+2. **Branch** from `sprint-1`, commit, open a **PR into `sprint-1`** with the teammate as
+   reviewer and link it to the Issue. CI (`test-and-docker`) must pass. The reviewer merges.
+3. **Release PR** `sprint-1` -> `main`. The `protect-main` ruleset requires a PR, 1 approval,
+   `test-and-docker` passing and the branch up to date with `main`, with no bypass. The reviewer
+   merges.
+4. The push to `main` starts **`deploy.yml`** (Actions > "Deploy demo"):
+   1. runs `ci-docker.yml` again (`test-and-docker`); the deploy job waits for it to pass,
+   2. logs in to GCP through Workload Identity Federation (GitHub environment `demo`, no key file),
+   3. builds the image and pushes `adviseslot/adviseslot:<commit SHA>`,
+   4. `deploy/release.sh`: pins the image by digest, runs the migrate job, updates the Cloud Run
+      service with `APP_COMMIT=<commit SHA>` and gives the new revision 100% of traffic. A failed
+      migration stops here and the old revision keeps serving,
+   5. `deploy/smoke_test.py`: `/api/health`, `/api/ready`, the page, a 401 on a protected route,
+      and `/api/version` must equal the released SHA,
+   6. writes the image tag, digest and URL to the run summary.
+
+Lab 5 release: Issue #50 -> PR #51 into `sprint-1` -> release PR #52 into `main` (merge commit
+`715cfed`) -> deploy run 43258951754 -> revision `adviseslot-00003-tbf`.
+
+### Find the running commit
+
+Any of these shows the same SHA:
+
+| Where | How |
+|---|---|
+| The site | Footer of every page: "AdviseSlot version `715cfed`" (hover for the full SHA) |
+| API | `curl https://adviseslot-nfnam6jppq-as.a.run.app/api/version` -> `{"commit":"<full SHA>"}` |
+| GitHub | Actions > "Deploy demo" > the run > Summary: image tag, digest and URL |
+| Google Cloud | Cloud Run > `adviseslot` > Revisions: the serving revision's image is `...adviseslot:<SHA>` and its variable `APP_COMMIT` |
+
+### Roll back
+
+Actions > "Deploy demo" > **Run workflow** on `main`, with `image_tag` = the full 40-character
+SHA of an earlier release (its image is still in Artifact Registry). This skips the tests, the
+build and the migration, points the service at that image and runs the smoke test. The footer
+then shows the older SHA. To return, run it again with the newer SHA, or push a new release to
+`main`.
+
+A rollback does not undo database migrations, so only roll back across releases whose
+migrations the older code can still run with.
