@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, NavLink, Route, Routes } from "react-router-dom";
 import { AuthProvider, homeFor, RequireLogin, useAuth } from "./auth";
-import { ApiError } from "./api";
+import { api, ApiError } from "./api";
 import { BookingDetail } from "./BookingDetail";
 import { Bookings } from "./Bookings";
 import { Login } from "./Login";
@@ -46,6 +46,22 @@ function TopBar() {
   );
 }
 
+// Lab 5 (C-06): the running commit, on every page, so a release is visible on the URL.
+function Footer() {
+  const [commit, setCommit] = useState<string | null>(null);
+  useEffect(() => {
+    api<{ commit: string }>("/api/version")
+      .then((v) => setCommit(v.commit))
+      .catch(() => setCommit(null));
+  }, []);
+  if (!commit) return null;
+  return (
+    <footer className="text-center text-muted small py-3" data-testid="version">
+      AdviseSlot version <code title={commit}>{commit.slice(0, 7)}</code>
+    </footer>
+  );
+}
+
 function Home() {
   const { user } = useAuth();
   return <Navigate to={user ? homeFor(user) : "/login"} replace />;
@@ -64,6 +80,7 @@ export function App() {
           <Route path="/schedule" element={<RequireLogin><Schedule /></RequireLogin>} />
           <Route path="*" element={<RequireLogin><Home /></RequireLogin>} />
         </Routes>
+        <Footer />
       </AuthProvider>
     </BrowserRouter>
   );

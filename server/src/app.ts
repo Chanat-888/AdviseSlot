@@ -35,6 +35,11 @@ app.get("/api/ready", async (_req, res) => {
   }
 });
 
+// Lab 5 (R-07, C-06): the commit this server runs. deploy/release.sh sets APP_COMMIT on Cloud Run.
+app.get("/api/version", (_req, res) => {
+  res.json({ commit: process.env.APP_COMMIT || "dev" });
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/slots", slotsRouter);
 app.use("/api/bookings", bookingsRouter);

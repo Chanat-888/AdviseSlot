@@ -5,7 +5,8 @@ Run (repo root):  python3 -m unittest discover -s deploy/tests -p 'test_smoke.py
 Covers: public checks pass and login is skipped without credentials; a database that is
 not ready fails even though HTTP answers; an API that does not reject a logged-out user
 fails; a student login sees seeded slots; an empty slot list fails; the session is logged
-out even if a check fails; only one of the two credentials set is an error.
+out even if a check fails; only one of the two credentials set is an error; with
+EXPECTED_COMMIT, the running commit must match.
 """
 import importlib.util
 from email.message import Message
@@ -18,6 +19,7 @@ smoke = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(smoke)
 
 CREDS = {'SMOKE_EMAIL': 'student1@example.test', 'SMOKE_PASSWORD': 'test-only'}
+COMMIT = '0123456789abcdef0123456789abcdef01234567'
 
 
 def headers(set_cookie=None):
@@ -39,7 +41,20 @@ class SmokeTests(unittest.TestCase):
             '/api/auth/login': (200, headers('sid=test-session; Path=/; HttpOnly'), b'{"id":1}'),
             '/api/auth/me': (200, headers(), b'{"id":1,"role":"STUDENT"}'),
             '/api/auth/logout': (204, headers(), b''),
+            '/api/version': (200, headers(), b'{"commit":"' + COMMIT.encode() + b'"}'),
         }[path]
+
+    @patch.dict('os.environ', {'EXPECTED_COMMIT': COMMIT}, clear=True)
+    def test_running_commit_matches_the_release(self):
+        with patch.object(smoke, 'request', side_effect=self.response) as req:
+            smoke.check('https://demo.test')
+            self.assertEqual(req.call_args.args[1], '/api/version')
+
+    @patch.dict('os.environ', {'EXPECTED_COMMIT': 'f' * 40}, clear=True)
+    def test_old_commit_still_running_fails(self):
+        with patch.object(smoke, 'request', side_effect=self.response), patch.object(smoke.time, 'sleep'):
+            with self.assertRaisesRegex(RuntimeError, '/api/version'):
+                smoke.check('https://demo.test')
 
     @patch.dict('os.environ', {}, clear=True)
     def test_public_checks_pass_and_skip_optional_login(self):

@@ -48,8 +48,9 @@ else
   echo 'Rollback: reuse an existing image; skip build, migration and seed.'
 fi
 
-# 4. Point the service at the image and send it all traffic.
-gcloud run services update "$SERVICE_NAME" --image="$DIGEST_IMAGE" --project="$PROJECT_ID" --region="$REGION" --quiet
+# 4. Point the service at the image and send it all traffic. APP_COMMIT is what
+#    GET /api/version and the page footer show, so anyone can see the running commit.
+gcloud run services update "$SERVICE_NAME" --image="$DIGEST_IMAGE" --update-env-vars="APP_COMMIT=$IMAGE_TAG" --project="$PROJECT_ID" --region="$REGION" --quiet
 # Give the newest revision 100% of traffic even if traffic was pinned before.
 gcloud run services update-traffic "$SERVICE_NAME" --to-latest --project="$PROJECT_ID" --region="$REGION" --quiet
 
