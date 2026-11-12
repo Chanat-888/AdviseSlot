@@ -1,0 +1,8 @@
+# Proposes updates to the pinned GitHub Actions SHAs (Lab 5 recommended practice).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: sprint-1
+    schedule:
+      interval: weekly
