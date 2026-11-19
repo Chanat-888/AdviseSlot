@@ -1,7 +1,7 @@
 # AdviseSlot Sprint 1 UAT plan and handoff (Lab 6 Part A)
 
 Product Team: Duo Gang — Chanat Dachkhumhang (67070503409), Jeerasak Phisawong (67070503461)
-UAT Team: _TBD (names, IDs)_
+UAT Team: Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (67070503483)
 Theme: 1 Appointment & Scheduling — student office-hour advising.
 
 ## 1. Release under test
@@ -10,7 +10,7 @@ Theme: 1 Appointment & Scheduling — student office-hour advising.
 |---|---|
 | Repository | https://github.com/Chanat-888/AdviseSlot |
 | Sprint 1 baseline tag | `v0.1.0-sprint-1` (commit `6718744`) |
-| Tested release (deployed) | `main` at `cbcb783d6ed2ef45f84befae9976137a42319b91` (Lab 5 release) — _proposed tag: `v0.1.1-uat`_ |
+| Tested release (deployed) | `main` at `cbcb783d6ed2ef45f84befae9976137a42319b91` (Lab 5 release), tag `v0.1.1-uat` |
 | Cloud Run revision | _fill from Console before handoff_ |
 | URL | https://adviseslot-nfnam6jppq-as.a.run.app |
 | How to confirm the version | The page footer shows the commit, or open `/api/version` → `{"commit":"cbcb783d…"}`. If it shows another commit, stop and tell the Product Team. |

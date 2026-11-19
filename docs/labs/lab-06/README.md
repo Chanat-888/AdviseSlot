@@ -6,8 +6,8 @@ Sprint 1 UAT for AdviseSlot. Due 22 Nov 2026. These files are the source for the
 | Item | Value |
 |---|---|
 | Product Team (us) | Duo Gang: Chanat Dachkhumhang (67070503409, @Chanat-888), Jeerasak Phisawong (67070503461, @ShitheadQuin) |
-| UAT Team (tests our app) | _TBD: team name, students, IDs_ |
-| Team we test (Part B) | _TBD: same partner team, their app and URL_ |
+| UAT Team (tests our app) | Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (67070503483) |
+| Team we test (Part B) | Team Top 2 (same students); app and URL _TBD from their handoff_ |
 | Theme | 1 Appointment & Scheduling: student office-hour advising |
 | Repository | https://github.com/Chanat-888/AdviseSlot |
 | Sprint 1 scope | F-01 to F-09 (`docs/sprints/sprint-1/`) |
@@ -28,7 +28,7 @@ Sprint 1 UAT for AdviseSlot. Due 22 Nov 2026. These files are the source for the
 | Role | Ref | Commit | Notes |
 |---|---|---|---|
 | Sprint 1 baseline | tag `v0.1.0-sprint-1` | `6718744` | Sprint 1 release |
-| Tested release (UAT round 1) | `main`, proposed tag `v0.1.1-uat` | `cbcb783` | Lab 5 release; only deployment changes since the baseline. Deployed revision _TBD_ |
+| Tested release (UAT round 1) | `main`, tag `v0.1.1-uat` | `cbcb783` | Lab 5 release; only deployment changes since the baseline. Deployed revision _TBD_ |
 | Defective code | `client/src/App.tsx` TopBar | `cbcb783` (same code on `sprint-1` `280bbf9`) | Issue #58 |
 | Test change (RED) | `fix/logout-busy` | `c50ec5a` | New E2E test |
 | Fix (GREEN) | `fix/logout-busy` | `51490ea` (+ `71e41ed` review fixes) | PR #59, merged into `sprint-1` as `0eb6a52` |

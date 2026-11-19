@@ -1,14 +1,14 @@
 # Part B: independent execution of the partner team's Sprint 1 UAT cases
 
 Here we are the **UAT Team** for the other team's product. These are our results, not theirs.
-Status: _not started; partner team not found yet_. If no partner is found, notify the TA and
+Status: _not started_. Partner team: Team Top 2. If they become unavailable, notify the TA and
 keep the evidence of the notification (handout section 2).
 
 ## 1. Product under test
 
 | Item | Value |
 |---|---|
-| Product Team | _TBD: team name, students, IDs_ |
+| Product Team | Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (67070503483) |
 | Application / theme | _TBD_ |
 | Repository | _TBD_ |
 | Sprint 1 release tag / commit | _TBD (from their handoff)_ |
