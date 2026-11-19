@@ -8,7 +8,7 @@ keep the evidence of the notification (handout section 2).
 
 | Item | Value |
 |---|---|
-| Product Team | Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (670503483) |
+| Product Team | Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (67070503483) |
 | Application / theme | _TBD_ |
 | Repository | _TBD_ |
 | Sprint 1 release tag / commit | _TBD (from their handoff)_ |
