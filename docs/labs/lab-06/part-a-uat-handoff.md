@@ -1,7 +1,7 @@
 # AdviseSlot Sprint 1 UAT plan and handoff (Lab 6 Part A)
 
 Product Team: Duo Gang — Chanat Dachkhumhang (67070503409), Jeerasak Phisawong (67070503461)
-UAT Team: _TBD (names, IDs)_
+UAT Team: Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (670503483)
 Theme: 1 Appointment & Scheduling — student office-hour advising.
 
 ## 1. Release under test
