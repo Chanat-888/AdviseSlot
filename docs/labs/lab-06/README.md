@@ -28,7 +28,7 @@ Sprint 1 UAT for AdviseSlot. Due 22 Nov 2026. These files are the source for the
 | Role | Ref | Commit | Notes |
 |---|---|---|---|
 | Sprint 1 baseline | tag `v0.1.0-sprint-1` | `6718744` | Sprint 1 release |
-| Tested release (UAT round 1) | `main`, proposed tag `v0.1.1-uat` | `cbcb783` | Lab 5 release; only deployment changes since the baseline. Deployed revision _TBD_ |
+| Tested release (UAT round 1) | `main`, tag `v0.1.1-uat` | `cbcb783` | Lab 5 release; only deployment changes since the baseline. Deployed revision _TBD_ |
 | Defective code | `client/src/App.tsx` TopBar | `cbcb783` (same code on `sprint-1` `280bbf9`) | Issue #58 |
 | Test change (RED) | `fix/logout-busy` | `c50ec5a` | New E2E test |
 | Fix (GREEN) | `fix/logout-busy` | `51490ea` (+ `71e41ed` review fixes) | PR #59, merged into `sprint-1` as `0eb6a52` |
