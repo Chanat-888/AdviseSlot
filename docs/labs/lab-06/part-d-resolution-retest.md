@@ -12,13 +12,13 @@ smoke check → UAT Team retest → acceptance decision.
 | Fix branch | `fix/logout-busy` from `sprint-1` `280bbf9` | Done |
 | RED test | `c50ec5a`, `evidence/lab6-logout-red.txt` | Done |
 | Fix (GREEN) | `51490ea`, `evidence/lab6-logout-green.txt` | Done |
-| PR | #59 into `sprint-1`, reviewer @ShitheadQuin, linked to #58 | Open; first review (comments) answered, waiting for approval |
+| PR | #59 into `sprint-1`, reviewer @ShitheadQuin, linked to #58 | Approved and merged by Snooker, 2026-11-19 |
 | CI | `test-and-docker` on PR #59 | Passed |
-| Merge into `sprint-1` | by Snooker (reviewer) | _TBD_ |
+| Merge into `sprint-1` | by Snooker (reviewer), merge commit `0eb6a52` | Done |
 | Release PR `sprint-1` → `main` | _TBD_ | _TBD_ |
 | Deploy and smoke check | _TBD_ | _TBD_ |
 | UAT Team retest | _TBD_ | _TBD_ |
-| Issue closed | by hand after retest | _TBD_ |
+| Issue closed | closed by Snooker after the merge (2026-11-19); reopen if the UAT retest fails | Done |
 
 Deploy rule: we do not deploy the fix until UAT round 1 on `cbcb783` is finished, and we tell
 the UAT Team before any deploy (handout section 2).
@@ -96,8 +96,8 @@ Full output: `evidence/lab6-logout-green.txt` on `fix/logout-busy`.
 
 | Item | Value |
 |---|---|
-| PR review text | See below; approval _TBD_ |
-| Merge commit into `sprint-1` | _TBD_ |
+| PR review text | See below |
+| Merge commit into `sprint-1` | `0eb6a52` (2026-11-19, by @ShitheadQuin) |
 | Release PR to `main` | _TBD_ |
 | Corrected `main` commit | _TBD_ |
 | Deploy workflow run | _TBD_ |
@@ -112,17 +112,19 @@ PR #59 review by Jeerasak Phisawong (@ShitheadQuin), 2026-11-19, "Comment":
 | 1 | PR | UAT-01 step 7, UAT-04 and the dry-run notes are not on any branch. | They are in PR #61 (`docs/labs/lab-06/`); the dry-run is Part C section 4. |
 | 2 | `journey.spec.ts` | The test cites AC-F02-01, which only covers the API; F-02 section 8 says the journey adds no new case. | The test now cites FR-02 and F-02 section 2 steps 1 and 6. F-02 section 8 (v0.3) describes the second E2E case. |
 | 3 | `App.tsx` / `logIn` | The "logIn reloads the page" lesson should be next to the helper. | A comment above `logIn` now warns about it. |
-| 4 | PR | `Closes #58` will not close the Issue on `sprint-1`. | Known; Pan closes #58 by hand after the merge. |
+| 4 | PR | `Closes #58` will not close the Issue on `sprint-1`. | Known; #58 is closed by hand after the merge. |
+
+Second review, 2026-11-19: Snooker checked both fixes on `71e41ed` (CI green, E2E 6/6) and
+approved: "Both comments addressed in 71e41ed (checked on the branch; CI green). Approving."
 
 ## 5. Independent retest and Sprint 1 decision (UAT Team fills)
 
-Give the UAT Team the corrected version and the original steps (#58 and UAT-01, UAT-04).
+Give the UAT Team the corrected version and the original steps (#58 and UAT-01).
 
 | Issue / case | Corrected version | Tester (name, team) | Date | Actual result | PASS / FAIL | Evidence ID |
 |---|---|---|---|---|---|---|
 | #58 | | | | | | |
 | UAT-01 (re-run) | | | | | | |
-| UAT-04 (re-run) | | | | | | |
 | _other affected cases_ | | | | | | |
 
 **Final Sprint 1 UAT decision:** _TBD: Accepted / Accepted with documented minor limitations /

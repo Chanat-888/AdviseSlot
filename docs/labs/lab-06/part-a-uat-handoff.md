@@ -23,7 +23,7 @@ features are not defects.
 
 **Known issue in this release:** #58, Logout stays disabled after a second login in the same
 tab (found by the Product Team before handoff, Major, fix in PR #59, not deployed yet). It hits
-UAT-01 step 7 and UAT-04 step 4. Please record what you see (FAIL, linked to #58; no new Issue
+UAT-01 step 7 (UAT-04 is not affected: its step 2 reloads the page). Please record what you see (FAIL, linked to #58; no new Issue
 needed), then reload the page, click **Logout** and continue the case, so the later steps still
 get tested. The fixed release will be retested with these steps.
 

@@ -31,7 +31,7 @@ handoff and fix it through the normal process (Part D).
 | Product team / owner | Duo Gang / Chanat Dachkhumhang |
 | Reporter | Chanat Dachkhumhang (Product Team dry-run) |
 | Tested version | `cbcb783` (deployed Lab 5 release), run locally on a fresh seeded database. Same code on `sprint-1` `280bbf9` |
-| Linked case / requirement | UAT-01 step 7, UAT-04 step 4; FR-02; F-02 section 2 steps 1 and 6 (a logged-in user clicks Logout in the top bar, the client goes to `/login`); SDS 4.1 (Logout in the top bar). AC-F02-01 is API-level and passes; the failure is in the client. |
+| Linked case / requirement | UAT-01 step 7; FR-02; F-02 section 2 steps 1 and 6 (a logged-in user clicks Logout in the top bar, the client goes to `/login`); SDS 4.1 (Logout in the top bar). AC-F02-01 is API-level and passes; the failure is in the client. |
 | Preconditions / data | Seeded demo accounts; any two, e.g. student3 and student1 |
 
 **Steps**
@@ -81,7 +81,7 @@ seed). D = Fri 20 Nov 2026. Purpose: check the steps and expected texts before t
 | UAT-02 | Pass | "You already have an upcoming booking."; "This slot overlaps one of your slots."; "This start time is in the past."; schedule unchanged |
 | UAT-03 | Pass | Other student's booking and `/bookings/999999` both "Booking not found."; other advisor "Booking not found."; role pages show the 403 messages |
 | UAT-01 | Pass, but hit #58 | Second Logout in the same tab was disabled |
-| UAT-04 | Pass, but hit #58 | Same |
+| UAT-04 | Pass | Not affected by #58: step 2 reloads the page, which resets the client state, so the Logout in step 4 works. (An earlier version of these notes said UAT-04 also hit #58; that was wrong, found in review of PR #61.) |
 
 ## 5. Documented minor limitations
 

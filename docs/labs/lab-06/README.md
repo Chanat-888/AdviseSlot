@@ -31,7 +31,7 @@ Sprint 1 UAT for AdviseSlot. Due 22 Nov 2026. These files are the source for the
 | Tested release (UAT round 1) | `main`, proposed tag `v0.1.1-uat` | `cbcb783` | Lab 5 release; only deployment changes since the baseline. Deployed revision _TBD_ |
 | Defective code | `client/src/App.tsx` TopBar | `cbcb783` (same code on `sprint-1` `280bbf9`) | Issue #58 |
 | Test change (RED) | `fix/logout-busy` | `c50ec5a` | New E2E test |
-| Fix (GREEN) | `fix/logout-busy` | `51490ea` | PR #59 into `sprint-1` |
+| Fix (GREEN) | `fix/logout-busy` | `51490ea` (+ `71e41ed` review fixes) | PR #59, merged into `sprint-1` as `0eb6a52` |
 | Corrected main release | _TBD_ | _TBD_ | Release PR `sprint-1` → `main` |
 | Corrected deployed revision | _TBD_ | _TBD_ | Check `/api/version` |
 
@@ -45,7 +45,7 @@ PRs); the application code at `cbcb783` and `280bbf9` is the same for Sprint 1.
 | Product Team dry-run of our own cases (not UAT) | 2026-11-18 | Done |
 | Handoff to UAT Team | _TBD_ | |
 | UAT round 1 on `cbcb783` | _TBD_ | |
-| Fix, review, release, deploy | _TBD_ | PR #59 open, CI passed |
+| Fix, review, release, deploy | _TBD_ | PR #59 merged into `sprint-1`; release and deploy not done |
 | UAT retest on corrected release | _TBD_ | |
 | PDF submitted on LEB2 | by 22 Nov 23:59 | |
 
