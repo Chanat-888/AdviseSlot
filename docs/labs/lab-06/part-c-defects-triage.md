@@ -31,7 +31,7 @@ handoff and fix it through the normal process (Part D).
 | Product team / owner | Duo Gang / Chanat Dachkhumhang |
 | Reporter | Chanat Dachkhumhang (Product Team dry-run) |
 | Tested version | `cbcb783` (deployed Lab 5 release), run locally on a fresh seeded database. Same code on `sprint-1` `280bbf9` |
-| Linked case / requirement | UAT-01 step 7, UAT-04; F-02 Log out (AC-F02-01); SDS 4.1 (Logout in the top bar) |
+| Linked case / requirement | UAT-01 step 7, UAT-04 step 4; FR-02; F-02 section 2 steps 1 and 6 (a logged-in user clicks Logout in the top bar, the client goes to `/login`); SDS 4.1 (Logout in the top bar). AC-F02-01 is API-level and passes; the failure is in the client. |
 | Preconditions / data | Seeded demo accounts; any two, e.g. student3 and student1 |
 
 **Steps**
@@ -40,7 +40,7 @@ handoff and fix it through the normal process (Part D).
 3. Log in as student1 in the same tab.
 4. Look at **Logout** in the top bar and click it.
 
-**Expected (F-02):** Logout is enabled; clicking it ends the session and opens the login page.
+**Expected (F-02 section 2):** Logout is enabled; clicking it ends the session and opens the login page.
 **Actual:** Logout is disabled. Clicking does nothing; student1 stays logged in until the page is
 reloaded.
 

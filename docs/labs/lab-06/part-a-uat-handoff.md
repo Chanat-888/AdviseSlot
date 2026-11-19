@@ -21,6 +21,12 @@ create slot, view own slots, view bookable slots, book slot, view own bookings, 
 **Out of scope:** cancel/reschedule, notifications, history views (Sprint 2/3). Missing Sprint 2/3
 features are not defects.
 
+**Known issue in this release:** #58, Logout stays disabled after a second login in the same
+tab (found by the Product Team before handoff, Major, fix in PR #59, not deployed yet). It hits
+UAT-01 step 7 and UAT-04 step 4. Please record what you see (FAIL, linked to #58; no new Issue
+needed), then reload the page, click **Logout** and continue the case, so the later steps still
+get tested. The fixed release will be retested with these steps.
+
 **Change notice:** the Product Team will not deploy during the agreed UAT window without telling
 the UAT Team first. Acceptance applies only to the commit recorded above.
 
@@ -42,6 +48,12 @@ case needs two users at once.
 
 **Sequence:** UAT-02, UAT-03 and UAT-05 change no data and can run any time, in any order.
 UAT-01 changes data (creates 1 slot and 1 booking) and must run once, **before UAT-04**.
+
+**Fresh data before each session:** the seed places its slots relative to the day it runs (3
+weekdays starting 2 days later) and books STU2 and STU3 only when they have no upcoming booking.
+So on the morning of each UAT session (the same day as testing) the Product Team runs the
+`adviseslot-migrate` Cloud Run job (migrate + seed) and checks that STU2 and STU3 each show
+1 upcoming booking. Older seeded slots and bookings that are already past are not used by any case.
 
 **Reset / cleanup:** Sprint 1 has no cancel feature, so a UAT-01 booking cannot be undone in the
 app. If UAT-01 must be repeated (e.g. retest), ask the Product Team; it deletes STU1's booking

@@ -12,7 +12,7 @@ smoke check → UAT Team retest → acceptance decision.
 | Fix branch | `fix/logout-busy` from `sprint-1` `280bbf9` | Done |
 | RED test | `c50ec5a`, `evidence/lab6-logout-red.txt` | Done |
 | Fix (GREEN) | `51490ea`, `evidence/lab6-logout-green.txt` | Done |
-| PR | #59 into `sprint-1`, reviewer @ShitheadQuin, linked to #58 | Open, waiting for review |
+| PR | #59 into `sprint-1`, reviewer @ShitheadQuin, linked to #58 | Open; first review (comments) answered, waiting for approval |
 | CI | `test-and-docker` on PR #59 | Passed |
 | Merge into `sprint-1` | by Snooker (reviewer) | _TBD_ |
 | Release PR `sprint-1` → `main` | _TBD_ | _TBD_ |
@@ -96,7 +96,7 @@ Full output: `evidence/lab6-logout-green.txt` on `fix/logout-busy`.
 
 | Item | Value |
 |---|---|
-| PR review text | _TBD: paste Snooker's review comments_ |
+| PR review text | See below; approval _TBD_ |
 | Merge commit into `sprint-1` | _TBD_ |
 | Release PR to `main` | _TBD_ |
 | Corrected `main` commit | _TBD_ |
@@ -104,6 +104,15 @@ Full output: `evidence/lab6-logout-green.txt` on `fix/logout-busy`.
 | Cloud Run revision | _TBD_ |
 | `/api/version` after deploy | _TBD_ |
 | Smoke check (manual) | _TBD: log in, log out, log in as another user, log out; footer shows the new commit_ |
+
+PR #59 review by Jeerasak Phisawong (@ShitheadQuin), 2026-11-19, "Comment":
+
+| # | Where | Review comment (short) | Answer |
+|---|---|---|---|
+| 1 | PR | UAT-01 step 7, UAT-04 and the dry-run notes are not on any branch. | They are in PR #61 (`docs/labs/lab-06/`); the dry-run is Part C section 4. |
+| 2 | `journey.spec.ts` | The test cites AC-F02-01, which only covers the API; F-02 section 8 says the journey adds no new case. | The test now cites FR-02 and F-02 section 2 steps 1 and 6. F-02 section 8 (v0.3) describes the second E2E case. |
+| 3 | `App.tsx` / `logIn` | The "logIn reloads the page" lesson should be next to the helper. | A comment above `logIn` now warns about it. |
+| 4 | PR | `Closes #58` will not close the Issue on `sprint-1`. | Known; Pan closes #58 by hand after the merge. |
 
 ## 5. Independent retest and Sprint 1 decision (UAT Team fills)
 
