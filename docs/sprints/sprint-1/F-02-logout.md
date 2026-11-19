@@ -16,6 +16,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-04 | Chanat (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
 | 0.2 | 2026-11-04 | Chanat (drafted with an AI agent) | Team answers applied: AC-F02-02 and TEST-F02-02 (logout ends only the current session; the "other session stays valid" check moved out of AC-F02-01). 204 and 401 behavior confirmed. |
+| 0.3 | 2026-11-19 | Chanat (drafted with an AI agent) | Section 8: the second E2E case for defect #58 (Logout for a second user in the same tab). No AC changed. |
 
 ## 1. Linked requirements
 
@@ -127,6 +128,11 @@ Test file: `server/tests/auth.logout.test.ts` (API, Supertest against the `_test
 
 UI/E2E: the Playwright journey logs in, clicks Logout, lands on `/login`, and then tries to open
 a protected route and is sent back to `/login`. It adds no new TEST id to F-02.
+
+A second E2E case (added for Lab 6 defect #58) checks section 2 steps 1 and 6 in the browser:
+after one user logs out, a second user who logs in in the same tab (no page reload) sees an
+enabled Logout button, and clicking it ends that session (`/api/auth/me` then returns 401).
+It is a UI regression test, so it adds no new TEST id either.
 
 ### 8.1 TDD plan
 

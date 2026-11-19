@@ -51,9 +51,9 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByLabel("Password")).toHaveValue("");
   });
 
-  // Lab 6 defect: after a logout, a second user who logs in in the same tab (no page reload)
-  // must still be able to log out (F-02, AC-F02-01). logIn() is not used for the second login
-  // because its page.goto reloads the page and would hide the bug.
+  // Lab 6 defect #58: after a logout, a second user who logs in in the same tab (no page reload)
+  // must still be able to log out (FR-02; F-02 section 2 steps 1 and 6). logIn() is not used for
+  // the second login because its page.goto reloads the page and would hide the bug.
   test("a second user who logs in in the same tab can log out (F-02)", async ({ page }) => {
     const first = SEED_USERS.find((u) => u.email === "student3@example.test")!;
     await logIn(page, first.email, /\/slots$/);
@@ -162,6 +162,8 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
   });
 });
 
+// page.goto reloads the app, which resets all client state. A test that checks state carried over
+// from an earlier user in the same tab must not log in with this helper (see defect #58).
 async function logIn(page: Page, email: string, home: RegExp) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
