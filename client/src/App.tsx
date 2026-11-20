@@ -19,6 +19,8 @@ function TopBar() {
       await signOut();
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Something went wrong.");
+    } finally {
+      // TopBar stays mounted while logged out, so reset busy or the next user's Logout stays disabled.
       setBusy(false);
     }
   }

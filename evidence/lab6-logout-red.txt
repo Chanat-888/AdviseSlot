@@ -1,0 +1,61 @@
+Lab 6 defect: Logout disabled after re-login in the same tab -- RED run
+Date: 2026-11-19 04:56 GMT
+Code under test: sprint-1 280bbf9ac69d71ef0c16c31c16196ade5cb89787 (unfixed client/src/App.tsx)
+Test change: new test in e2e/tests/journey.spec.ts (uncommitted at run time)
+Command: cd e2e && npx playwright test -g "second user" --reporter=list
+----
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+4 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+Script executed successfully.
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+
+The seed command has been executed.
+Script executed successfully.
+
+Running 1 test using 1 worker
+
+  x  1 [chromium] › tests\journey.spec.ts:57:7 › E2E journey (Sprint 1, issue #13) › a second user who logs in in the same tab can log out (F-02) (6.4s)
+
+
+  1) [chromium] › tests\journey.spec.ts:57:7 › E2E journey (Sprint 1, issue #13) › a second user who logs in in the same tab can log out (F-02) 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator:  getByRole('button', { name: 'Logout' })
+    Expected: enabled
+    Received: disabled
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeEnabled" with timeout 5000ms
+      - waiting for getByRole('button', { name: 'Logout' })
+        9 × locator resolved to <button disabled type="button" class="btn btn-outline-secondary btn-sm">Logout</button>
+          - unexpected value "disabled"
+
+
+      66 |     await expect(page.getByRole("navigation").getByText(`${student.name} (STUDENT)`)).toBeVisible();
+      67 |
+    > 68 |     await expect(page.getByRole("button", { name: "Logout" })).toBeEnabled();
+         |                                                                ^
+      69 |     await logOut(page);
+      70 |     const me = await page.request.get("http://localhost:3100/api/auth/me");
+      71 |     expect(me.status()).toBe(401);
+        at C:\Users\Pan\AppData\Local\Temp\claude\ca9346075f66015c\b844e358-4086-4e0b-8f1a-996737f24717\scratchpad\fix-logout\e2e\tests\journey.spec.ts:68:64
+
+    test-results\journey-E2E-journey-Sprint-34b99--same-tab-can-log-out-F-02--chromium\test-failed-1.png
+
+    Error Context: test-results\journey-E2E-journey-Sprint-34b99--same-tab-can-log-out-F-02--chromium\error-context.md
+
+
+
+
+  1 failed
+    [chromium] › tests\journey.spec.ts:57:7 › E2E journey (Sprint 1, issue #13) › a second user who logs in in the same tab can log out (F-02) 

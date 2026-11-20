@@ -51,6 +51,26 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByLabel("Password")).toHaveValue("");
   });
 
+  // Lab 6 defect #58: after a logout, a second user who logs in in the same tab (no page reload)
+  // must still be able to log out (FR-02; F-02 section 2 steps 1 and 6). logIn() is not used for
+  // the second login because its page.goto reloads the page and would hide the bug.
+  test("a second user who logs in in the same tab can log out (F-02)", async ({ page }) => {
+    const first = SEED_USERS.find((u) => u.email === "student3@example.test")!;
+    await logIn(page, first.email, /\/slots$/);
+    await logOut(page);
+
+    // Same tab, no reload: log in as Student One from the login page Logout left us on
+    await page.getByLabel("Email").fill(student.email);
+    await page.getByLabel("Password").fill(DEMO_PASSWORD);
+    await page.getByRole("button", { name: "Log in" }).click();
+    await expect(page.getByRole("navigation").getByText(`${student.name} (STUDENT)`)).toBeVisible();
+
+    await expect(page.getByRole("button", { name: "Logout" })).toBeEnabled();
+    await logOut(page);
+    const me = await page.request.get("http://localhost:3100/api/auth/me");
+    expect(me.status()).toBe(401);
+  });
+
   // F-04 to F-09 in the browser: the advisor creates a slot, Student Two books it and opens the
   // booking from /bookings, the advisor opens it from /schedule and sees the student's name,
   // and another advisor gets "Booking not found." (F-09, NFR-03).
@@ -142,6 +162,8 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
   });
 });
 
+// page.goto reloads the app, which resets all client state. A test that checks state carried over
+// from an earlier user in the same tab must not log in with this helper (see defect #58).
 async function logIn(page: Page, email: string, home: RegExp) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
