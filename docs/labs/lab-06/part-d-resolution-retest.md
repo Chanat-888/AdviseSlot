@@ -15,9 +15,9 @@ smoke check → UAT Team retest → acceptance decision.
 | PR | #59 into `sprint-1`, reviewer @ShitheadQuin, linked to #58 | Approved and merged by Snooker, 2026-11-19 |
 | CI | `test-and-docker` on PR #59 | Passed |
 | Merge into `sprint-1` | by Snooker (reviewer), merge commit `0eb6a52` | Done |
-| Release PR `sprint-1` → `main` | _TBD_ | _TBD_ |
-| Deploy and smoke check | _TBD_ | _TBD_ |
-| UAT Team retest | _TBD_ | _TBD_ |
+| Release PR `sprint-1` → `main` | #65 (after sync PR #64), approved and merged by Snooker, merge commit `c4dc3b4` | Done, 2026-11-20 |
+| Deploy and smoke check | Deploy run 44739029326, revision `adviseslot-00005-4tw`, workflow smoke test passed, `/api/version` = `c4dc3b4` | Done, 2026-11-20 19:54 ICT |
+| UAT Team retest | Requested on #63 with the new commit and revision | _Waiting_ |
 | Issue closed | closed by Snooker after the merge (2026-11-19); reopen if the UAT retest fails | Done |
 
 Deploy rule: we do not deploy the fix until UAT round 1 on `cbcb783` is finished, and we tell
@@ -98,12 +98,12 @@ Full output: `evidence/lab6-logout-green.txt` on `fix/logout-busy`.
 |---|---|
 | PR review text | See below |
 | Merge commit into `sprint-1` | `0eb6a52` (2026-11-19, by @ShitheadQuin) |
-| Release PR to `main` | _TBD_ |
-| Corrected `main` commit | _TBD_ |
-| Deploy workflow run | _TBD_ |
-| Cloud Run revision | _TBD_ |
-| `/api/version` after deploy | _TBD_ |
-| Smoke check (manual) | _TBD: log in, log out, log in as another user, log out; footer shows the new commit_ |
+| Release PR to `main` | #65 (sync PR #64 first, because `main` had merge commit `cbcb783`) |
+| Corrected `main` commit | `c4dc3b42b8e929fa8775537172d1b6d01da7caae` (merged 2026-11-20 by @ShitheadQuin) |
+| Deploy workflow run | https://github.com/Chanat-888/AdviseSlot/actions/runs/44739029326 (success) |
+| Cloud Run revision | `adviseslot-00005-4tw`, 100% of traffic (previous: `adviseslot-00004-ksp` on `cbcb783`) |
+| `/api/version` after deploy | `{"commit":"c4dc3b42b8e929fa8775537172d1b6d01da7caae"}` |
+| Smoke check | Workflow smoke test passed (public URL and login). Manual check (log in, log out, log in as another user, log out): _TBD_ |
 
 PR #59 review by Jeerasak Phisawong (@ShitheadQuin), 2026-11-19, "Comment":
 
@@ -123,7 +123,7 @@ Give the UAT Team the corrected version and the original steps (#58 and UAT-01).
 
 | Issue / case | Corrected version | Tester (name, team) | Date | Actual result | PASS / FAIL | Evidence ID |
 |---|---|---|---|---|---|---|
-| #58 | | | | | | |
+| #58 / UAT Issue #63 | `c4dc3b4`, `adviseslot-00005-4tw` | | | | | |
 | UAT-01 (re-run) | | | | | | |
 | _other affected cases_ | | | | | | |
 

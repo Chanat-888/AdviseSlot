@@ -7,7 +7,7 @@ Sprint 1 UAT for AdviseSlot. Due 22 Nov 2026. These files are the source for the
 |---|---|
 | Product Team (us) | Duo Gang: Chanat Dachkhumhang (67070503409, @Chanat-888), Jeerasak Phisawong (67070503461, @ShitheadQuin) |
 | UAT Team (tests our app) | Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (67070503483) |
-| Team we test (Part B) | Team Top 2 (same students); app and URL _TBD from their handoff_ |
+| Team we test (Part B) | Team Top 2 (same students): Inventory and Borrowing System, https://inventory-ftuxc6vyna-as.a.run.app |
 | Theme | 1 Appointment & Scheduling: student office-hour advising |
 | Repository | https://github.com/Chanat-888/AdviseSlot |
 | Sprint 1 scope | F-01 to F-09 (`docs/sprints/sprint-1/`) |
@@ -28,12 +28,12 @@ Sprint 1 UAT for AdviseSlot. Due 22 Nov 2026. These files are the source for the
 | Role | Ref | Commit | Notes |
 |---|---|---|---|
 | Sprint 1 baseline | tag `v0.1.0-sprint-1` | `6718744` | Sprint 1 release |
-| Tested release (UAT round 1) | `main`, tag `v0.1.1-uat` | `cbcb783` | Lab 5 release; only deployment changes since the baseline. Deployed revision _TBD_ |
+| Tested release (UAT round 1) | `main`, tag `v0.1.1-uat` | `cbcb783` | Lab 5 release; only deployment changes since the baseline. Deployed revision `adviseslot-00004-ksp` |
 | Defective code | `client/src/App.tsx` TopBar | `cbcb783` (same code on `sprint-1` `280bbf9`) | Issue #58 |
 | Test change (RED) | `fix/logout-busy` | `c50ec5a` | New E2E test |
 | Fix (GREEN) | `fix/logout-busy` | `51490ea` (+ `71e41ed` review fixes) | PR #59, merged into `sprint-1` as `0eb6a52` |
-| Corrected main release | _TBD_ | _TBD_ | Release PR `sprint-1` → `main` |
-| Corrected deployed revision | _TBD_ | _TBD_ | Check `/api/version` |
+| Corrected main release | `main` | `c4dc3b4` | Release PR #65 (after sync PR #64), merged 2026-11-20 by @ShitheadQuin |
+| Corrected deployed revision | `adviseslot-00005-4tw` | `c4dc3b4` | Deploy run 44739029326, 100% traffic from 2026-11-20 19:54 ICT; `/api/version` shows `c4dc3b4...` |
 
 Merge commits: `main` and `sprint-1` differ only by merge commits (sync PR #56 and the release
 PRs); the application code at `cbcb783` and `280bbf9` is the same for Sprint 1.
@@ -44,9 +44,9 @@ PRs); the application code at `cbcb783` and `280bbf9` is the same for Sprint 1.
 |---|---|---|
 | Product Team dry-run of our own cases (not UAT) | 2026-11-18 | Done |
 | Handoff to UAT Team | _TBD_ | |
-| UAT round 1 on `cbcb783` | _TBD_ | |
-| Fix, review, release, deploy | _TBD_ | PR #59 merged into `sprint-1`; release and deploy not done |
-| UAT retest on corrected release | _TBD_ | |
+| UAT round 1 on `cbcb783` | 2026-11-20 | Team Top 2 filed #63 (duplicate of #58); full case results not received yet |
+| Fix, review, release, deploy | 2026-11-19 to 20 | Done: PR #59 → `sprint-1`; release PR #65 → `main` `c4dc3b4`; deployed `adviseslot-00005-4tw` |
+| UAT retest on corrected release | _TBD_ | Requested on #63 (2026-11-20) |
 | PDF submitted on LEB2 | by 22 Nov 23:59 | |
 
 ## Contributions
