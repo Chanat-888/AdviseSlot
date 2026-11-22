@@ -18,6 +18,7 @@
 | 0.1 | 2026-11-04 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
 | 0.2 | 2026-11-05 | Jeerasak (drafted with an AI agent) | Review on PR #21: TEST-F07-04 and -05 use advisor B's identical slots for the rejected cases; Prisma `P2002` mapping noted; TEST-F07-03 uses a shared precomputed hash. |
 | 0.3 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67 (D-31), approved by TA Supachok Deetaweesukh on 2026-11-22: BR-07 allows at most two active bookings, at most one with the same advisor. Check 4 split into 4a `SAME_ADVISOR_BOOKING` (new code) and 4b `ACTIVE_BOOKING_LIMIT` (new message); boundary table, AC-F07-06 and TEST-F07-06 revised; new TEST-F07-08 for two parallel requests by one student (TA condition); E2E second-booking step becomes a same-advisor case. Written before the code change, for review. |
+| 0.4 | 2026-11-23 | Chanat (drafted with an AI agent) | Review of PR #80: the red tests run on the `sprint-2` commit right before the Lab 7 implementation commit, and #67 merges before the F-13 code PR (section 8.1); new boundary row and case S10 for a booking whose slot ends exactly now (D-17). |
 
 ## 1. Linked requirements
 
@@ -96,6 +97,7 @@ Check 2 gives a clear answer in the normal case. Check 5 is what makes BR-05 hol
 | 2 active (A and B), books another slot of A | 409 `SAME_ADVISOR_BOOKING` (check 4a first), no new row | AC-F07-06 |
 | 1 ACTIVE on an ended slot of A + 1 active with B, books a slot of A | 201 (the ended booking does not count, D-17) | AC-F07-06 |
 | 1 CANCELLED booking on a future slot of A, books a slot of A | 201 (a cancelled booking does not count) | AC-F07-06 |
+| 1 ACTIVE with A on a slot that ends exactly now (`endAt = now`), books another slot of A | 201 (active needs `endAt > now`, D-17) | AC-F07-06 |
 | Same student, 1 active with A, sends 2 parallel requests for slots of B and C | Exactly one 201 and one 409 `ACTIVE_BOOKING_LIMIT`; 2 active bookings afterwards | AC-F07-06 |
 | Same student, no bookings, sends 2 parallel requests for two slots of A | Exactly one 201 and one 409 `SAME_ADVISOR_BOOKING`; 1 active booking with A afterwards | AC-F07-06 |
 | Advisor calls the endpoint | 403 `FORBIDDEN_ROLE`, no row | AC-F07-07 |
@@ -226,7 +228,7 @@ BR-07 cannot be a static index because "active" depends on the current time (SDS
 | AC-F07-03 | 10 concurrent requests for one open slot create exactly 1 active booking. | Of 10 parallel requests by 10 different students: exactly one 201, nine 409 `SLOT_TAKEN`, no 500. Exactly 1 ACTIVE row for the slot. |
 | AC-F07-04 | Deadline boundaries: morning slot 17:59 previous day accepted, 18:00 rejected; afternoon slot 2 h 01 min before accepted, exactly 2 h rejected. | Tue 09:00 slot: 201 at Mon 17:59, 422 `BOOKING_DEADLINE_PASSED` at Mon 18:00. Tue 14:00 slot: 201 at Tue 11:59, 422 at Tue 12:00. |
 | AC-F07-05 | A late slot is bookable until 2 h before start and rejected from then on. | Late Wed 09:00 slot: 201 at Wed 06:59, 422 `BOOKING_DEADLINE_PASSED` at Wed 07:00. |
-| AC-F07-06 | A student holds at most two active bookings and at most one with the same advisor; ended and cancelled bookings do not count; this also holds for parallel requests by the same student. | The nine BR-07 rows of section 3.3: 201, or 409 `SAME_ADVISOR_BOOKING` / `ACTIVE_BOOKING_LIMIT` with no new row. A student never ends up with 3 active bookings, or 2 with one advisor. |
+| AC-F07-06 | A student holds at most two active bookings and at most one with the same advisor; ended and cancelled bookings do not count; this also holds for parallel requests by the same student. | The ten BR-07 rows of section 3.3: 201, or 409 `SAME_ADVISOR_BOOKING` / `ACTIVE_BOOKING_LIMIT` with no new row. A student never ends up with 3 active bookings, or 2 with one advisor. |
 | AC-F07-07 | An advisor booking gets 403; the student id is taken from the session, not the request. | Advisor: 403 `FORBIDDEN_ROLE`, no row. Student S1 sending `studentId` of S2: 201 and the row has `studentId` = S1. |
 
 ## 8. Software Test Specification (STS)
@@ -244,7 +246,7 @@ Test clock: fake `Date` as in F-01. Times are Asia/Bangkok. Unless stated, now =
 | TEST-F07-03 | AC-F07-03 | API (database, concurrency) | One Open slot. 10 students created for this test, each logged in. The students share one precomputed bcrypt hash (test helper) so the setup stays within Vitest's timeout. | Send the 10 `POST` requests together with `Promise.all`. | Exactly one 201 and nine 409 `SLOT_TAKEN`, no 500. `Booking` count with `status` ACTIVE for the slot is 1. |
 | TEST-F07-04 | AC-F07-04 | Unit + API | Slots Tue 10 Nov 09:00 and Tue 10 Nov 14:00, `isLate` false, for advisor A, and the same two slots for advisor B (so each rejected case has its own unbooked slot; `Slot_no_overlap` is per advisor). | Unit: `bookingDeadline` of both. API: S1 books A's Tue 09:00 at Mon 17:59; S2 books B's Tue 09:00 at Mon 18:00; S3 books A's Tue 14:00 at Tue 11:59; S4 books B's Tue 14:00 at Tue 12:00. | Unit: Mon 18:00 and Tue 12:00. API: 201, 422 `BOOKING_DEADLINE_PASSED`, 201, 422. |
 | TEST-F07-05 | AC-F07-05 | Unit + API | Late slot Wed 11 Nov 09:00 (`isLate` true, created Tue 19:00) for advisor A, and an identical late slot for advisor B. | Unit: `bookingDeadline` is Wed 07:00. API: S1 books A's slot at Wed 06:59; S2 books B's slot at Wed 07:00. | 201, then 422 `BOOKING_DEADLINE_PASSED`. |
-| TEST-F07-06 | AC-F07-06 | API | Advisors A, B, C with Open slots. Students S1 to S7 with the existing bookings of section 8.2. | Each student books the slot given in section 8.2. | As section 8.2. Rejected cases add no row. |
+| TEST-F07-06 | AC-F07-06 | API | Advisors A, B, C with Open slots. Students S1 to S7 and S10 with the existing bookings of section 8.2. | Each student books the slot given in section 8.2. | As section 8.2. Rejected cases add no row. |
 | TEST-F07-07 | AC-F07-07 | API | Open slots. Advisor A logged in. S1 and S2 exist, S1 logged in. | A: `POST /api/bookings`. S1: `POST` with `{ slotId, studentId: S2.id }`. | A: 403 `FORBIDDEN_ROLE`, no row. S1: 201 and the row's `studentId` is S1. |
 | TEST-F07-08 | AC-F07-06 | API (database, concurrency) | (a) S8 has 1 ACTIVE booking with A; Open slots of B and C. (b) S9 has no bookings; two Open slots of A at different times. | (a) S8 sends both `POST` requests (the B slot and the C slot) together with `Promise.all`. (b) S9 sends both `POST` requests (the two A slots) together with `Promise.all`. | (a) Exactly one 201 and one 409 `ACTIVE_BOOKING_LIMIT`, no 500; S8 has exactly 2 ACTIVE bookings. (b) Exactly one 201 and one 409 `SAME_ADVISOR_BOOKING`, no 500; S9 has exactly 1 ACTIVE booking. Which request wins is not fixed. |
 
@@ -265,14 +267,15 @@ Now = Mon 9 Nov 10:00. Bookings are on future slots unless stated. Each student 
 | S5 | 1 ACTIVE with A, 1 ACTIVE with B | A (another slot) | 409 `SAME_ADVISOR_BOOKING` |
 | S6 | 1 ACTIVE with A on Fri 6 Nov 10:00 (ended), 1 ACTIVE with B | A | 201 |
 | S7 | 1 CANCELLED with A on a future slot | A | 201 |
+| S10 | 1 ACTIVE with A on Mon 9 Nov 09:30-10:00 (ends exactly now) | A (another slot) | 201 |
 
-**Revised expected result.** The Sprint 1 TEST-F07-06 expected 409 `ACTIVE_BOOKING_LIMIT` when a student with one active booking books a second slot. Under the new BR-07 that case is 201 when the second slot is with another advisor (S2) and 409 `SAME_ADVISOR_BOOKING` when it is with the same advisor (S3). This is a legitimate revision: the requirement itself changed through change request #67, approved by the TA (D-31) before any code change, so the test follows the new requirement; it is not changed to fit the code. On the pre-change code (`main` = `c4dc3b4`) cases S2, S3, S5 and S6 and both parts of TEST-F07-08 fail. The ended-booking case (old S2, now S6) keeps its meaning, but S6 now also holds an active booking with B.
+**Revised expected result.** The Sprint 1 TEST-F07-06 expected 409 `ACTIVE_BOOKING_LIMIT` when a student with one active booking books a second slot. Under the new BR-07 that case is 201 when the second slot is with another advisor (S2) and 409 `SAME_ADVISOR_BOOKING` when it is with the same advisor (S3). This is a legitimate revision: the requirement itself changed through change request #67, approved by the TA (D-31) before any code change, so the test follows the new requirement; it is not changed to fit the code. On the pre-change code (section 8.1) cases S2, S3, S5 and S6 and both parts of TEST-F07-08 fail. The ended-booking case (old S2, now S6) keeps its meaning, but S6 now also holds an active booking with B.
 
 ### 8.1 TDD plan
 
 The `bookingDeadline` unit tests (TEST-F07-04 and -05, unit part) are written first and shown failing, then TEST-F07-01 to -07 at API level, then the endpoint. TEST-F07-03 runs against the real PostgreSQL test database (not a mock), as NFR-04 requires. The failing runs are kept as evidence.
 
-For #67 (Lab 7): the revised TEST-F07-06 and the new TEST-F07-08 are committed first and run on the pre-change code (`c4dc3b4`), and the red output is saved. Then checks 4a and 4b are implemented and the same tests, plus the full server suite, run green.
+For #67 (Lab 7): the revised TEST-F07-06 and the new TEST-F07-08 are committed first and run on the `sprint-2` commit right before the Lab 7 implementation commit, and the red output is saved. That commit is the actual pre-change implementation; its BR-07 code is the same as the deployed pre-change version `main` = `c4dc3b4`. Then checks 4a and 4b are implemented and the same tests, plus the full server suite, run green. Merge order agreed in the review of PR #80: the #67 implementation merges into `sprint-2` before the F-13 code PR (which also changes `createBooking`), so the code that #67 changes is still the Sprint 1 BR-07 code.
 
 ## 9. Known limitations (Sprint 1)
 
