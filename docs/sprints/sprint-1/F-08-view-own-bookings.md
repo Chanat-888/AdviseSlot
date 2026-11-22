@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-04 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
+| 0.2 | 2026-11-22 | Chanat (drafted with an AI agent) | Sprint 2 (F-10, PR #76): a Cancelled booking gains a `cancellation` object `{ cancelledAt, cancelledBy { id, name, role }, reason }`. The key is absent for Upcoming and Passed bookings, so the Sprint 1 bodies and tests are unchanged. |
 
 ## 1. Linked requirements
 
