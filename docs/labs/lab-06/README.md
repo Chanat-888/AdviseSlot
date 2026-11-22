@@ -55,9 +55,9 @@ PRs); the application code at `cbcb783` and `280bbf9` is the same for Sprint 1.
 |---|---|---|
 | Part A cases and handoff | Wrote | Reviews |
 | Part B execution of partner cases | Both (pair) | Both (pair) |
-| Part C reports and triage | _TBD_ | _TBD_ |
+| Part C reports and triage | Wrote #36/#37 and the #63 triage | Evidence for #36 (B-04, B-05); reviews |
 | Part D: Issue #58, RED test, fix, PR #59 | Author | Reviewer, merges |
-| Release to `main` and deploy | _TBD_ | _TBD_ |
+| Release to `main` and deploy | Opened sync PR #64 and release PR #65; smoke check | Reviewed and merged #64 and #65 |
 | PDF | _TBD_ | _TBD_ |
 
 ## AI use
