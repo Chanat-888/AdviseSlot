@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review (Issue #68). |
+| 0.2 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Section 2.1: lock order student row, then slot row, in F-07 and F-14, to avoid a deadlock. Section 6: the F-07 change is a reorder plus the slot lock. |
 
 ## 1. Linked requirements
 
@@ -56,7 +57,9 @@ After the delete:
 
 Without a lock, this order breaks BR-14: a booking reads the slot (not deleted), the delete checks for an ACTIVE booking (none committed yet) and commits, then the booking inserts. The result is a deleted slot with an ACTIVE booking.
 
-So the booking transaction in `server/src/services/bookings.ts` (F-07) must read the slot with `FOR UPDATE` too (one-line change, before its checks). F-14 books its new slot through the same code. With both sides locking the same row, delete and book run one after the other. The edit in F-12 uses the same lock.
+So the booking transaction in `server/src/services/bookings.ts` (F-07) must lock the slot row too, and F-14 must lock its new slot the same way. With both sides locking the same row, delete and book run one after the other. The edit in F-12 uses the same lock.
+
+Lock order: the student's `User` row first, then the `Slot` row, in both F-07 and F-14. F-07 today reads the slot before it locks the student, so the change moves the student lock to the start of the transaction and reads the slot with `FOR UPDATE` after it. Otherwise F-07 (slot then student) and F-14 (student then slot) could deadlock on one student's parallel requests. Edit and delete lock only the slot row, so they cannot form a cycle.
 
 This touches Chanat's file. It is made in the F-13 implementation PR, shown by TEST-F13-07, and Chanat confirms it in the review of this contract.
 
@@ -158,7 +161,7 @@ Screen `/schedule`, role advisor, the F-05 slot list.
 |---|---|
 | Schema | None. `Slot.deletedAt` exists since the F-04 migration. |
 | Migration | None. |
-| Service | New `deleteSlot(advisorId, slotId, now)` in `server/src/services/slots.ts`. One-line lock in the F-07 booking transaction (section 2.1). |
+| Service | New `deleteSlot(advisorId, slotId, now)` in `server/src/services/slots.ts`. In the F-07 booking transaction: lock the student row first, then read the slot `FOR UPDATE` (section 2.1). |
 | Route | `slotsRouter.delete("/:id", ...)` in `server/src/routes/slots.ts`. |
 | Seed | No change. |
 | Historical data | Existing rows all have `deletedAt` null; nothing to migrate. |
