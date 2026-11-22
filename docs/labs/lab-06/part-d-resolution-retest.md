@@ -103,7 +103,7 @@ Full output: `evidence/lab6-logout-green.txt` on `fix/logout-busy`.
 | Deploy workflow run | https://github.com/Chanat-888/AdviseSlot/actions/runs/44739029326 (success) |
 | Cloud Run revision | `adviseslot-00005-4tw`, 100% of traffic (previous: `adviseslot-00004-ksp` on `cbcb783`) |
 | `/api/version` after deploy | `{"commit":"c4dc3b42b8e929fa8775537172d1b6d01da7caae"}` |
-| Smoke check | Workflow smoke test passed (public URL and login). Manual check (log in, log out, log in as another user, log out): _TBD_ |
+| Smoke check | Workflow smoke test passed (public URL and login). Manual check by Chanat on 2026-11-22, one tab, no reload: logged in as Student Three (D-01), Logout opened the login page with footer `c4dc3b4` (D-02), logged in as Student One in the same tab with Logout enabled (D-03), Logout opened the login page again (D-04). PASS |
 
 PR #59 review by Jeerasak Phisawong (@ShitheadQuin), 2026-11-19, "Comment":
 
