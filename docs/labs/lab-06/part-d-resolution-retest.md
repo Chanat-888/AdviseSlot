@@ -16,7 +16,7 @@ smoke check → UAT Team retest → acceptance decision.
 | CI | `test-and-docker` on PR #59 | Passed |
 | Merge into `sprint-1` | by Snooker (reviewer), merge commit `0eb6a52` | Done |
 | Release PR `sprint-1` → `main` | #65 (after sync PR #64), approved and merged by Snooker, merge commit `c4dc3b4` | Done, 2026-11-20 |
-| Deploy and smoke check | Deploy run 44739029326, revision `adviseslot-00005-4tw`, workflow smoke test passed (`/api/health`, `/api/ready`, `/`, `/api/slots/bookable`, `/api/version` = `c4dc3b4`; login step skipped, no smoke credentials), manual smoke check PASS | Done, 2026-11-20 19:54 ICT |
+| Deploy and smoke check | Deploy run 44739029326, revision `adviseslot-00005-4tw`, workflow smoke test passed (`/api/health`, `/api/ready`, `/`, `/api/slots/bookable`, `/api/version` = `c4dc3b4`; login step skipped, no smoke credentials), manual smoke check PASS on 2026-11-22 (D-01 to D-04) | Deployed 2026-11-20 19:54 ICT; manual smoke check 2026-11-22 |
 | UAT Team retest | Team Top 2 on #63: PASS on `c4dc3b4` / `adviseslot-00005-4tw` (section 5) | Done, 2026-11-22 |
 | Issue closed | #58 closed by Snooker after the merge (2026-11-19); UAT Issue #63 closed by Chanat after the passing retest (2026-11-22) | Done |
 
