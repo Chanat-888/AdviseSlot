@@ -124,8 +124,10 @@ Give the UAT Team the corrected version and the original steps (#58 and UAT-01).
 | Issue / case | Corrected version | Tester (name, team) | Date | Actual result | PASS / FAIL | Evidence ID |
 |---|---|---|---|---|---|---|
 | #58 / UAT Issue #63 | `c4dc3b4`, `adviseslot-00005-4tw` | Team Top 2 (GitHub @Ryugc, Grittapob Chutitas) | 2026-11-22 | Signed in as Student Three on `/slots` and clicked Logout: signed out straight away, no hang and no reload needed. Their steps did not include the second login in the same tab (the exact #58 path), which we asked them to add; that path is covered by our E2E test (section 2) | PASS | Two screenshots in their comment on #63 (2026-11-22 10:54 ICT) |
-| UAT-01 (re-run) | `c4dc3b4` | _not received yet (asked on #63)_ | | | | |
-| _other affected cases_ | | | | | | |
+| UAT-01 (re-run) | `c4dc3b4` | Team Top 2 | 2026-11-22 | Logged in with a first account, logged out, logged in as Student Three in the same tab without a reload, clicked Logout: signed out at once, no refresh needed (this is the #58 path) | PASS | Their decision comment on #63 |
+| UAT-02 to UAT-05 | `cbcb783` (round 1) | Team Top 2 | 2026-11-20 | Not affected by the fix (only the Logout button changed); not re-run on `c4dc3b4` | PASS | Their decision comment on #63 |
+
+Round 1 on `cbcb783` (2026-11-20): UAT-01 FAIL (#63), UAT-02 to UAT-05 PASS.
 
 **Final Sprint 1 UAT decision (recorded by the UAT Team): Accepted.**
 
@@ -135,7 +137,7 @@ Give the UAT Team the corrected version and the original steps (#58 and UAT-01).
 | UAT testers | Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (67070503483) |
 | Date | 2026-11-22 |
 | Conditions / accepted minor limitations | None. Their words: "With no Critical or Major defects remaining, Team Top 2 accepts AdviseSlot for Sprint 1." |
-| How it was recorded | Message from @Ryugc on the teams' Discord, 2026-11-22 11:01 ICT (screenshot N-03), after their passing retest comment on #63. We asked them to repeat it as a comment on #63 |
+| How it was recorded | Comment by @Ryugc on #63, 2026-11-22 11:06 ICT (edited 11:11): https://github.com/Chanat-888/AdviseSlot/issues/63#issuecomment-7073981583. Also sent on the teams' Discord at 11:01 (screenshot N-03) |
 
 Only the UAT Team may record acceptance. Do not claim it while any Critical/Major defect is open
 or a required case is BLOCKED.
