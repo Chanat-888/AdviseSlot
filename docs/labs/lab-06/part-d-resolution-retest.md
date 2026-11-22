@@ -17,8 +17,8 @@ smoke check → UAT Team retest → acceptance decision.
 | Merge into `sprint-1` | by Snooker (reviewer), merge commit `0eb6a52` | Done |
 | Release PR `sprint-1` → `main` | #65 (after sync PR #64), approved and merged by Snooker, merge commit `c4dc3b4` | Done, 2026-11-20 |
 | Deploy and smoke check | Deploy run 44739029326, revision `adviseslot-00005-4tw`, workflow smoke test passed, `/api/version` = `c4dc3b4` | Done, 2026-11-20 19:54 ICT |
-| UAT Team retest | Requested on #63 with the new commit and revision | _Waiting_ |
-| Issue closed | closed by Snooker after the merge (2026-11-19); reopen if the UAT retest fails | Done |
+| UAT Team retest | Team Top 2 on #63: PASS on `c4dc3b4` / `adviseslot-00005-4tw` (section 5) | Done, 2026-11-22 |
+| Issue closed | #58 closed by Snooker after the merge (2026-11-19); UAT Issue #63 closed by Chanat after the passing retest (2026-11-22) | Done |
 
 Deploy rule: we do not deploy the fix until UAT round 1 on `cbcb783` is finished, and we tell
 the UAT Team before any deploy (handout section 2).
@@ -123,8 +123,8 @@ Give the UAT Team the corrected version and the original steps (#58 and UAT-01).
 
 | Issue / case | Corrected version | Tester (name, team) | Date | Actual result | PASS / FAIL | Evidence ID |
 |---|---|---|---|---|---|---|
-| #58 / UAT Issue #63 | `c4dc3b4`, `adviseslot-00005-4tw` | | | | | |
-| UAT-01 (re-run) | | | | | | |
+| #58 / UAT Issue #63 | `c4dc3b4`, `adviseslot-00005-4tw` | Team Top 2 (GitHub @Ryugc, Grittapob Chutitas) | 2026-11-22 | Signed in as Student Three on `/slots` and clicked Logout: signed out straight away, no hang and no reload needed. Their steps did not include the second login in the same tab (the exact #58 path), which we asked them to add; that path is covered by our E2E test (section 2) | PASS | Two screenshots in their comment on #63 (2026-11-22 10:54 ICT) |
+| UAT-01 (re-run) | `c4dc3b4` | _not received yet (asked on #63)_ | | | | |
 | _other affected cases_ | | | | | | |
 
 **Final Sprint 1 UAT decision:** _TBD: Accepted / Accepted with documented minor limitations /

@@ -31,7 +31,7 @@ steps, expected, actual, severity and screenshots (screenshots as a comment on e
 | Actual | Both lists show `9a94358f-...`, the asset `id` of TAG-RPI-001 (`public/app.js` lines 85 and 101 render `assetId`) | "Borrow request ID" sits above the date picker, "Due date" next to the text box (which starts as `request-1`) |
 | Severity | Minor: the journey works, but users cannot tell which asset a row is about | Minor: cosmetic; Approve / Checkout fills the form |
 | Evidence | B-04, B-05, B-23 (posted on the Issue) | B-21b (posted on the Issue) |
-| Partner response | _Waiting_ | _Waiting_ |
+| Partner response | None by 2026-11-22 | None by 2026-11-22 |
 
 ## 2. Findings about our product found before the handoff
 
@@ -80,7 +80,7 @@ All findings from the UAT Team are listed here, including "none" if there are no
 
 | # | UAT Issue | Case | Summary | Classification | Reason (Sprint 1 contract + evidence) | Duplicate of | Severity | Owner | Fix status | Disposition |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | #63 (Ryugc, 2026-11-20) | Not stated yet (asked); Student Three on `/slots`, `cbcb783`, ~18:49 ICT | Logout greys out and hangs until a manual reload | Duplicate | Same symptom as #58 (Logout disabled after a second login in the same tab; F-02 section 2). Their screenshots show the greyed button on `cbcb783`. Asked them to confirm the case and that another account logged out earlier in that tab | #58 | Major (as #58) | Chanat | Fixed in `c4dc3b4`, deployed `adviseslot-00005-4tw`; retest requested on #63 | Waiting for the UAT retest |
+| 1 | #63 (Ryugc, 2026-11-20) | Not stated yet (asked); Student Three on `/slots`, `cbcb783`, ~18:49 ICT | Logout greys out and hangs until a manual reload | Duplicate | Same symptom as #58 (Logout disabled after a second login in the same tab; F-02 section 2). Their screenshots show the greyed button on `cbcb783`. Asked them to confirm the case and that another account logged out earlier in that tab | #58 | Major (as #58) | Chanat | Fixed in `c4dc3b4`, deployed `adviseslot-00005-4tw` | UAT retest PASS on 2026-11-22; #63 closed |
 
 Classification is one of: accepted defect, duplicate, not-defect, enhancement. Reproduce and
 clarify a report before calling it not-defect.

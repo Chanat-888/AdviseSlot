@@ -1,8 +1,9 @@
 # Part B: independent execution of the partner team's Sprint 1 UAT cases
 
 Here we are the **UAT Team** for the other team's product. These are our results, not theirs.
-Status: round 1 done on 2026-11-20 (all five cases PASS, two Minor defects reported); waiting
-for the partner's response to the reports.
+Status: round 1 done on 2026-11-20 (all five cases PASS, two Minor defects reported). The
+partner had not answered the reports by 2026-11-22, so we accepted both as documented minor
+limitations (section 6).
 
 ## 1. Product under test
 
@@ -69,8 +70,8 @@ case failed; we still reported two defects we saw while running the cases.
 
 | Our ref | Case | Partner Issue | Severity | Sent on | Partner response |
 |---|---|---|---|---|---|
-| F-1 | UAT-01, UAT-04 | [#36](https://github.com/Ryugc/Inventory-and-Borrowing-System/issues/36) asset UUID shown instead of the asset name | Minor | 2026-11-20 | _Waiting_ |
-| F-2 | UAT-01, UAT-04 | [#37](https://github.com/Ryugc/Inventory-and-Borrowing-System/issues/37) checkout form labels look swapped | Minor | 2026-11-20 | _Waiting_ |
+| F-1 | UAT-01, UAT-04 | [#36](https://github.com/Ryugc/Inventory-and-Borrowing-System/issues/36) asset UUID shown instead of the asset name | Minor | 2026-11-20 | None by 2026-11-22; Issue open |
+| F-2 | UAT-01, UAT-04 | [#37](https://github.com/Ryugc/Inventory-and-Borrowing-System/issues/37) checkout form labels look swapped | Minor | 2026-11-20 | None by 2026-11-22; Issue open |
 
 Observation, not reported as a defect: a disabled Request button looks the same as an enabled
 one (B-06); clicking it does nothing.
@@ -79,9 +80,21 @@ one (B-06); clicking it does nothing.
 
 | Partner Issue | Corrected version | Tester | Date | Actual result | PASS / FAIL | Evidence ID |
 |---|---|---|---|---|---|---|
-| #36 | _TBD_ | | | | | |
-| #37 | _TBD_ | | | | | |
+| #36 | No fix released by 2026-11-22 | n/a | n/a | Not retested: no corrected version | n/a | n/a |
+| #37 | No fix released by 2026-11-22 | n/a | n/a | Not retested: no corrected version | n/a | n/a |
 
-**Our decision on their Sprint 1 release:** _TBD: Accepted / Accepted with documented minor
-limitations / Not Accepted_, version _TBD_, date _TBD_, testers: Chanat Dachkhumhang,
-Jeerasak Phisawong. Reasons: _TBD_.
+**Our decision on their Sprint 1 release: Accepted with documented minor limitations.**
+Version `13a8d94` (revision `inventory-00006-hxv`), date 2026-11-22, testers: Chanat
+Dachkhumhang, Jeerasak Phisawong.
+
+Reasons: all five agreed cases passed, including the normal journey, the unavailable-asset rule
+(409), the forbidden checkout and ownership checks (403, other borrower's request hidden) and
+persistence across sessions. No Critical or Major defect was found and no case was BLOCKED. The
+two open defects are Minor and do not stop any user task:
+
+| Accepted limitation | Partner Issue | Effect |
+|---|---|---|
+| My requests and Active loans show the asset UUID instead of the asset name | #36 | Users must match the UUID to an asset; the request ID is shown only in the toast |
+| Checkout form labels look swapped | #37 | Only matters when a custodian types an ID by hand; Approve / Checkout fills the form correctly |
+
+Limit of this decision: we could not confirm the deployed commit from the site (section 1).

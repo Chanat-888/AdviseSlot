@@ -46,7 +46,7 @@ PRs); the application code at `cbcb783` and `280bbf9` is the same for Sprint 1.
 | Handoff to UAT Team | _TBD_ | |
 | UAT round 1 on `cbcb783` | 2026-11-20 | Team Top 2 filed #63 (duplicate of #58); full case results not received yet |
 | Fix, review, release, deploy | 2026-11-19 to 20 | Done: PR #59 → `sprint-1`; release PR #65 → `main` `c4dc3b4`; deployed `adviseslot-00005-4tw` |
-| UAT retest on corrected release | _TBD_ | Requested on #63 (2026-11-20) |
+| UAT retest on corrected release | 2026-11-22 | Team Top 2: #63 PASS on `c4dc3b4`; #63 closed. Their Sprint 1 decision and UAT-01 re-run not received yet |
 | PDF submitted on LEB2 | by 22 Nov 23:59 | |
 
 ## Contributions
