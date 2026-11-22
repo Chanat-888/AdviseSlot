@@ -17,12 +17,13 @@
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, against the new BR-07 of change request #67. Awaiting team review. |
 | 0.2 | 2026-11-22 | Chanat (drafted with an AI agent) | Review of PR #76: step 5.2 locks the new slot row (BR-14, SDS 3.1), lock order student then slot; race test TEST-F14-08. Built against the current BR-07; the #67 dependency, `SAME_ADVISOR_BOOKING` and the same-advisor cases move to #67's impact analysis. |
+| 0.3 | 2026-11-23 | Chanat (drafted with an AI agent) | Section 0 only: #67 is approved (D-31); the Lab 7 implementation adds the new BR-07 check to check 6. |
 
 ## 0. BR-07 and change request #67
 
 This contract uses the current BR-07 (SRS v0.4: at most one active booking). By BR-15, BR-07 is checked as if the old booking were already released, so the student then holds no other active booking and check 6 cannot fail today. Check 6 calls the same BR-07 check as F-07, with the old booking excluded.
 
-Lab 7 change request #67 (if approved) changes BR-07 to "at most two active bookings, at most one with the same advisor". Its impact analysis revises this contract: check 6 can then fail with 409 `SAME_ADVISOR_BOOKING`, and AC-F14-05 gets the same-advisor cases.
+Lab 7 change request #67 was approved by TA Supachok Deetaweesukh on 2026-11-22 (D-31) and changes BR-07 to "at most two active bookings, at most one with the same advisor" (F-07 v0.3). Because check 6 calls the F-07 check, the Lab 7 implementation adds the new rule to it: with the old booking released, check 6 can fail with 409 `SAME_ADVISOR_BOOKING` (another active booking with the new slot's advisor) or `ACTIVE_BOOKING_LIMIT` (two other active bookings). Rescheduling to another slot of the old booking's advisor stays allowed. AC-F14-05 gets these cases when F-14 is built.
 
 ## 1. Linked requirements
 
