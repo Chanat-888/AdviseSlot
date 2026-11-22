@@ -44,7 +44,7 @@ PRs); the application code at `cbcb783` and `280bbf9` is the same for Sprint 1.
 |---|---|---|
 | Product Team dry-run of our own cases (not UAT) | 2026-11-18 | Done |
 | Handoff to UAT Team | 2026-11-19 | Sent to Team Top 2 (URL, `cbcb783` / `v0.1.1-uat`, Part A link, known issue #58) |
-| UAT round 1 on `cbcb783` | 2026-11-20 | Team Top 2 filed #63 (duplicate of #58); full case results not received yet |
+| UAT round 1 on `cbcb783` | 2026-11-20 | Team Top 2: UAT-01 FAIL (#63, duplicate of #58), UAT-02 to UAT-05 PASS |
 | Fix, review, release, deploy | 2026-11-19 to 20 | Done: PR #59 → `sprint-1`; release PR #65 → `main` `c4dc3b4`; deployed `adviseslot-00005-4tw` |
 | UAT retest on corrected release | 2026-11-22 | Team Top 2: #63 PASS on `c4dc3b4`; #63 closed. UAT-01 re-run PASS; Sprint 1 decision Accepted (comment on #63) |
 | PDF submitted on LEB2 | by 22 Nov 23:59 | |
@@ -58,7 +58,7 @@ PRs); the application code at `cbcb783` and `280bbf9` is the same for Sprint 1.
 | Part C reports and triage | Wrote #36/#37 and the #63 triage | Evidence for #36 (B-04, B-05); reviews |
 | Part D: Issue #58, RED test, fix, PR #59 | Author | Reviewer, merges |
 | Release to `main` and deploy | Opened sync PR #64 and release PR #65; smoke check | Reviewed and merged #64 and #65 |
-| PDF | _TBD_ | _TBD_ |
+| PDF | Built with an AI agent from these files | Reviews |
 
 ## AI use
 
