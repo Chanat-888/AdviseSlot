@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
+| 0.2 | 2026-11-22 | Chanat (drafted with an AI agent) | Review of PR #76: TEST-F10-01 also checks the `cancellation` object in F-08/F-09 after a student cancel and its absence for an Upcoming booking; `cancelReason` length CHECK decided (yes); TEST-F10-04 uses a fresh student S4. |
 
 ## 1. Linked requirements
 
@@ -149,7 +150,7 @@ Screen `/bookings/:id`, role: student.
 | Layer | Change |
 |---|---|
 | `Booking` | Three nullable columns: `cancelledAt` (timestamptz), `cancelledById` (FK to `User`, restrict), `cancelReason` (text). As planned in SDS section 3. F-10 writes `cancelledAt` and `cancelledById`; F-11 also writes `cancelReason`. |
-| Constraint | Raw SQL CHECK in the same migration: `("status" = 'ACTIVE' AND "cancelledAt" IS NULL AND "cancelledById" IS NULL) OR ("status" = 'CANCELLED' AND "cancelledAt" IS NOT NULL AND "cancelledById" IS NOT NULL)`. |
+| Constraint | Raw SQL CHECK in the same migration: `("status" = 'ACTIVE' AND "cancelledAt" IS NULL AND "cancelledById" IS NULL) OR ("status" = 'CANCELLED' AND "cancelledAt" IS NOT NULL AND "cancelledById" IS NOT NULL)`. A second CHECK: `"cancelReason" IS NULL OR char_length("cancelReason") BETWEEN 1 AND 500` (backs BR-12; the service trims first). |
 | Migration | `prisma migrate dev --name add_booking_cancel`. Existing rows are all ACTIVE with nulls, so they satisfy the CHECK. No data backfill. |
 | Rule function | `studentCanCancel(startAt: Date, now: Date): boolean` in `server/src/domain/rules.ts`. |
 | Seed | Unchanged. |
@@ -169,7 +170,7 @@ model Booking {
 
 | AC | Criterion | Expected, observable outcome |
 |---|---|---|
-| AC-F10-01 | A student cancels their own Upcoming booking that starts in more than 12 hours. | 200, body section 4.2 with `status` "Cancelled" and `cancellation.cancelledBy.id` = the student. Row: CANCELLED, `cancelledAt` = now, `cancelledById` = student, `cancelReason` null. |
+| AC-F10-01 | A student cancels their own Upcoming booking that starts in more than 12 hours. | 200, body section 4.2 with `status` "Cancelled" and `cancellation.cancelledBy.id` = the student. Row: CANCELLED, `cancelledAt` = now, `cancelledById` = student, `cancelReason` null. `GET /api/bookings/:id` and `GET /api/bookings/mine` return the same `cancellation` for this booking; an Upcoming booking in `/mine` has no `cancellation` key. |
 | AC-F10-02 | BR-11 boundary: exactly 12 h before the start is allowed, less is rejected. | Wed 11 Nov 10:00 slot: 200 at Tue 22:00; 422 `CANCEL_WINDOW_PASSED` at Tue 22:01 and the row stays ACTIVE. |
 | AC-F10-03 | A booking that is not active cannot be cancelled. | Already CANCELLED: 409 `BOOKING_NOT_ACTIVE`. ACTIVE on an ended slot: 409 `BOOKING_NOT_ACTIVE`. Rows unchanged. |
 | AC-F10-04 | BR-13: the freed slot is bookable again only before its deadline. | Afternoon slot Wed 14:00 cancelled Mon 10:00: in the bookable list and S2 books it (201). Morning slot Wed 09:00 cancelled Tue 20:00 (13 h before, after the Tue 18:00 deadline): not in the bookable list, S2 gets 422 `BOOKING_DEADLINE_PASSED`, advisor's `/api/slots/mine` shows "Closed". |
@@ -185,10 +186,10 @@ Test clock: fake `Date` as in Sprint 1. Times are Asia/Bangkok. Unless stated, n
 
 | TEST | AC | Level | Precondition / input | Action | Expected |
 |---|---|---|---|---|---|
-| TEST-F10-01 | AC-F10-01 | API | S1 has an ACTIVE booking on Thu 12 Nov 10:00 (advisor A). S1 logged in. | `POST /api/bookings/:id/cancel`. | 200, `status` "Cancelled", `cancellation.cancelledBy` = S1, `reason` null. Row CANCELLED with `cancelledAt` = now. |
+| TEST-F10-01 | AC-F10-01 | API | S1 has an ACTIVE booking on Thu 12 Nov 10:00 (advisor A). S2 has an ACTIVE booking on Fri 13 Nov 10:00. S1 and S2 logged in. | S1: `POST /api/bookings/:id/cancel`, then `GET /api/bookings/:id` and `GET /api/bookings/mine`. S2: `GET /api/bookings/mine`. | 200, `status` "Cancelled", `cancellation.cancelledBy` = S1 with `role` "STUDENT", `reason` null. Row CANCELLED with `cancelledAt` = now. Both GETs return the same `cancellation`. S2's Upcoming item has no `cancellation` key. |
 | TEST-F10-02 | AC-F10-02 | Unit + API | Slots Wed 11 Nov 10:00 for advisors A and B; S1 booked A's, S2 booked B's. | Unit: `studentCanCancel` at Tue 22:00 / 22:01. API: S1 cancels at Tue 22:00; S2 cancels at Tue 22:01. | Unit: true / false. API: 200; 422 `CANCEL_WINDOW_PASSED`, S2's row still ACTIVE. |
 | TEST-F10-03 | AC-F10-03 | API | S1 has a CANCELLED booking (future slot) and an ACTIVE booking on Fri 6 Nov 10:00 (ended). | S1 cancels each. | 409 `BOOKING_NOT_ACTIVE` both times, rows unchanged. |
-| TEST-F10-04 | AC-F10-04 | API | S1 booked Wed 11 Nov 14:00 (advisor A) and S3 booked Wed 11 Nov 09:00 (advisor B). | Now Mon 10:00: S1 cancels; S2 lists bookable and books it. Now Tue 20:00: S3 cancels; S2 lists bookable and books B's slot; advisor B lists own slots. | 201 for the first. Second: slot absent from the list, 422 `BOOKING_DEADLINE_PASSED`, status "Closed". |
+| TEST-F10-04 | AC-F10-04 | API | S1 booked Wed 11 Nov 14:00 (advisor A) and S3 booked Wed 11 Nov 09:00 (advisor B). | Now Mon 10:00: S1 cancels; S2 lists bookable and books it. Now Tue 20:00: S3 cancels; S4 (no bookings) lists bookable and books B's slot; advisor B lists own slots. | 201 for the first. Second: slot absent from the list, 422 `BOOKING_DEADLINE_PASSED`, status "Closed". |
 | TEST-F10-05 | AC-F10-05 | API | S1 has an ACTIVE booking. S2 logged in. | S2 cancels S1's booking; S2 cancels id 999999. | Both 404 with identical bodies. S1's row ACTIVE. |
 
 R-01 extension: `server/tests/r01.auth.test.ts` adds `POST /api/bookings/:id/cancel` to the 401 list (TEST-R01-01).

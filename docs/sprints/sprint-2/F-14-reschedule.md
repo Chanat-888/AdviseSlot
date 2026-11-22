@@ -5,25 +5,24 @@
 | Feature | F-14 Reschedule booking |
 | Sprint | 2 |
 | Owner | Contract and implementation: Chanat Dachkhumhang (Issues #68, #71), reviewed by Jeerasak Phisawong. |
-| Status | Contract draft. Implementation not started (Issue #71). Built last in Sprint 2. |
-| Linked requirements | FR-14, BR-05, BR-06, BR-07 (as changed by #67), BR-11, BR-15, BR-16 (rule), BR-09, NFR-03, NFR-04, NFR-05 (see section 1) |
-| Depends on | F-07 (booking checks), F-10 (cancel columns and the BR-11 check), **Lab 7 change #67 (new BR-07)** |
+| Status | Contract draft. Implementation not started (Issue #71). Built after F-10 (it needs the cancel columns). |
+| Linked requirements | FR-14, BR-05, BR-06, BR-07, BR-11, BR-14, BR-15, BR-16 (rule), BR-09, NFR-03, NFR-04, NFR-05 (see section 1) |
+| Depends on | F-07 (booking checks), F-10 (cancel columns and the BR-11 check) |
 | Needed by | F-18 (the old booking appears as cancelled by the student) |
-| Related documents | `docs/srs.md` (v0.4, BR-07 revised by #67), `docs/system-sds.md` sections 3, 5, 6, `docs/sprints/sprint-1/F-07-book-slot.md`, `docs/sprints/sprint-2/F-10-student-cancel.md`, Issue #67 |
+| Related documents | `docs/srs.md` (v0.4), `docs/system-sds.md` sections 3, 5, 6, `docs/sprints/sprint-1/F-07-book-slot.md`, `docs/sprints/sprint-2/F-10-student-cancel.md`, `docs/sprints/sprint-2/F-13-delete-slot.md` (section 2.1), Issue #67 |
 
 ## Version history
 
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, against the new BR-07 of change request #67. Awaiting team review. |
+| 0.2 | 2026-11-22 | Chanat (drafted with an AI agent) | Review of PR #76: step 5.2 locks the new slot row (BR-14, SDS 3.1), lock order student then slot; race test TEST-F14-08. Built against the current BR-07; the #67 dependency, `SAME_ADVISOR_BOOKING` and the same-advisor cases move to #67's impact analysis. |
 
-## 0. Dependency on the BR-07 change (#67)
+## 0. BR-07 and change request #67
 
-Change request #67 (Lab 7) replaces BR-07 "at most one active booking" with "at most **two** active bookings in total and at most **one** with the same advisor". This contract is written against the new rule. F-14 is implemented only after #67 is implemented and merged into `sprint-2`.
+This contract uses the current BR-07 (SRS v0.4: at most one active booking). By BR-15, BR-07 is checked as if the old booking were already released, so the student then holds no other active booking and check 6 cannot fail today. Check 6 calls the same BR-07 check as F-07, with the old booking excluded.
 
-If #67 is not approved, this contract is revised (new version) before F-14 code starts: check 6 below then becomes "no other active booking" and AC-F14-05 is replaced.
-
-Consequence of BR-15 ("BR-07 is checked as if the old booking were already released"): after releasing the old booking the student holds at most one other active booking, so the two-booking limit can never be the reason a reschedule fails. Only the same-advisor part can (check 6).
+Lab 7 change request #67 (if approved) changes BR-07 to "at most two active bookings, at most one with the same advisor". Its impact analysis revises this contract: check 6 can then fail with 409 `SAME_ADVISOR_BOOKING`, and AC-F14-05 gets the same-advisor cases.
 
 ## 1. Linked requirements
 
@@ -34,7 +33,8 @@ Consequence of BR-15 ("BR-07 is checked as if the old booking were already relea
 | BR-11 | Cancel only if the old slot starts at least 12 h from now. | `studentCanCancel` from F-10. 422 `CANCEL_WINDOW_PASSED`. |
 | BR-05 | One active booking per slot, also under concurrency. | Partial unique index (F-07). A losing insert gives 409 `SLOT_TAKEN` and rolls back the old booking's cancel. |
 | BR-06 / BR-16 | Booking deadline of the new slot. | `bookingDeadline` (F-07). 422 `BOOKING_DEADLINE_PASSED`. |
-| BR-07 (#67) | Max 2 active bookings, max 1 with the same advisor. | Counted after the student row lock, excluding the old booking (check 6). 409 `SAME_ADVISOR_BOOKING`. |
+| BR-07 | At most one active booking (current rule). | Counted after the student row lock, excluding the old booking (check 6). Cannot fail under the current rule; #67 changes it. |
+| BR-14 | A slot with an active booking cannot be edited or deleted. | The new slot row is locked (step 5.2) with the same lock as F-07, F-12, F-13, so a parallel edit or delete of the new slot runs before or after the reschedule, never in between. |
 | BR-09 | A student acts only on their own bookings. | Another student's booking: 404. |
 | NFR-03 | Advisor gets 403. | `requireRole("STUDENT")`. |
 | NFR-04 | Concurrency holds. | AC-F14-06 against the real database. |
@@ -48,13 +48,14 @@ Consequence of BR-15 ("BR-07 is checked as if the old booking were already relea
 4. `requireAuth`, `requireRole("STUDENT")`, body validation (section 3.1).
 5. One transaction:
    1. Lock the student's row (`SELECT ... FOR UPDATE`, as F-07), so the student's own parallel requests run one after the other.
-   2. Checks 1 to 6 of section 3.2.
-   3. Update the old booking: `status` CANCELLED, `cancelledAt` = now, `cancelledById` = the student, `cancelReason` null, `WHERE id = $id AND status = 'ACTIVE'` (0 rows: 409 `BOOKING_NOT_ACTIVE`).
-   4. Insert the new ACTIVE booking (`slotId` = `newSlotId`, `studentId` from the session, `createdAt` = now). A partial-unique-index violation (Prisma `P2002`) aborts the transaction: 409 `SLOT_TAKEN`, and the old booking is still ACTIVE.
+   2. Lock the new slot row: `SELECT id FROM "Slot" WHERE id = $newSlotId FOR UPDATE` (SDS section 3.1, BR-14 row). Lock order is always student, then slot (as F-07 after the F-13 change), so no deadlock with F-07; F-12 and F-13 lock only the slot.
+   3. Checks 1 to 6 of section 3.2.
+   4. Update the old booking: `status` CANCELLED, `cancelledAt` = now, `cancelledById` = the student, `cancelReason` null, `WHERE id = $id AND status = 'ACTIVE'` (0 rows: 409 `BOOKING_NOT_ACTIVE`).
+   5. Insert the new ACTIVE booking (`slotId` = `newSlotId`, `studentId` from the session, `createdAt` = now). A partial-unique-index violation (Prisma `P2002`) aborts the transaction: 409 `SLOT_TAKEN`, and the old booking is still ACTIVE.
 6. 201 with the new booking (F-09 shape) and `previousBookingId`.
 7. The client goes to `/bookings/<new id>` with "Booking moved."
 
-The old slot is freed by step 5.3 and follows BR-13 (bookable again only before its deadline).
+The old slot is freed by step 5.4 and follows BR-13 (bookable again only before its deadline).
 
 ## 3. Validation, failures and boundaries
 
@@ -77,10 +78,8 @@ The old slot is freed by step 5.3 and follows BR-13 (bookable again only before 
 | 3 | BR-11 on the old booking | `old.startAt - now < 12 h` | 422 `CANCEL_WINDOW_PASSED` |
 | 4 | New slot exists and differs | No slot `newSlotId` (or deleted): 404 `NOT_FOUND` ("This slot does not exist."). Same slot as the old booking: 400 `VALIDATION_ERROR` ("Choose a different slot.") | |
 | 5 | New slot free and before deadline | Has an ACTIVE booking: 409 `SLOT_TAKEN`. `now >= bookingDeadline(newSlot)`: 422 `BOOKING_DEADLINE_PASSED` | |
-| 6 | BR-07 (#67), old booking released | Among the student's other active bookings (excluding `:id`) one is with the new slot's advisor | 409 `SAME_ADVISOR_BOOKING` |
-| 7 | BR-05 race | The insert in step 5.4 violates the partial unique index | 409 `SLOT_TAKEN` (whole transaction rolled back) |
-
-Moving to another slot of the **same** advisor as the old booking is allowed: the old booking is excluded in check 6.
+| 6 | BR-07, old booking released | The student's active bookings other than `:id` break BR-07 (same check as F-07) | 409 `ACTIVE_BOOKING_LIMIT` (cannot happen under the current BR-07; #67 revises this check) |
+| 7 | BR-05 race | The insert in step 5.5 violates the partial unique index | 409 `SLOT_TAKEN` (whole transaction rolled back) |
 
 ### 3.3 Failure and boundary cases
 
@@ -91,10 +90,9 @@ Moving to another slot of the **same** advisor as the old booking is allowed: th
 | New slot morning Tue 09:00: at Mon 17:59 / Mon 18:00 | 201 / 422 `BOOKING_DEADLINE_PASSED`, old still ACTIVE | AC-F14-03 |
 | New slot is a late slot: before / at 2 h before start | 201 / 422 `BOOKING_DEADLINE_PASSED` | AC-F14-03 |
 | New slot already booked | 409 `SLOT_TAKEN`, old still ACTIVE | AC-F14-04 |
-| Student holds A (old) and B; new slot of B | 409 `SAME_ADVISOR_BOOKING`, both unchanged | AC-F14-05 |
-| Student holds A (old) and B; new slot of A (other time) | 201 (old A released first) | AC-F14-05 |
-| Student holds A (old) and B; new slot of C | 201, student holds B and C | AC-F14-05 |
+| Student's only active booking is the old one; new slot of any advisor (also the same advisor A) | 201 (old booking released before BR-07) | AC-F14-05 |
 | Two students race: S1 reschedules into slot X while S2 books X | Exactly one succeeds; if S1 loses, S1's old booking is still ACTIVE | AC-F14-06 |
+| S1 reschedules into X while advisor B deletes X | Either 201 and delete 409 `SLOT_HAS_ACTIVE_BOOKING`, or delete 204 and reschedule 404 with S1's old booking ACTIVE | AC-F14-06 |
 | Old booking already cancelled / passed | 409 `BOOKING_NOT_ACTIVE` | AC-F14-07 |
 | Another student's booking | 404 `NOT_FOUND`, identical body to an unknown id | AC-F14-07 |
 | Advisor calls | 403 `FORBIDDEN_ROLE` | AC-F14-07 |
@@ -148,12 +146,12 @@ Matches SDS section 6 ("Reschedule": student own, advisor 403).
 | 404 | `NOT_FOUND` | "Booking not found." / "This slot does not exist." | Checks 1 / 4. |
 | 409 | `BOOKING_NOT_ACTIVE` | "This booking is no longer upcoming." | Check 2 (code from F-10). |
 | 409 | `SLOT_TAKEN` | "This slot has just been booked by someone else." | Checks 5 and 7. |
-| 409 | `SAME_ADVISOR_BOOKING` | "You already have an upcoming booking with this advisor." | Check 6 (code from #67). |
+| 409 | `ACTIVE_BOOKING_LIMIT` | as F-07 | Check 6 (cannot happen under the current BR-07). |
 | 422 | `CANCEL_WINDOW_PASSED` | "You can cancel only until 12 hours before the start (22:00 on 10 Nov)." | Check 3 (F-10 message). |
 | 422 | `BOOKING_DEADLINE_PASSED` | as F-07 | Check 5. |
 | 500 | `INTERNAL_ERROR` | "Something went wrong." | Unexpected. |
 
-No new codes beyond F-10 (`BOOKING_NOT_ACTIVE`) and #67 (`SAME_ADVISOR_BOOKING`).
+No new codes beyond F-10 (`BOOKING_NOT_ACTIVE`).
 
 ## 5. UI behavior
 
@@ -178,7 +176,7 @@ Considered and not done: a `rescheduledFromId` link column. F-18 shows the old b
 | AC-F14-02 | BR-11 on the old booking: exactly 12 h allowed, less rejected, nothing changes on rejection. | Old Wed 11 Nov 10:00: 201 at Tue 22:00; 422 `CANCEL_WINDOW_PASSED` at Tue 22:01, old ACTIVE, no new row. |
 | AC-F14-03 | BR-06 / BR-16 on the new slot, nothing changes on rejection. | New Tue 09:00: 201 at Mon 17:59, 422 `BOOKING_DEADLINE_PASSED` at Mon 18:00 (old ACTIVE, no new row). New late Wed 09:00: 201 at Wed 06:59, 422 at Wed 07:00. |
 | AC-F14-04 | A taken new slot is refused and the old booking stays. | 409 `SLOT_TAKEN`, old ACTIVE, new slot's booking still the other student's. |
-| AC-F14-05 | New BR-07 (#67), with the old booking released: same advisor as another active booking is refused; same advisor as the old booking and a third advisor are allowed. | Holding A(old)+B: to B → 409 `SAME_ADVISOR_BOOKING`, nothing changes; to A (other time) → 201; to C → 201 and the student holds B and C. |
+| AC-F14-05 | BR-07 is checked with the old booking released (BR-15): a student whose only active booking is the old one can reschedule, also to another slot of the same advisor. | 201 to A's other slot; the student holds exactly one ACTIVE booking afterwards. |
 | AC-F14-06 | All-or-nothing under concurrency. | S1 reschedules into X while S2 books X (parallel, real database): exactly one 201, one 409 `SLOT_TAKEN`, no 500. X has 1 ACTIVE booking. If S1 lost, S1's old booking is ACTIVE and S1 has no new row. |
 | AC-F14-07 | Ownership, role, state and input. | Other student's booking: 404 (same body as unknown id). Advisor: 403 `FORBIDDEN_ROLE`. Cancelled or passed old booking: 409 `BOOKING_NOT_ACTIVE`. Same slot: 400 `VALIDATION_ERROR`. No row changes in any case. |
 
@@ -194,9 +192,10 @@ Test clock: fake `Date`, Asia/Bangkok, now = Mon 9 Nov 10:00 unless stated. Ever
 | TEST-F14-02 | AC-F14-02 | API | A's Wed 11 Nov 10:00 booked by S1, B's Wed 11 Nov 10:00 booked by S2; C's two Open slots on Thu. | Now Tue 22:00: S1 reschedules to C's first. Now Tue 22:01: S2 reschedules to C's second. | 201; 422 `CANCEL_WINDOW_PASSED`, S2's old ACTIVE, C's second slot still Open. |
 | TEST-F14-03 | AC-F14-03 | API | S1..S4 each hold a booking on Thu 12 Nov. New slots: Tue 10 Nov 09:00 for A and for B; late Wed 11 Nov 09:00 for A and for B. | S1 → A Tue 09:00 at Mon 17:59; S2 → B Tue 09:00 at Mon 18:00; S3 → A late at Wed 06:59; S4 → B late at Wed 07:00. (Old bookings start Thu, so BR-11 passes.) | 201, 422, 201, 422 `BOOKING_DEADLINE_PASSED`; rejected students' old bookings ACTIVE. |
 | TEST-F14-04 | AC-F14-04 | API | S1 holds A Thu 10:00. B Thu 14:00 booked by S2. | S1 reschedules to B Thu 14:00. | 409 `SLOT_TAKEN`; S1's old ACTIVE; slot still S2's. |
-| TEST-F14-05 | AC-F14-05 | API | S1 holds A Thu 10:00 (old) and B Thu 11:00. Open: B Thu 15:00, A Fri 10:00, C Fri 11:00. | S1 reschedules old → B 15:00; then old → A Fri 10:00; then (new A booking) → C Fri 11:00. | 409 `SAME_ADVISOR_BOOKING` (nothing changed); 201; 201, S1's active bookings are B Thu 11:00 and C Fri 11:00. |
+| TEST-F14-05 | AC-F14-05 | API | S1 holds A Thu 10:00 (old), nothing else. Open: A Fri 10:00. | S1 reschedules old → A Fri 10:00. | 201; S1 has exactly 1 ACTIVE booking (A Fri 10:00). |
 | TEST-F14-06 | AC-F14-06 | API (database, concurrency) | S1 holds A Thu 10:00. Slot X (B Thu 14:00) Open. S2 has no booking. Repeat 20 times with fresh data. | `Promise.all` of S1 reschedule → X and S2 `POST /api/bookings` → X. | Each round: exactly one 2xx, one 409 `SLOT_TAKEN`, no 500; X has 1 ACTIVE booking; if S1 lost, S1's old booking ACTIVE and S1 has exactly 1 booking row. |
 | TEST-F14-07 | AC-F14-07 | API | S1 holds an ACTIVE booking, a CANCELLED booking, a booking on an ended slot. S2 and advisor A logged in. | S2 reschedules S1's booking; A calls the endpoint; S1 reschedules the cancelled one and the ended one; S1 reschedules to its own slot. | 404 (same body as id 999999); 403 `FORBIDDEN_ROLE`; 409 `BOOKING_NOT_ACTIVE` twice; 400 `VALIDATION_ERROR`. No row changed. |
+| TEST-F14-08 | AC-F14-06 | API (database, concurrency) | S1 holds A Thu 10:00. X = B Thu 14:00 Open. 10 rounds, fresh data. | `Promise.all` of S1 reschedule → X and B `DELETE` X. | Each round (201, 409 `SLOT_HAS_ACTIVE_BOOKING`) or (404, 204); never X deleted with an ACTIVE booking; if 404, S1's old booking ACTIVE. |
 
 R-01: `r01.auth.test.ts` adds `POST /api/bookings/:id/reschedule` to the 401 list.
 

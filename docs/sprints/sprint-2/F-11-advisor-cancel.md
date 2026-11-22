@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
+| 0.2 | 2026-11-22 | Chanat (drafted with an AI agent) | Review of PR #76: `cancelReason` length CHECK decided (yes), added in the F-10 migration. |
 
 ## 1. Linked requirements
 
@@ -137,7 +138,7 @@ Student side: `/bookings/:id` and `/bookings` show "Cancelled by <advisor name>:
 
 No new columns: F-10 adds `cancelledAt`, `cancelledById` and `cancelReason`. F-11 is the only writer of `cancelReason`.
 
-Optional extra CHECK (same migration as F-10, decided at review): `"cancelReason" IS NULL OR char_length("cancelReason") BETWEEN 1 AND 500`.
+CHECK (in the F-10 migration, agreed in review of PR #76): `"cancelReason" IS NULL OR char_length("cancelReason") BETWEEN 1 AND 500`. The service trims before writing, so the CHECK backs the 1 to 500 rule of BR-12.
 
 Rule function: `advisorCanCancel(startAt: Date, now: Date): boolean` in `server/src/domain/rules.ts`.
 
