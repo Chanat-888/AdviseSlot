@@ -1,5 +1,5 @@
 # CI: "CI & Docker Build" (Lab 5, Issue #4).
-# Runs on every pull request into sprint-1 (our staging branch) and main, and can be
+# Runs on every pull request into sprint-1, sprint-2 (our staging branches) and main, and can be
 # reused by deploy.yml (workflow_call) so a deploy only starts after these checks pass.
 # It does not deploy anything.
 #
@@ -13,7 +13,7 @@ name: CI & Docker Build
 on:
   workflow_call:
   pull_request:
-    branches: [sprint-1, main]
+    branches: [sprint-1, sprint-2, main]
   workflow_dispatch:
 
 permissions:
