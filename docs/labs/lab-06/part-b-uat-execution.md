@@ -98,3 +98,5 @@ two open defects are Minor and do not stop any user task:
 | Checkout form labels look swapped | #37 | Only matters when a custodian types an ID by hand; Approve / Checkout fills the form correctly |
 
 Limit of this decision: we could not confirm the deployed commit from the site (section 1).
+
+Recorded as a comment on #36 and #37 on 2026-11-22, and both Issues left open for a later sprint.

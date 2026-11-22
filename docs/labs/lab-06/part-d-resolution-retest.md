@@ -127,16 +127,15 @@ Give the UAT Team the corrected version and the original steps (#58 and UAT-01).
 | UAT-01 (re-run) | `c4dc3b4` | _not received yet (asked on #63)_ | | | | |
 | _other affected cases_ | | | | | | |
 
-**Final Sprint 1 UAT decision:** _TBD: Accepted / Accepted with documented minor limitations /
-Not Accepted_
+**Final Sprint 1 UAT decision (recorded by the UAT Team): Accepted.**
 
 | Field | Value |
 |---|---|
-| Release tested | _TBD (commit and revision)_ |
-| UAT testers | _TBD_ |
-| Date | _TBD_ |
-| Conditions / accepted minor limitations | _TBD_ |
-| How it was recorded | _TBD (e.g. comment on the Issue or signed form)_ |
+| Release tested | `c4dc3b4`, revision `adviseslot-00005-4tw` (round 1 on `cbcb783` / `adviseslot-00004-ksp`) |
+| UAT testers | Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (67070503483) |
+| Date | 2026-11-22 |
+| Conditions / accepted minor limitations | None. Their words: "With no Critical or Major defects remaining, Team Top 2 accepts AdviseSlot for Sprint 1." |
+| How it was recorded | Message from @Ryugc on the teams' Discord, 2026-11-22 11:01 ICT (screenshot N-03), after their passing retest comment on #63. We asked them to repeat it as a comment on #63 |
 
 Only the UAT Team may record acceptance. Do not claim it while any Critical/Major defect is open
 or a required case is BLOCKED.

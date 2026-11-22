@@ -12,7 +12,7 @@ Sprint 1 UAT for AdviseSlot. Due 22 Nov 2026. These files are the source for the
 | Repository | https://github.com/Chanat-888/AdviseSlot |
 | Sprint 1 scope | F-01 to F-09 (`docs/sprints/sprint-1/`) |
 | Deployed URL | https://adviseslot-nfnam6jppq-as.a.run.app |
-| Final UAT decision | _TBD (only the UAT Team records it, Part D section 5)_ |
+| Final UAT decision | Accepted by Team Top 2 on 2026-11-22 for `c4dc3b4` (Part D section 5) |
 
 ## Files
 
@@ -46,7 +46,7 @@ PRs); the application code at `cbcb783` and `280bbf9` is the same for Sprint 1.
 | Handoff to UAT Team | _TBD_ | |
 | UAT round 1 on `cbcb783` | 2026-11-20 | Team Top 2 filed #63 (duplicate of #58); full case results not received yet |
 | Fix, review, release, deploy | 2026-11-19 to 20 | Done: PR #59 → `sprint-1`; release PR #65 → `main` `c4dc3b4`; deployed `adviseslot-00005-4tw` |
-| UAT retest on corrected release | 2026-11-22 | Team Top 2: #63 PASS on `c4dc3b4`; #63 closed. Their Sprint 1 decision and UAT-01 re-run not received yet |
+| UAT retest on corrected release | 2026-11-22 | Team Top 2: #63 PASS on `c4dc3b4`; #63 closed. Sprint 1 decision: Accepted (Discord, 11:01). UAT-01 re-run results not received |
 | PDF submitted on LEB2 | by 22 Nov 23:59 | |
 
 ## Contributions
