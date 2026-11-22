@@ -16,7 +16,7 @@ smoke check → UAT Team retest → acceptance decision.
 | CI | `test-and-docker` on PR #59 | Passed |
 | Merge into `sprint-1` | by Snooker (reviewer), merge commit `0eb6a52` | Done |
 | Release PR `sprint-1` → `main` | #65 (after sync PR #64), approved and merged by Snooker, merge commit `c4dc3b4` | Done, 2026-11-20 |
-| Deploy and smoke check | Deploy run 44739029326, revision `adviseslot-00005-4tw`, workflow smoke test passed, `/api/version` = `c4dc3b4` | Done, 2026-11-20 19:54 ICT |
+| Deploy and smoke check | Deploy run 44739029326, revision `adviseslot-00005-4tw`, workflow smoke test passed (`/api/health`, `/api/ready`, `/`, `/api/slots/bookable`, `/api/version` = `c4dc3b4`; login step skipped, no smoke credentials), manual smoke check PASS | Done, 2026-11-20 19:54 ICT |
 | UAT Team retest | Team Top 2 on #63: PASS on `c4dc3b4` / `adviseslot-00005-4tw` (section 5) | Done, 2026-11-22 |
 | Issue closed | #58 closed by Snooker after the merge (2026-11-19); UAT Issue #63 closed by Chanat after the passing retest (2026-11-22) | Done |
 
@@ -103,7 +103,7 @@ Full output: `evidence/lab6-logout-green.txt` on `fix/logout-busy`.
 | Deploy workflow run | https://github.com/Chanat-888/AdviseSlot/actions/runs/44739029326 (success) |
 | Cloud Run revision | `adviseslot-00005-4tw`, 100% of traffic (previous: `adviseslot-00004-ksp` on `cbcb783`) |
 | `/api/version` after deploy | `{"commit":"c4dc3b42b8e929fa8775537172d1b6d01da7caae"}` |
-| Smoke check | Workflow smoke test passed (public URL and login). Manual check by Chanat on 2026-11-22, one tab, no reload: logged in as Student Three (D-01), Logout opened the login page with footer `c4dc3b4` (D-02), logged in as Student One in the same tab with Logout enabled (D-03), Logout opened the login page again (D-04). PASS |
+| Smoke check | Workflow smoke test: PASS for `/api/health`, `/api/ready`, `/`, `/api/slots/bookable` and `/api/version` (expected commit `c4dc3b4`); its login step was skipped because no smoke credentials are configured, so login and logout were checked manually. Manual check by Chanat on 2026-11-22, one tab, no reload: logged in as Student Three (D-01), Logout opened the login page with footer `c4dc3b4` (D-02), logged in as Student One in the same tab with Logout enabled (D-03), Logout opened the login page again (D-04). PASS |
 
 PR #59 review by Jeerasak Phisawong (@ShitheadQuin), 2026-11-19, "Comment":
 
