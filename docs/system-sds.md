@@ -16,7 +16,7 @@
 | 0.4 | 2026-10-28 | Jeerasak (with an AI agent) | Applied D-25: local PostgreSQL 17 in Docker on port 5433 (section 3.3), `DATABASE_URL` example matches the skeleton (section 8), app image built in Lab 5 (section 9). |
 | 0.5 | 2026-11-04 | Chanat (drafted with an AI agent) | Section 7 (from the F-01 to F-03 contracts): the `sid` cookie gets `Max-Age=7200`; the login email is trimmed and lowercased (D-26); a 401 from `requireAuth` clears the cookie but does not delete the expired row (no session cleanup in Sprint 1). For the SDS owner to review. |
 | 0.6 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): section 3.1 and 3.3 add the `User.email` lowercase CHECK constraint (D-26), written as raw SQL in the F-01 migration. For the SDS owner to review. |
-| 0.7 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Sprint 2 slot contracts (F-12, F-13, F-15). Closed O-03 (D-28). New 422 code `SLOT_ALREADY_STARTED` (D-29). Section 3.1: slot row lock so an edit or delete cannot race a booking (BR-14). Section 5.1: request shapes of the three slot endpoints. Issue #68. |
+| 0.7 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Sprint 2 slot contracts (F-12, F-13, F-15). Closed O-03 (D-28). New 422 code `SLOT_ALREADY_STARTED` (D-29). Section 3.1: slot row lock so an edit or delete cannot race a booking (BR-14). Section 5.1: request shapes of the three slot endpoints. Section 5: 409 `BOOKING_NOT_ACTIVE` from the F-10/F-11/F-14 contracts (#76). Issue #68. |
 
 ## 1. Stack and rationale
 
@@ -200,7 +200,7 @@ client calls `GET /api/auth/me` and sends students to `/slots` and advisors to
 | 401 | No valid session, or wrong login | `UNAUTHENTICATED`, `INVALID_CREDENTIALS` |
 | 403 | Logged in, but the role may not do this | `FORBIDDEN_ROLE` |
 | 404 | Not found, or belongs to someone else (do not reveal it exists) | `NOT_FOUND` |
-| 409 | Conflict with existing data | `SLOT_TAKEN`, `SLOT_OVERLAP`, `ACTIVE_BOOKING_LIMIT`, `SLOT_HAS_ACTIVE_BOOKING` (Sprint 2) |
+| 409 | Conflict with existing data | `SLOT_TAKEN`, `SLOT_OVERLAP`, `ACTIVE_BOOKING_LIMIT`, `SLOT_HAS_ACTIVE_BOOKING` (Sprint 2), `BOOKING_NOT_ACTIVE` (Sprint 2, F-10, F-11, F-14) |
 | 422 | Valid input that breaks a business rule | `SLOT_OUTSIDE_HOURS`, `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_IN_PAST`, `SLOT_UNBOOKABLE`, `BOOKING_DEADLINE_PASSED`, `CANCEL_WINDOW_PASSED` (Sprint 2), `SLOT_ALREADY_STARTED` (Sprint 2, D-29) |
 | 500 | Unexpected error. Generic message only; details go to the server log. | `INTERNAL_ERROR` |
 

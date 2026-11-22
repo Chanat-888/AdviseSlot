@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review (Issue #68). |
+| 0.2 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Review on PR #77: the self-overlap case is the unchanged start (09:00), not 09:30, which only touches the old range; TEST-F12-03 updated, 09:30 kept as a back-to-back case. Section 9: editing a Closed slot reopens it as a late slot without a notification (for the F-19 contract). |
 
 ## 1. Linked requirements
 
@@ -92,7 +93,8 @@ Times are Asia/Bangkok. Now is Mon 9 Nov 2026 10:00 unless stated. Slot X = advi
 | Move X to Tue 08:00 / Tue 17:30 | 200 | AC-F12-02 |
 | Move X to Mon 9 Nov 09:30 (past) | 422 `SLOT_IN_PAST` | AC-F12-02 |
 | A also has Tue 10:00; move X to Tue 10:00 | 409 `SLOT_OVERLAP`, X unchanged | AC-F12-03 |
-| Move X to Tue 09:30 (overlaps only its own old time range) | 200 | AC-F12-03 |
+| Move X to Tue 09:00 (its own current start, the only start that overlaps its old range) | 200, `isLate` recomputed | AC-F12-03 |
+| Move X to Tue 09:30 (back-to-back with its old range, no overlap) | 200 | AC-F12-03 |
 | B has Tue 14:00; move X to Tue 14:00 | 200 (overlap is per advisor) | AC-F12-03 |
 | A has a deleted slot at Tue 14:00; move X there | 200 | AC-F12-03 |
 | X has an ACTIVE booking | 409 `SLOT_HAS_ACTIVE_BOOKING`, X and booking unchanged | AC-F12-04 |
@@ -202,7 +204,7 @@ Test clock: now = **Mon 9 Nov 2026 10:00** Asia/Bangkok (`2026-11-09T03:00:00Z`)
 |---|---|---|---|---|---|
 | TEST-F12-01 | AC-F12-01 | API | X. | A: `PATCH` X with `startAt` Tue 14:00 and `endAt` Tue 18:00. | 200, `id` = X, `endAt` Tue 14:30. DB row has the new times. |
 | TEST-F12-02 | AC-F12-02 | API | X. | A: `PATCH` X to Sat 14 Nov 10:00, Tue 10:15, Tue 07:30, Tue 18:00, Mon 9 Nov 09:30; then to Tue 08:00; then Tue 17:30. | 422 `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_OUTSIDE_HOURS`, `SLOT_OUTSIDE_HOURS`, `SLOT_IN_PAST` (row unchanged after each); then 200, 200. |
-| TEST-F12-03 | AC-F12-03 | API | X; A has Tue 10:00; B has Tue 14:00; A has a deleted Tue 15:00. | A: `PATCH` X to Tue 10:00; to Tue 09:30; to Tue 14:00; to Tue 15:00. | 409 `SLOT_OVERLAP` (X unchanged); 200; 200; 200. |
+| TEST-F12-03 | AC-F12-03 | API | X; A has Tue 10:00; B has Tue 14:00; A has a deleted Tue 15:00. | A: `PATCH` X to Tue 10:00; to Tue 09:00 (unchanged start); to Tue 14:00; to Tue 15:00. | 409 `SLOT_OVERLAP` (X unchanged); 200 (fails if the slot counts against itself); 200; 200. |
 | TEST-F12-04 | AC-F12-04 | API | X with an ACTIVE booking by S; slot Y (Tue 11:00) with only a CANCELLED booking. | A: `PATCH` X to Tue 14:00; `PATCH` Y to Tue 16:00. | 409 `SLOT_HAS_ACTIVE_BOOKING` (X time and booking unchanged); 200. |
 | TEST-F12-05 | AC-F12-05 | API | Now Mon 9 Nov 19:00. A has W = Wed 11 Nov 09:00 (`isLate` false). | `PATCH` W to Tue 10 Nov 09:00; then back to Wed 11 Nov 09:00. Then now = Tue 10 Nov 07:30: `PATCH` W to Tue 09:30. Then now = Tue 07:29: same. | 200 `isLate` true, deadline Tue 07:00; 200 `isLate` false, deadline Tue 18:00; 422 `SLOT_UNBOOKABLE` (row unchanged); 200 `isLate` true. |
 | TEST-F12-06 | AC-F12-06 | API | A has Mon 9 Nov 09:30 and Mon 10:00 (inserted with Prisma). | `PATCH` each to Tue 15:00. | Both 422 `SLOT_ALREADY_STARTED`. |
@@ -218,6 +220,7 @@ TEST-F12-01 to -07 are written first and fail against `sprint-2` without the rou
 
 - Only the start time can change; the advisor cannot move a slot to another advisor.
 - A slot that becomes late through an edit sends no notification (D-28).
+- Edit is offered on Closed rows, so an advisor can "edit" a Closed morning slot to the same start: by D-28 it becomes a late slot, bookable again until start - 2 h, but no student is notified. Delete + create of the same slot would notify from Sprint 3 (FR-19). The F-19 contract must decide whether an edit that makes a slot late also notifies.
 - A booked slot must have its booking cancelled first (F-11), then be edited; there is no "move the booking with the slot".
 
 ## 10. Completion evidence

@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review (Issue #68). |
+| 0.2 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Review on PR #77: removed the 20-slot size rule (BR-02 already limits a batch to 20 and gives the clearer 422); a 23P01 race answers 409 with the plain F-04 message; insert with `createManyAndReturn`; past-slot note corrected (three slots, `startAt <= now`). |
 
 ## 1. Linked requirements
 
@@ -41,8 +42,8 @@ D-30: the batch is all-or-nothing.
 3. `requireAuth`, then `requireRole("ADVISOR")` (403 for a student).
 4. The server validates the body and cuts the range into starts `startAt, startAt + 30 min, ...` up to `endAt` (section 3.1). The cutting is a pure function `expandRange(startAt, endAt)` in `server/src/domain/rules.ts`.
 5. For each start in time order the server runs `checkSlotStart(start, now)` (F-04 rules 1 to 5). The first failure rejects the whole batch (D-30); the message ends with the failing slot's local time.
-6. Inside one transaction the server looks for any live slot of the advisor (`deletedAt` null) that overlaps `[startAt, endAt)`. If one exists, 409 `SLOT_OVERLAP`, naming the first new slot that overlaps. Otherwise it inserts all rows (`createMany`) with `advisorId` from the session, `createdAt = now` and each slot's own `isLate`.
-7. If the exclusion constraint fires (a parallel create), the transaction rolls back and the answer is 409 `SLOT_OVERLAP`. No row of the batch remains.
+6. Inside one transaction the server looks for any live slot of the advisor (`deletedAt` null) that overlaps `[startAt, endAt)`. If one exists, 409 `SLOT_OVERLAP`, naming the first new slot that overlaps. Otherwise it inserts all rows in one call that returns them (`createManyAndReturn`, Prisma 5.22; plain `createMany` returns only a count) with `advisorId` from the session, `createdAt = now` and each slot's own `isLate`.
+7. If the exclusion constraint fires (a parallel create), the transaction rolls back and the answer is 409 `SLOT_OVERLAP` with the plain F-04 message "This slot overlaps one of your slots." and no "(slot at HH:MM)" suffix, because the 23P01 error does not say which slot clashed. No row of the batch remains.
 8. The server responds 201 with `{ "slots": [...] }`, sorted by start. The client adds them to the list.
 
 "Now" is the server clock, as in F-04. A batch of one slot is allowed and behaves like F-04 with the batch response shape.
@@ -57,7 +58,6 @@ D-30: the batch is all-or-nothing.
 | Order | `endAt <= startAt`. |
 | Length | `endAt - startAt` is not a whole multiple of 30 minutes. |
 | One date | `local(startAt)` and `local(endAt)` are on different calendar dates (Asia/Bangkok). |
-| Size | More than 20 slots (08:00 to 18:00 holds 20). |
 | Any other field | Ignored. |
 
 ### 3.2 Rule checks
@@ -84,7 +84,8 @@ Times are Asia/Bangkok. Now is Mon 9 Nov 2026 10:00 unless stated.
 | Tue 07:30 to 09:00 | 422 `SLOT_OUTSIDE_HOURS` (slot at 07:30), no rows | AC-F15-02 |
 | Sat 14 Nov 09:00 to 10:00 | 422 `SLOT_NOT_WEEKDAY`, no rows | AC-F15-02 |
 | Tue 09:15 to 10:15 | 422 `SLOT_INVALID_START_MINUTE`, no rows | AC-F15-02 |
-| Mon 9 Nov 09:00 to 11:00 (first two in the past) | 422 `SLOT_IN_PAST` (slot at 09:00), no rows | AC-F15-02 |
+| Tue 07:00 to 18:00 (22 slots, more than a day holds) | 422 `SLOT_OUTSIDE_HOURS` (slot at 07:00), no rows; there is no separate size rule, BR-02 limits a batch to 20 | AC-F15-02 |
+| Mon 9 Nov 09:00 to 11:00 (09:00, 09:30 and 10:00 are past, since `startAt <= now` counts as past) | 422 `SLOT_IN_PAST` (slot at 09:00), no rows | AC-F15-02 |
 | A has Tue 10:00; batch Tue 09:00 to 11:00 | 409 `SLOT_OVERLAP` (slot at 10:00), A still has only Tue 10:00 | AC-F15-03 |
 | A has Tue 08:30 and 11:00; batch Tue 09:00 to 11:00 | 201 (back-to-back on both sides) | AC-F15-03 |
 | B has Tue 09:00; A batches Tue 09:00 to 10:00 | 201 (overlap is per advisor) | AC-F15-03 |
@@ -141,6 +142,7 @@ Each item has the F-04 section 4.2 shape. Ids are not guaranteed to be consecuti
 | 401 | `UNAUTHENTICATED` | "You are not logged in." | No session. |
 | 403 | `FORBIDDEN_ROLE` | "Only advisors can create slots." | Student. |
 | 409 | `SLOT_OVERLAP` | "This slot overlaps one of your slots. (slot at HH:MM)" | Rule 6. |
+| 409 | `SLOT_OVERLAP` | "This slot overlaps one of your slots." (no suffix) | Exclusion constraint fired on a parallel create (step 7). |
 | 422 | F-04 codes | F-04 message + " (slot at HH:MM)" | Rules 1 to 5. |
 | 500 | `INTERNAL_ERROR` | "Something went wrong." | Unexpected. |
 
@@ -164,7 +166,7 @@ Screen `/schedule`, role advisor, the F-04 create form.
 | Layer | Change |
 |---|---|
 | Schema / migration | None. Same `Slot` table and constraints as F-04. |
-| Domain | New pure `expandRange(startAt, endAt): Date[] \| null` in `rules.ts` (null when section 3.1 order, length, one-date or size fails). |
+| Domain | New pure `expandRange(startAt, endAt): Date[] \| null` in `rules.ts` (null when the section 3.1 order, length or one-date rule fails; no size limit, a one-date range has at most 48 starts). |
 | Service | New `createSlotBatch(advisorId, startAt, endAt, now)` in `server/src/services/slots.ts`, reusing `checkSlotStart`, `isLateSlot`, `toSlotDto` and the 23P01 mapping. |
 | Route | `slotsRouter.post("/batch", ...)`, registered before any `/:id` route. |
 | Notifications | None in Sprint 2. F-19 (Sprint 3) will create notifications for the late slots of a batch in the same transaction. |
@@ -189,10 +191,10 @@ Test clock: now = **Mon 9 Nov 2026 10:00** Asia/Bangkok (`2026-11-09T03:00:00Z`)
 | TEST | AC | Level | Precondition / input | Action | Expected |
 |---|---|---|---|---|---|
 | TEST-F15-01 | AC-F15-01 | API | Advisor A logged in. | `POST /batch` Tue 10 Nov 09:00 to 11:00; then Wed 11 Nov 08:00 to 18:00; then Thu 12 Nov 09:00 to 09:30. | 201 with 4, 20 and 1 slots, starts as in section 3.3. DB has 25 rows for A. `GET /api/slots/mine` lists all 25. |
-| TEST-F15-02 | AC-F15-02 | API | A logged in, no slots. | `POST /batch` with Tue 17:00-18:30, Tue 07:30-09:00, Sat 14 Nov 09:00-10:00, Tue 09:15-10:15, Mon 9 Nov 09:00-11:00. | 422 `SLOT_OUTSIDE_HOURS` "(slot at 18:00)", `SLOT_OUTSIDE_HOURS` "(slot at 07:30)", `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_IN_PAST` "(slot at 09:00)". `Slot` count stays 0. |
+| TEST-F15-02 | AC-F15-02 | API | A logged in, no slots. | `POST /batch` with Tue 17:00-18:30, Tue 07:30-09:00, Tue 07:00-18:00, Sat 14 Nov 09:00-10:00, Tue 09:15-10:15, Mon 9 Nov 09:00-11:00. | 422 `SLOT_OUTSIDE_HOURS` "(slot at 18:00)", `SLOT_OUTSIDE_HOURS` "(slot at 07:30)", `SLOT_OUTSIDE_HOURS` "(slot at 07:00)", `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_IN_PAST` "(slot at 09:00)". `Slot` count stays 0. |
 | TEST-F15-03 | AC-F15-03 | API | A has Tue 10:00; then (fresh data) A has Tue 08:30 and 11:00; B has Tue 09:00; A has a deleted Wed 09:00. | A: batch Tue 09:00-11:00 (first data). Then with the second data: A batch Tue 09:00-11:00; A batch Wed 09:00-10:00. | 409 `SLOT_OVERLAP` "(slot at 10:00)", A still has 1 slot. Then 201 (4 slots), 201 (2 slots). |
 | TEST-F15-04 | AC-F15-04 | API | Advisors A and B logged in, no slots. | Now Mon 19:00: A batch Tue 11:00-13:00. Now Tue 10 Nov 07:00: B batch Tue 09:00-10:00. Now Tue 06:59: B batch Tue 09:00-10:00 again. | 201 with `isLate` [true, true, false, false]. Then 422 `SLOT_UNBOOKABLE` "(slot at 09:00)", no rows for B. Then 201, both `isLate` true. |
-| TEST-F15-05 | AC-F15-05 | Unit + API | A logged in. | Unit: `expandRange` with 09:00-11:00 (4 starts), 09:00-09:00, 11:00-09:00, 09:00-09:45, Tue 23:30-Wed 00:00, 08:00-18:30 on one day (21 slots). API: the same bad ranges, and a body without `endAt`. | Unit: 4 starts, then null for each bad range. API: 400 `VALIDATION_ERROR` each, `Slot` count unchanged. |
+| TEST-F15-05 | AC-F15-05 | Unit + API | A logged in. | Unit: `expandRange` with 09:00-11:00 (4 starts), 09:00-09:00, 11:00-09:00, 09:00-09:45, Tue 23:30-Wed 00:00, and Tue 07:00-18:00. API: the bad ranges (not 07:00-18:00, which is in TEST-F15-02), and a body without `endAt`. | Unit: 4 starts, null for each of the next four, 22 starts for 07:00-18:00 (no size rule). API: 400 `VALIDATION_ERROR` each, `Slot` count unchanged. |
 | TEST-F15-06 | AC-F15-06 | API | Student S logged in. | `POST /batch` Tue 09:00-10:00. | 403 `FORBIDDEN_ROLE`, `Slot` count unchanged. |
 | TEST-F15-07 | AC-F15-01 | E2E | Seeded advisor. | `/schedule`, "Several slots", next weekday 09:00 to 10:00, Create. Reload. | "2 slots created."; both rows are in the list after reload. |
 
