@@ -21,6 +21,7 @@
 | 0.9 | 2026-11-23 | Chanat (drafted with an AI agent) | F-18 contract v0.2: `GET /api/bookings/history` is advisor-only; students already see their cancelled bookings through `/mine` (F-10). |
 | 0.10 | 2026-11-23 | Chanat (drafted with an AI agent) | Section 3.1 FR-19 row: lock note on the notification inserts (key-share lock on the student's `User` row, no cycle), from the review of PR #93. |
 | 0.11 | 2026-11-23 | Jeerasak (drafted with an AI agent) | F-16 contract v0.1: section 5.1 `GET /api/slots/bookable` takes the optional `advisorId` and `date` filters, and `GET /api/advisors` returns `{ id, name }` only; section 4.1 `/slots` filter bar; section 6 adds the "List advisors" row. |
+| 0.12 | 2026-11-23 | Jeerasak (drafted with an AI agent) | F-17 contract v0.1: section 5.1 `GET /api/summary` takes the Bangkok days `from` and `to` (at most 90 days) and returns `counts { slots, booked, cancelled, open }` and the upcoming appointments of the caller's slots. |
 
 ## 1. Stack and rationale
 
@@ -229,7 +230,7 @@ Detailed request and response shapes belong in each feature contract.
 | `DELETE /api/slots/:id` | Advisor owner | Soft-delete an unbooked future slot (F-13) | 2 |
 | `POST /api/slots/batch` | Advisor | Create consecutive slots (`{ startAt, endAt }`, all-or-nothing, F-15) | 2 |
 | `GET /api/advisors` | Student | Advisor list for filtering: `{ id, name }` of every advisor, sorted by name (F-16) | 3 |
-| `GET /api/summary?from=&to=` | Advisor | Appointment summary | 3 |
+| `GET /api/summary?from=&to=` | Advisor | Appointment summary of own slots starting in the Bangkok days `from` to `to` (both included, at most 90 days): `counts { slots, booked, cancelled, open }` and the upcoming appointments (F-17) | 3 |
 | `GET /api/bookings/history` | Advisor | Cancelled and passed bookings on own slots, with who cancelled and the reason (FR-18). Students see their cancelled bookings through `GET /api/bookings/mine` (F-10). | 3 |
 | `GET /api/notifications` | Student | Own notifications, newest first, with unread count | 3 |
 | `POST /api/notifications/:id/read` | Student owner | Mark one notification as read | 3 |
