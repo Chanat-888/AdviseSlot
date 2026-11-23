@@ -4,7 +4,7 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Owner of this document | Chanat Dachkhumhang (reviewer: Jeerasak Phisawong) |
-| Related documents | `docs/srs.md` (v0.4), `docs/features.md`, `docs/decisions.md` |
+| Related documents | `docs/srs.md` (v0.5), `docs/features.md`, `docs/decisions.md` |
 
 ## Version history
 
@@ -15,6 +15,8 @@
 | 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Sprint 1 contracts F-01 to F-03: added AC-F01-05 (login validation, 400) and AC-F02-02 (logout ends only the current session), with TEST-F01-05 and TEST-F02-02. Added section 6.2 (D-26, D-27). No change to requirement text. |
 | 0.4 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): added AC-F01-06 (the database rejects an uppercase `User` email, D-26) with TEST-F01-06 to the FR-01 row, the Sprint 1 AC list and section 6.2. No change to requirement text. |
 | 0.5 | 2026-11-05 | Chanat (drafted with an AI agent) | Release of Sprint 1: statuses of the Sprint 1 rows changed from Planned to Verified. No change to requirement text, AC or test IDs. Issue #14. |
+| 0.6 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67, approved by TA Supachok Deetaweesukh on 2026-11-22 (D-31): BR-07 and AC-F07-06 rows revised, TEST-F07-08 added (parallel requests by one student), section 6.3 records the baseline change. |
+| 0.7 | 2026-11-23 | Chanat (drafted with an AI agent) | Review of PR #80: red-test base and merge order in section 6.3; F-14 check 6 can fail only with `SAME_ADVISOR_BOOKING`. |
 
 ## 1. How to read this matrix
 
@@ -64,7 +66,7 @@
 | BR-04 | F-04; later F-12, F-15 | 1; 2 | AC-F04-04; Sprint 2 part defined in Sprint 2 contract | TEST-F04-04 | Verified (Sprint 1 part) |
 | BR-05 | F-07; later F-14 | 1; 2 | AC-F07-02, AC-F07-03; Sprint 2 part defined in Sprint 2 contract | TEST-F07-02, TEST-F07-03 | Verified (Sprint 1 part) |
 | BR-06 | F-06, F-07; later F-14 | 1; 2 | AC-F06-02, AC-F07-04; Sprint 2 part defined in Sprint 2 contract | TEST-F06-02, TEST-F07-04 | Verified (Sprint 1 part) |
-| BR-07 | F-07, F-08; later F-14 | 1; 2 | AC-F07-06, AC-F08-01; Sprint 2 part defined in Sprint 2 contract | TEST-F07-06, TEST-F08-01 | Verified (Sprint 1 part) |
+| BR-07 | F-07, F-08; later F-14 | 1; 2 | AC-F07-06, AC-F08-01; Sprint 2 part defined in Sprint 2 contract | TEST-F07-06, TEST-F07-08, TEST-F08-01 | Sprint 1 rule verified; revised by #67 (D-31), revised tests planned (red on the pre-change `sprint-2` commit, then green) |
 | BR-08 | R-01, F-04, F-05; later F-12, F-13, F-15, F-17 | 1; 2, 3 | AC-F04-05, AC-F05-02; later parts defined in Sprint 2/3 contracts | TEST-F04-05, TEST-F05-02 | Verified (Sprint 1 part) |
 | BR-09 | R-01, F-05, F-06, F-07, F-08, F-09; later F-18 | 1; 3 | AC-F05-01, AC-F06-03, AC-F07-07, AC-F08-01, AC-F09-03; Sprint 3 part defined in Sprint 3 contract | TEST-F05-01, TEST-F06-03, TEST-F07-07, TEST-F08-01, TEST-F09-03 | Verified (Sprint 1 part) |
 | BR-10 | R-01, F-01, F-02 | 1 | AC-F01-04, AC-F02-01, AC-F02-02 | TEST-F01-04, TEST-F02-01, TEST-F02-02 | Verified (Sprint 1) |
@@ -125,7 +127,7 @@ expected results.
 | AC-F07-03 | 10 concurrent requests for one open slot create exactly 1 active booking. | BR-05, NFR-04 |
 | AC-F07-04 | Deadline boundaries: morning slot 17:59 previous day accepted, 18:00 rejected; afternoon slot 2 h 01 min before accepted, exactly 2 h rejected. | BR-06, NFR-05 |
 | AC-F07-05 | A late slot is bookable until 2 h before start and rejected from then on. | BR-16, NFR-05 |
-| AC-F07-06 | A student with an active booking cannot book a second slot; a booking whose slot has ended does not count. | BR-07 |
+| AC-F07-06 | A student holds at most two active bookings and at most one with the same advisor; ended and cancelled bookings do not count; this also holds for parallel requests by the same student (revised by #67). | BR-07 |
 | AC-F07-07 | An advisor booking gets 403; the student id is taken from the session, not the request. | BR-09, NFR-03 |
 | AC-F08-01 | Student sees only their own bookings, upcoming and past; an ended ACTIVE booking shows as "Passed". | FR-08, BR-07, BR-09 |
 | AC-F09-01 | The booking's student opens its detail. | FR-08 |
@@ -192,6 +194,14 @@ Recorded while writing the Sprint 1 contracts.
 |---|---|---|---|
 | Login email is trimmed and lowercased | D-26 | No requirement change | F-01 (AC-F01-01, AC-F01-06) |
 | Cut line if the Sprint 1 release is at risk | D-27 | No requirement change | F-08, F-09 (UI screens only) |
+
+### 6.3 Lab 7 change request #67 (SRS v0.4 to v0.5)
+
+Approved by TA Supachok Deetaweesukh on 2026-11-22, on two conditions: the teammate reviews the revised contract before the code change, and parallel booking requests by the same student are tested. Old baseline: tag `v0.1.0-sprint-1`; deployed pre-change version: `main` = `c4dc3b4`. The red tests run on the `sprint-2` commit right before the Lab 7 implementation commit (same BR-07 code as `c4dc3b4`); #67 merges before the F-13 code PR (F-07 section 8.1).
+
+| Change | Decision | Effect on requirements | Effect on features |
+|---|---|---|---|
+| At most two active bookings per student, at most one with the same advisor (was one in total) | D-31 (replaces D-10) | BR-07 changed; FR-07 unchanged | F-07 (check 4a/4b, new 409 `SAME_ADVISOR_BOOKING`, AC-F07-06, TEST-F07-06 revised, TEST-F07-08 new, E2E second-booking step); F-08 regression only; F-14 check 6 (`SAME_ADVISOR_BOOKING` only, AC-F14-05) |
 
 ## 7. Findings for SRS owner
 
