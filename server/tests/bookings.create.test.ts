@@ -160,7 +160,7 @@ describe("TEST-F07-03 (AC-F07-03, NFR-04): 10 parallel requests for one slot", (
     // A CANCELLED row does not count against the index.
     await expect(
       prisma.booking.create({
-        data: { slotId: slot.id, studentId: students[2].id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00") },
+        data: { slotId: slot.id, studentId: students[2].id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00"), cancelledAt: bkk("2026-11-03T09:00:00"), cancelledById: students[2].id },
       }),
     ).resolves.toBeTruthy();
   });
@@ -292,7 +292,7 @@ describe("TEST-F07-06 (AC-F07-06, BR-07): at most two active bookings, at most o
     const s7 = students[6];
     const future = await insertSlot(advisor.id, "2026-11-10T10:00:00");
     await prisma.booking.create({
-      data: { slotId: future.id, studentId: s7.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00") },
+      data: { slotId: future.id, studentId: s7.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00"), cancelledAt: bkk("2026-11-03T09:00:00"), cancelledById: s7.id },
     });
     const open = await insertSlot(advisor.id, "2026-11-10T09:00:00");
     const res = await book(await loginCookie(s7.email), { slotId: open.id });

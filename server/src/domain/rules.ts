@@ -103,3 +103,8 @@ export function bookingStatus(
   if (booking.status === "CANCELLED") return "Cancelled";
   return slot.endAt.getTime() <= now.getTime() ? "Passed" : "Upcoming";
 }
+
+/** BR-11 (F-10): a student may cancel while the slot starts at least 12 hours from now. */
+export function studentCanCancel(startAt: Date, now: Date): boolean {
+  return startAt.getTime() - now.getTime() >= 12 * HOUR;
+}
