@@ -13,6 +13,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-23 | Chanat (drafted with an AI agent) | First release notes for the release candidate. Awaiting team review. |
+| 0.2 | 2026-11-23 | Chanat (drafted with an AI agent) | Review of PR #103: the F-16 contract row lists the contract's linked requirements (FR-16, FR-06, BR-06, BR-09, BR-16 rule, NFR-03, NFR-05, NFR-07); NFR-10 removed, since F-16 does not claim it. |
 
 ## 1. What is in this release
 
@@ -22,7 +23,7 @@ one release PR, `sprint-2` into `main`.
 
 | Item | Requirements | Issue | PR | Author |
 |---|---|---|---|---|
-| F-16 Filter bookable slots by advisor and date: contract | FR-16, BR-06, BR-16, NFR-03, NFR-10 | #75 | #94 | Jeerasak |
+| F-16 Filter bookable slots by advisor and date: contract | FR-16, FR-06, BR-06, BR-09, BR-16 (rule), NFR-03, NFR-05, NFR-07 | #75 | #94 | Jeerasak |
 | F-16 Filter bookable slots: code, tests, E2E step | FR-16 | #75 | #98 | Jeerasak |
 | F-17 Appointment summary: contract (no code yet) | FR-17 | #99 | #100 | Jeerasak |
 | F-18 Cancellation history and F-19 Late-slot notification: contracts (no code yet), D-32 | FR-18, FR-19, BR-09, BR-16 | #92 | #93 | Chanat |
