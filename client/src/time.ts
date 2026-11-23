@@ -38,3 +38,12 @@ export const START_TIMES: string[] = Array.from({ length: 20 }, (_, i) => {
   const minutes = 8 * 60 + i * 30;
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${minutes % 60 === 0 ? "00" : "30"}`;
 });
+
+/** 08:30 to 18:00 in 30-minute steps: the end times of a batch (F-15 section 5). */
+export const END_TIMES: string[] = [...START_TIMES.slice(1), "18:00"];
+
+/** Minutes since midnight of "09:30". */
+export function minutesOf(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}

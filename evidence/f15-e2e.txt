@@ -1,0 +1,33 @@
+# F-15 UI + E2E TEST-F15-07 run on feat/f15-batch-create (working tree on top of de894f7, committed right after this run)
+# 2026-11-23 13:08 +0700
+# Before it: cd client && npx tsc --noEmit -p . && npm run build (both passed)
+
+## cd e2e && npx playwright test
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+4 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+Script executed successfully.
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+
+The seed command has been executed.
+Script executed successfully.
+
+Running 7 tests using 1 worker
+
+  ok 1 [chromium] › tests\journey.spec.ts:13:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (955ms)
+  ok 2 [chromium] › tests\journey.spec.ts:42:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (592ms)
+  ok 3 [chromium] › tests\journey.spec.ts:57:7 › E2E journey (Sprint 1, issue #13) › a second user who logs in in the same tab can log out (F-02) (1.3s)
+  ok 4 [chromium] › tests\journey.spec.ts:77:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking (3.2s)
+  ok 5 [chromium] › tests\journey.spec.ts:131:7 › E2E journey (Sprint 1, issue #13) › student books a slot, then a second booking shows the server's message (982ms)
+  ok 6 [chromium] › tests\journey.spec.ts:160:7 › E2E journey (Sprint 1, issue #13) › advisor creates several slots at once (F-15, TEST-F15-07) (880ms)
+  ok 7 [chromium] › tests\journey.spec.ts:185:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (657ms)
+
+  7 passed (17.0s)
