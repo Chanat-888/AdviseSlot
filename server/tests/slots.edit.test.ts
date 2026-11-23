@@ -185,9 +185,11 @@ describe("TEST-F12-04 (AC-F12-04): an ACTIVE booking blocks the edit, a CANCELLE
 
 describe("TEST-F12-05 (AC-F12-05): isLate is recomputed for the new start as if created now (D-28)", () => {
   it("becomes late, goes back to normal, then follows the exactly-2-hours boundary", async () => {
+    // Advisor B, so X (advisor A's Tue 09:00 from beforeEach) does not overlap Tue 09:00 here;
+    // the contract's TEST-F12-05 has only W.
     at("2026-11-09T19:00:00");
-    const W = await insertSlot(advisor.id, "2026-11-11T09:00:00");
-    let a = await loginCookie(advisor.email);
+    const W = await insertSlot(advisorB.id, "2026-11-11T09:00:00");
+    let a = await loginCookie(advisorB.email);
 
     const late = await moveTo(a, W.id, "2026-11-10T09:00:00");
     expect(late.status).toBe(200);
@@ -201,14 +203,14 @@ describe("TEST-F12-05 (AC-F12-05): isLate is recomputed for the new start as if 
     expect(back.body.bookingDeadline).toBe(iso("2026-11-10T18:00:00"));
 
     at("2026-11-10T07:30:00");
-    a = await loginCookie(advisor.email);
+    a = await loginCookie(advisorB.email);
     const tooSoon = await moveTo(a, W.id, "2026-11-10T09:30:00"); // late and exactly 2 h away
     expect(tooSoon.status).toBe(422);
     expect(tooSoon.body).toEqual({ error: { code: "SLOT_UNBOOKABLE", message: "This slot starts too soon to be booked." } });
     await expectUnchanged(W.id, "2026-11-11T09:00:00");
 
     at("2026-11-10T07:29:00");
-    a = await loginCookie(advisor.email);
+    a = await loginCookie(advisorB.email);
     const justOk = await moveTo(a, W.id, "2026-11-10T09:30:00"); // 2 h 01 min away
     expect(justOk.status).toBe(200);
     expect(justOk.body.isLate).toBe(true);
