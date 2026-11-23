@@ -4,7 +4,7 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Owner of this document | Chanat Dachkhumhang (reviewer: Jeerasak Phisawong) |
-| Related documents | `docs/srs.md` (v0.4), `docs/system-sds.md`, `docs/traceability.md`, `docs/decisions.md` |
+| Related documents | `docs/srs.md` (v0.5), `docs/system-sds.md`, `docs/traceability.md`, `docs/decisions.md` |
 
 ## Version history
 
@@ -13,6 +13,7 @@
 | 0.1 | 2026-10-28 | Chanat (drafted with an AI agent) | First feature inventory from SRS v0.2. Awaiting team review. |
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Aligned with SRS v0.3: F-04 rejects a late slot starting 2 h or less from now (D-23), F-05 uses D-24 statuses, F-17 includes the open count. |
 | 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Related documents point to SRS v0.4 (decision list D-01 to D-27). No feature changes. |
+| 0.4 | 2026-11-23 | Chanat (drafted with an AI agent) | Aligned with SRS v0.5: F-07 uses the new BR-07 of Lab 7 change request #67 (D-31), at most two active bookings and at most one with the same advisor. Sprint 2 (F-10 to F-15) marked done, released as `v0.2.0-sprint-2`. |
 
 ## 1. Conventions
 
@@ -39,11 +40,13 @@ and both see the saved booking, with every rule and ownership check enforced on 
 | F-04 | Create slot | Advisor picks a date and start time. Server sets end = start + 30 min and checks weekday, :00/:30, 08:00-18:00, not past, no overlap. A slot created after its normal deadline is accepted as a late slot if it starts more than 2 hours from now; otherwise it is rejected (`SLOT_UNBOOKABLE`). | FR-04, BR-01, BR-02, BR-03, BR-04, BR-08, BR-16 (rule), NFR-03, NFR-05 | F-01 | Advisor |
 | F-05 | View own slots | Advisor lists their own slots with status (Open, Booked, Closed, Passed, per D-24) and the booking student's name when booked. | FR-05, BR-08, BR-09, NFR-03 | F-04 | Advisor |
 | F-06 | View bookable slots | Student lists every currently bookable slot of all advisors: advisor name, start, end, booking deadline. No booker identity is exposed. | FR-06, BR-06, BR-09, BR-16 (rule), NFR-03, NFR-05, NFR-10 (Sprint 3) | F-04 | Student |
-| F-07 | Book slot | Student books a bookable slot. Enforces one active booking per slot (also under concurrency), the booking deadline (including late slots) and one active booking per student. | FR-07, BR-05, BR-06, BR-07, BR-09, BR-16 (rule), NFR-03, NFR-04, NFR-05 | F-06 | Student |
+| F-07 | Book slot | Student books a bookable slot. Enforces one active booking per slot (also under concurrency), the booking deadline (including late slots) and BR-07: at most two active bookings per student, at most one with the same advisor (D-31). | FR-07, BR-05, BR-06, BR-07, BR-09, BR-16 (rule), NFR-03, NFR-04, NFR-05 | F-06 | Student |
 | F-08 | View own bookings | Student lists their own bookings, upcoming and past. An ended ACTIVE booking is shown as "Passed". | FR-08, BR-07, BR-09 | F-07 | Student |
 | F-09 | Booking detail | The booking's student or the slot's advisor opens one booking's detail. Anyone else gets 404 with no booking data. | FR-08, FR-09, BR-09, NFR-03 | F-07 | Student, Advisor |
 
 ## 3. Sprint 2: change and cancel
+
+Status: done. F-10 to F-15 were released on 2026-11-23 as `v0.2.0-sprint-2`.
 
 | ID | Feature | Description | Related requirements | Depends on | Primary role |
 |---|---|---|---|---|---|
