@@ -1,0 +1,33 @@
+# Sprint 2 post-deploy check (DoD R7, R8) and Lab 7 #67 release step
+# Date: 2026-11-23T18:57:58+07:00   Release: PR #90 merged as 198a1ea, tag v0.2.0-sprint-2   URL: https://adviseslot-nfnam6jppq-as.a.run.app
+
+## R7 GCP deploy: run https://github.com/Chanat-888/AdviseSlot/actions/runs/45168953657 (success)
+image tag: 198a1ea4c52d00c5b0614f2547cb86b2764cf1fc
+image digest: sha256:fd4e82c3e7034dead24e8f39f66d074ac9326215ab4cc462c8acddbc906f4b10
+migrate job: execution adviseslot-migrate-xb2vn completed (applies 20261123070837_add_booking_cancel)
+Cloud Run revision: adviseslot-00006-vg4, 100% of traffic
+smoke test: PASS /api/health, /api/ready, /, /api/slots/bookable (401), /api/version
+
+## R8 post-deploy
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/version
+{"commit":"198a1ea4c52d00c5b0614f2547cb86b2764cf1fc"}
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/ready
+{"status":"ready","db":"up"}
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/slots/bookable   (logged out, expect 401)
+{"error":{"code":"UNAUTHENTICATED","message":"You are not logged in."}}  HTTP 401
+Footer: reads /api/version (client/src/App.tsx:55-62), shows the first 7 characters: 198a1ea
+
+## Manual Sprint 2 path on the live site (Pan)
+Done by Pan on 2026-11-23 in a browser on the live site, as seed user Student One. Screenshots in evidence/post-deploy-sprint-2/:
+1-bookable-footer.webp     Bookable slots (F-06); footer "AdviseSlot version 198a1ea" = /api/version above.
+2-my-bookings-before.webp  My bookings: Upcoming Tue 24 Nov 11:00-11:30 Advisor One; Passed Tue 17 Nov 13:30-14:00 Advisor Two.
+                           The Passed booking was made before this release, so pre-release data survived the deploy
+                           and the migration (NFR-06, NFR-09).
+3-detail-upcoming.webp     Booking detail, Upcoming, with the new Reschedule (F-14) and Cancel booking (F-10) buttons.
+4-cancel-confirm.png       "Cancel this booking?" Yes / No.
+5-cancelled.webp           "Booking cancelled." Status Cancelled; Cancel and Reschedule buttons gone. The slot started
+                           about 16 h later, so BR-11 (at least 12 h ahead) allowed it.
+6-bookable-after.webp      Bookable list after the cancel: the Tue 24 Nov 11:00 slot does not come back, because its
+                           BR-06 booking deadline (Mon 23 Nov 18:00) had passed (BR-13).
+
+# Result: PASS (R7 deploy, R8 version/footer, live Sprint 2 cancel path, pre-release data kept)
