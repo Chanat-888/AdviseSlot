@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-23 | Jeerasak (drafted with an AI agent) | First contract, written before implementation, on the released Sprint 2 (`v0.2.0-sprint-2`). Awaiting team review. |
+| 0.2 | 2026-11-23 | Jeerasak (drafted with an AI agent) | Review of PR #94: a query value that is not one plain string (given twice, `advisorId[]=1`, `date[a]=...`, which Express parses into an array or object) is 400, since `parseId` would read `["1"]` as `"1"`; TEST-F16-04 adds those cases. The E2E step asserts at least one row after each filter, so it cannot pass on an empty list. TEST-F16-06 names the exact advisor order (the API tests use `createUsers()`, not the seed). |
 
 ## 1. Linked requirements
 
@@ -54,7 +55,7 @@ The filters are an exact match on the advisor and one calendar day. There is no 
 |---|---|---|
 | `advisorId` | Optional. A positive whole number in plain digits that fits the INT column, the same rule as `:id` (`parseId`, `server/src/routes/ids.ts`). | 400 `VALIDATION_ERROR`, "The advisor filter must be a positive whole number." |
 | `date` | Optional. `YYYY-MM-DD` with a real calendar date (`2026-02-30` and `2026-13-01` are bad). | 400 `VALIDATION_ERROR`, "The date filter must be a real date written as YYYY-MM-DD." |
-| Either, given twice (`?date=a&date=b`) | Not allowed. | 400 with that parameter's message. |
+| Either, as anything other than one plain string: given twice (`?date=a&date=b`), with brackets (`?advisorId[]=1`), or as an object (`?date[a]=2026-11-10`) | Not allowed. Express parses these into an array or an object, so the route checks `typeof value === "string"` before `parseId` or `bangkokDay` (`parseId` would read `["1"]` as `"1"`). | 400 with that parameter's message. |
 | Either, given empty (`?date=`) | Treated as not given (an HTML form sends empty values). | none |
 | Any other parameter | Ignored, as in F-06. | none |
 
@@ -85,8 +86,8 @@ The route uses it for validation (null → 400) and the service uses `start` and
 | Late slot on the filtered date, now 1 ms before / at its deadline (start - 2 h) | Listed / not listed | AC-F16-03 |
 | `bangkokDay("2026-11-10")` | `[2026-11-09T17:00:00.000Z, 2026-11-10T17:00:00.000Z)` | AC-F16-02 (unit) |
 | `bangkokDay` of `2026-02-29`, `2026-02-30`, `2026-13-01`, `2026-11-1`, `10/11/2026`, `2026-11-10T00:00` | null (2026 is not a leap year) | AC-F16-04 (unit) |
-| `advisorId` = `abc`, `0`, `-1`, `1.5`, `007`, `99999999999`, or given twice | 400 `VALIDATION_ERROR`, advisor message | AC-F16-04 |
-| `date` = `2026-13-01`, `2026-02-30`, `10/11/2026`, `2026-11-1`, or given twice | 400 `VALIDATION_ERROR`, date message | AC-F16-04 |
+| `advisorId` = `abc`, `0`, `-1`, `1.5`, `007`, `99999999999`, given twice, or `advisorId[]=1` | 400 `VALIDATION_ERROR`, advisor message | AC-F16-04 |
+| `date` = `2026-13-01`, `2026-02-30`, `10/11/2026`, `2026-11-1`, given twice, or `date[a]=2026-11-10` | 400 `VALIDATION_ERROR`, date message | AC-F16-04 |
 | `advisorId=&date=` (both empty) | Treated as no filter: the F-06 list | AC-F16-04 |
 | `advisorId` unknown (999999) or a student's id; `date` a Saturday or in the past | 200 `[]` | AC-F16-05 |
 | Response content, with filters | No `student`, `studentId`, `bookingId` or `status`; no booker's name or email in the body | AC-F16-05 |
@@ -195,20 +196,20 @@ The client does not check the rules itself: the server decides what is bookable 
 
 Test files: `server/tests/slots.bookable.filter.test.ts` and `server/tests/advisors.list.test.ts` (API, Supertest against the `_test` database), the `bangkokDay` cases in `server/tests/domain.rules.test.ts` (unit), and one step in `e2e/tests/journey.spec.ts`. Fake clock as in F-06. Times are Asia/Bangkok. Rows are inserted with Prisma. Now = Mon 9 Nov 2026 10:00 unless stated.
 
-Shared setup for TEST-F16-01 to -05: advisors A and B (each test creates its own, so the seed does not change the counts). Open slots: A Tue 10 Nov 09:00, A Tue 10 Nov 14:00, A Wed 11 Nov 09:00, B Tue 10 Nov 09:30, B Wed 11 Nov 14:00.
+Shared setup for TEST-F16-01 to -05: advisors A and B are `createUsers()`'s "Dr. Advisor One" and "Dr. Advisor Two" (the helper truncates `User` and its dependants first, so no seed data changes the counts). Open slots: A Tue 10 Nov 09:00, A Tue 10 Nov 14:00, A Wed 11 Nov 09:00, B Tue 10 Nov 09:30, B Wed 11 Nov 14:00.
 
 | TEST | AC | Level | Precondition / input | Action | Expected |
 |---|---|---|---|---|---|
 | TEST-F16-01 | AC-F16-01 | API | Shared setup. Student S1 logged in. | `GET /api/slots/bookable`; then `?advisorId=<A>`; then `?advisorId=<B>`. | No filter: all 5, as F-06. A: Tue 09:00, Tue 14:00, Wed 09:00 in that order, each with `advisor.id` = A and the F-06 fields. B: Tue 09:30, Wed 14:00. |
 | TEST-F16-02 | AC-F16-02 | Unit + API | Shared setup. | Unit: `bangkokDay("2026-11-10")`, `bangkokDay("2026-12-31")`. API: `?date=2026-11-10`; `?date=2026-11-11`; `?advisorId=<A>&date=2026-11-10`. | Unit: `[2026-11-09T17:00Z, 2026-11-10T17:00Z)` and `[2026-12-30T17:00Z, 2026-12-31T17:00Z)`. API: Tue → A 09:00, B 09:30, A 14:00. Wed → A 09:00, B 14:00. A + Tue → A 09:00, A 14:00. |
 | TEST-F16-03 | AC-F16-03 | API | Shared setup, plus on A and Tue 10 Nov: 10:00 with an ACTIVE booking by S2, 10:30 soft-deleted, 11:00 Open. Plus A Fri 6 Nov 10:00 (ended). Plus a late slot A Wed 11 Nov 10:00 created Tue 10 Nov 19:00 (`isLate` true). | `?advisorId=<A>&date=2026-11-10` at now; `?advisorId=<A>&date=2026-11-06`; `?advisorId=<A>&date=2026-11-11` at Wed 07:59:59.999 and at Wed 08:00:00. | Tue: 09:00, 11:00, 14:00 (not 10:00 booked, not 10:30 deleted). Fri 6: `[]`. Wed at 07:59:59.999: only the late 10:00 (the normal Wed 09:00 closed at Tue 18:00, BR-06). Wed at 08:00:00 (10:00 - 2 h, BR-16): `[]`. |
-| TEST-F16-04 | AC-F16-04 | Unit + API | Shared setup. S1 logged in. | Unit: `bangkokDay` of `2026-02-29`, `2026-02-30`, `2026-13-01`, `2026-11-1`, `10/11/2026`, `2026-11-10T00:00`. API: `advisorId` = `abc`, `0`, `-1`, `1.5`, `007`, `99999999999`, and `?advisorId=1&advisorId=2`; `date` = `2026-13-01`, `2026-02-30`, `10/11/2026`, `2026-11-1`, and `?date=2026-11-10&date=2026-11-11`; `?advisorId=abc&date=bad`; `?advisorId=&date=`. | Unit: all null. API: 400 `VALIDATION_ERROR` with the advisor message for each `advisorId` case and for `abc` + `bad`; with the date message for each `date` case; the body has only `error`. Empty values: 200 with all 5 slots. |
+| TEST-F16-04 | AC-F16-04 | Unit + API | Shared setup. S1 logged in. | Unit: `bangkokDay` of `2026-02-29`, `2026-02-30`, `2026-13-01`, `2026-11-1`, `10/11/2026`, `2026-11-10T00:00`. API: `advisorId` = `abc`, `0`, `-1`, `1.5`, `007`, `99999999999`, `?advisorId=1&advisorId=2` and `?advisorId[]=<A>`; `date` = `2026-13-01`, `2026-02-30`, `10/11/2026`, `2026-11-1`, `?date=2026-11-10&date=2026-11-11` and `?date[a]=2026-11-10`; `?advisorId=abc&date=bad`; `?advisorId=&date=`. | Unit: all null. API: 400 `VALIDATION_ERROR` with the advisor message for each `advisorId` case and for `abc` + `bad`; with the date message for each `date` case; the body has only `error`. Empty values: 200 with all 5 slots. |
 | TEST-F16-05 | AC-F16-05 | API | Shared setup, plus A Tue 10 Nov 15:00 booked by S2 (named "Booker Two", email `booker2@example.test`). | `?advisorId=999999`; `?advisorId=<S1's id>`; `?date=2026-11-14` (Saturday); `?date=2026-11-06` (past); `?advisorId=<A>&date=2026-11-10`. | 200 `[]` four times. The last: 2 items (09:00, 14:00), no item has `student`, `studentId`, `bookingId` or `status`, and the raw body does not contain "Booker Two" or `booker2@example.test`. |
-| TEST-F16-06 | AC-F16-06 | API | Advisors "Zed Advisor" and "Amy Advisor" created by the test, plus the seed's; students S1, S2. | S1: `GET /api/advisors`. Advisor A: `GET /api/advisors` and `GET /api/slots/bookable?advisorId=<A>`. | S1: 200, every ADVISOR user, sorted by name ("Amy Advisor" before "Zed Advisor"), each item exactly `{ id, name }`, no student. Advisor: 403 `FORBIDDEN_ROLE` with "Only students can list advisors." and "Only students can view bookable slots.". |
+| TEST-F16-06 | AC-F16-06 | API | `createUsers()` (Student One, "Dr. Advisor One", "Dr. Advisor Two"), plus advisors "Zed Advisor" and "Amy Advisor" and a second student created by the test. | S1: `GET /api/advisors`. Advisor A: `GET /api/advisors` and `GET /api/slots/bookable?advisorId=<A>`. | S1: 200, exactly 4 items in this order: Amy Advisor, Dr. Advisor One, Dr. Advisor Two, Zed Advisor, each item exactly `{ id, name }`, no student. Advisor: 403 `FORBIDDEN_ROLE` with "Only students can list advisors." and "Only students can view bookable slots.". |
 
 R-01: `server/tests/r01.auth.test.ts` adds `GET /api/advisors` to `PROTECTED` (the route inventory test then covers it). `GET /api/slots/bookable` is already listed.
 
-UI/E2E (`e2e/tests/journey.spec.ts`, real clock, seed data): student1 opens `/slots`, picks "Advisor Two" in the Advisor select, and every listed row shows Advisor Two; picks the date of the first listed row, and every row is on that date; Clear filters brings back rows of both advisors. Then it opens `/slots?date=2026-02-30` and sees "The date filter must be a real date written as YYYY-MM-DD." (NFR-07, Sprint 3 check). The step uses only seeded open slots on the next weekdays, so it does not depend on the time of day.
+UI/E2E (`e2e/tests/journey.spec.ts`, real clock, seed data): student1 opens `/slots`, picks "Advisor Two" in the Advisor select, and at least one row is listed and every listed row shows Advisor Two; picks the date of the first listed row, and at least one row is listed and every row is on that date; Clear filters brings back rows of both advisors. (The seed gives Advisor Two 10:00 and 13:30 on each of three weekdays, two or more days ahead, minus Student Three's booking, so the lists are never empty.) Then it opens `/slots?date=2026-02-30` and sees "The date filter must be a real date written as YYYY-MM-DD." (NFR-07, Sprint 3 check). The step uses only seeded open slots on the next weekdays, so it does not depend on the time of day.
 
 ### 8.1 TDD plan
 
