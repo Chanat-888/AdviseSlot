@@ -4,7 +4,7 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Owner of this document | Chanat Dachkhumhang (reviewer: Jeerasak Phisawong) |
-| Related documents | `docs/srs.md` (v0.4), `docs/features.md`, `docs/decisions.md` |
+| Related documents | `docs/srs.md` (v0.5), `docs/features.md`, `docs/decisions.md` |
 
 ## Version history
 
@@ -15,6 +15,9 @@
 | 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Sprint 1 contracts F-01 to F-03: added AC-F01-05 (login validation, 400) and AC-F02-02 (logout ends only the current session), with TEST-F01-05 and TEST-F02-02. Added section 6.2 (D-26, D-27). No change to requirement text. |
 | 0.4 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): added AC-F01-06 (the database rejects an uppercase `User` email, D-26) with TEST-F01-06 to the FR-01 row, the Sprint 1 AC list and section 6.2. No change to requirement text. |
 | 0.5 | 2026-11-05 | Chanat (drafted with an AI agent) | Release of Sprint 1: statuses of the Sprint 1 rows changed from Planned to Verified. No change to requirement text, AC or test IDs. Issue #14. |
+| 0.6 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67, approved by TA Supachok Deetaweesukh on 2026-11-22 (D-31): BR-07 and AC-F07-06 rows revised, TEST-F07-08 added (parallel requests by one student), section 6.3 records the baseline change. |
+| 0.7 | 2026-11-23 | Chanat (drafted with an AI agent) | Review of PR #80: red-test base and merge order in section 6.3; F-14 check 6 can fail only with `SAME_ADVISOR_BOOKING`. |
+| 0.8 | 2026-11-23 | Chanat (drafted with an AI agent) | Release of Sprint 2: FR-10 to FR-15 and BR-11 to BR-15 filled with the AC and test IDs of the Sprint 2 contracts and set to Verified (Sprint 2); the Sprint 2 parts of BR-01 to BR-08, BR-16, NFR-02 and NFR-03 added and verified. NFR-06 (GCP part) and NFR-09 wait for the post-deploy check. Tested on `sprint-2` at `209af9a`. |
 
 ## 1. How to read this matrix
 
@@ -25,7 +28,7 @@
   in that sprint's contract.
 - A requirement that spans sprints lists the Sprint 1 part with IDs and the later part as
   "defined in Sprint N contract".
-- Status: **Verified (Sprint 1)** = implemented and its Sprint 1 tests pass (release evidence in `evidence/`). **Verified (Sprint 1 part)** = the same for the Sprint 1 part of a requirement that continues in Sprint 2 or 3. **Planned** = AC and test IDs assigned, not yet implemented. **Allocated** =
+- Status: **Verified (Sprint 1)** = implemented and its Sprint 1 tests pass (release evidence in `evidence/`). **Verified (Sprint 2)** = implemented and its Sprint 2 contract tests pass on the release commit (`evidence/release-sprint-2-tests.txt`). **Verified (Sprint 1 and 2 parts)** = both sprints' parts pass; any Sprint 3 part is still open. **Verified (Sprint 1 part)** = the same for the Sprint 1 part of a requirement that continues in Sprint 2 or 3. **Planned** = AC and test IDs assigned, not yet implemented. **Allocated** =
   feature and sprint assigned, AC not yet written. Status is updated at each sprint review.
 
 ## 2. Matrix
@@ -43,12 +46,12 @@
 | FR-07 | F-07 Book slot | 1 | AC-F07-01 | TEST-F07-01 | Verified (Sprint 1) |
 | FR-08 | F-08 View own bookings, F-09 Booking detail | 1 | AC-F08-01, AC-F09-01 | TEST-F08-01, TEST-F09-01 | Verified (Sprint 1) |
 | FR-09 | F-09 Booking detail | 1 | AC-F09-02 | TEST-F09-02 | Verified (Sprint 1) |
-| FR-10 | F-10 Student cancels booking | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| FR-11 | F-11 Advisor cancels booking | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| FR-12 | F-12 Edit slot | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| FR-13 | F-13 Delete slot | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| FR-14 | F-14 Reschedule booking | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| FR-15 | F-15 Batch create slots | 2 | AC/test defined in Sprint 2 contract | | Allocated |
+| FR-10 | F-10 Student cancels booking | 2 | AC-F10-01, AC-F10-02, AC-F10-03, AC-F10-04, AC-F10-05 | TEST-F10-01, TEST-F10-02, TEST-F10-03, TEST-F10-04, TEST-F10-05 | Verified (Sprint 2) |
+| FR-11 | F-11 Advisor cancels booking | 2 | AC-F11-01, AC-F11-02, AC-F11-03, AC-F11-04, AC-F11-05 | TEST-F11-01, TEST-F11-02, TEST-F11-03, TEST-F11-04, TEST-F11-05 | Verified (Sprint 2) |
+| FR-12 | F-12 Edit slot | 2 | AC-F12-01, AC-F12-02, AC-F12-03, AC-F12-04, AC-F12-05, AC-F12-06, AC-F12-07 | TEST-F12-01, TEST-F12-02, TEST-F12-03, TEST-F12-04, TEST-F12-05, TEST-F12-06, TEST-F12-07 | Verified (Sprint 2) |
+| FR-13 | F-13 Delete slot | 2 | AC-F13-01, AC-F13-02, AC-F13-03, AC-F13-04, AC-F13-05, AC-F13-06, AC-F13-07 | TEST-F13-01, TEST-F13-02, TEST-F13-03, TEST-F13-04, TEST-F13-05, TEST-F13-06, TEST-F13-07, TEST-F13-08 | Verified (Sprint 2) |
+| FR-14 | F-14 Reschedule booking | 2 | AC-F14-01, AC-F14-02, AC-F14-03, AC-F14-04, AC-F14-05, AC-F14-06, AC-F14-07 | TEST-F14-01, TEST-F14-02, TEST-F14-03, TEST-F14-04, TEST-F14-05, TEST-F14-06, TEST-F14-07, TEST-F14-08 | Verified (Sprint 2) |
+| FR-15 | F-15 Batch create slots | 2 | AC-F15-01, AC-F15-02, AC-F15-03, AC-F15-04, AC-F15-05, AC-F15-06 | TEST-F15-01, TEST-F15-02, TEST-F15-03, TEST-F15-04, TEST-F15-05, TEST-F15-06, TEST-F15-07 | Verified (Sprint 2) |
 | FR-16 | F-16 Filter bookable slots | 3 | AC/test defined in Sprint 3 contract | | Allocated |
 | FR-17 | F-17 Appointment summary | 3 | AC/test defined in Sprint 3 contract | | Allocated |
 | FR-18 | F-18 Cancellation history | 3 | AC/test defined in Sprint 3 contract | | Allocated |
@@ -58,30 +61,30 @@
 
 | Req | Feature / responsibility | Sprint | AC | Test | Status |
 |---|---|---|---|---|---|
-| BR-01 | F-04; later F-12, F-15 | 1; 2 | AC-F04-01; Sprint 2 part defined in Sprint 2 contract | TEST-F04-01 | Verified (Sprint 1 part) |
-| BR-02 | F-04; later F-12, F-15 | 1; 2 | AC-F04-02; Sprint 2 part defined in Sprint 2 contract | TEST-F04-02 | Verified (Sprint 1 part) |
-| BR-03 | F-04; later F-12, F-15 | 1; 2 | AC-F04-03; Sprint 2 part defined in Sprint 2 contract | TEST-F04-03 | Verified (Sprint 1 part) |
-| BR-04 | F-04; later F-12, F-15 | 1; 2 | AC-F04-04; Sprint 2 part defined in Sprint 2 contract | TEST-F04-04 | Verified (Sprint 1 part) |
-| BR-05 | F-07; later F-14 | 1; 2 | AC-F07-02, AC-F07-03; Sprint 2 part defined in Sprint 2 contract | TEST-F07-02, TEST-F07-03 | Verified (Sprint 1 part) |
-| BR-06 | F-06, F-07; later F-14 | 1; 2 | AC-F06-02, AC-F07-04; Sprint 2 part defined in Sprint 2 contract | TEST-F06-02, TEST-F07-04 | Verified (Sprint 1 part) |
-| BR-07 | F-07, F-08; later F-14 | 1; 2 | AC-F07-06, AC-F08-01; Sprint 2 part defined in Sprint 2 contract | TEST-F07-06, TEST-F08-01 | Verified (Sprint 1 part) |
-| BR-08 | R-01, F-04, F-05; later F-12, F-13, F-15, F-17 | 1; 2, 3 | AC-F04-05, AC-F05-02; later parts defined in Sprint 2/3 contracts | TEST-F04-05, TEST-F05-02 | Verified (Sprint 1 part) |
+| BR-01 | F-04; later F-12, F-15 | 1; 2 | AC-F04-01, AC-F12-01, AC-F15-01 | TEST-F04-01, TEST-F12-01, TEST-F15-01, TEST-F15-07 | Verified (Sprint 1 and 2 parts) |
+| BR-02 | F-04; later F-12, F-15 | 1; 2 | AC-F04-02, AC-F12-02, AC-F15-02 | TEST-F04-02, TEST-F12-02, TEST-F15-02 | Verified (Sprint 1 and 2 parts) |
+| BR-03 | F-04; later F-12, F-15 | 1; 2 | AC-F04-03, AC-F12-02, AC-F15-02 | TEST-F04-03, TEST-F12-02, TEST-F15-02 | Verified (Sprint 1 and 2 parts) |
+| BR-04 | F-04; later F-12, F-15 | 1; 2 | AC-F04-04, AC-F12-03, AC-F15-03 | TEST-F04-04, TEST-F12-03, TEST-F15-03 | Verified (Sprint 1 and 2 parts) |
+| BR-05 | F-07; later F-14 | 1; 2 | AC-F07-02, AC-F07-03, AC-F14-04, AC-F14-06 | TEST-F07-02, TEST-F07-03, TEST-F14-04, TEST-F14-06, TEST-F14-08 | Verified (Sprint 1 and 2 parts) |
+| BR-06 | F-06, F-07; later F-14 | 1; 2 | AC-F06-02, AC-F07-04, AC-F14-03 | TEST-F06-02, TEST-F07-04, TEST-F14-03 | Verified (Sprint 1 and 2 parts) |
+| BR-07 | F-07, F-08; later F-14 | 1; 2 | AC-F07-06, AC-F08-01, AC-F14-05 | TEST-F07-06, TEST-F07-08, TEST-F08-01, TEST-F14-05 | Verified (Sprint 1 and 2 parts); rule revised by #67 (D-31), red then green in PR #82 |
+| BR-08 | R-01, F-04, F-05; later F-12, F-13, F-15, F-17 | 1; 2, 3 | AC-F04-05, AC-F05-02; AC-F12-07, AC-F13-05, AC-F15-06; Sprint 3 part (F-17) defined in Sprint 3 contract | TEST-F04-05, TEST-F05-02, TEST-F12-07, TEST-F13-05, TEST-F15-06 | Verified (Sprint 1 and 2 parts) |
 | BR-09 | R-01, F-05, F-06, F-07, F-08, F-09; later F-18 | 1; 3 | AC-F05-01, AC-F06-03, AC-F07-07, AC-F08-01, AC-F09-03; Sprint 3 part defined in Sprint 3 contract | TEST-F05-01, TEST-F06-03, TEST-F07-07, TEST-F08-01, TEST-F09-03 | Verified (Sprint 1 part) |
 | BR-10 | R-01, F-01, F-02 | 1 | AC-F01-04, AC-F02-01, AC-F02-02 | TEST-F01-04, TEST-F02-01, TEST-F02-02 | Verified (Sprint 1) |
-| BR-11 | F-10, F-14 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| BR-12 | F-11 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| BR-13 | F-10, F-11 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| BR-14 | F-12, F-13 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| BR-15 | F-14 | 2 | AC/test defined in Sprint 2 contract | | Allocated |
-| BR-16 | Rule: F-04, F-06, F-07; later F-15. Notification: F-19 | 1 (rule); 2 (batch); 3 (notification) | AC-F04-06, AC-F04-07, AC-F06-02, AC-F07-05; later parts defined in Sprint 2/3 contracts | TEST-F04-06, TEST-F04-07, TEST-F06-02, TEST-F07-05 | Verified (Sprint 1 part) |
+| BR-11 | F-10, F-14 | 2 | AC-F10-02, AC-F14-02 | TEST-F10-02, TEST-F14-02 | Verified (Sprint 2) |
+| BR-12 | F-11 | 2 | AC-F11-02, AC-F11-03 | TEST-F11-02, TEST-F11-03 | Verified (Sprint 2) |
+| BR-13 | F-10, F-11 | 2 | AC-F10-04, AC-F12-04, AC-F13-03, AC-F14-01 | TEST-F10-04, TEST-F12-04, TEST-F13-03, TEST-F14-01 | Verified (Sprint 2) |
+| BR-14 | F-12, F-13 | 2 | AC-F12-04, AC-F13-02, AC-F13-07 | TEST-F12-04, TEST-F13-02, TEST-F13-07 | Verified (Sprint 2) |
+| BR-15 | F-14 | 2 | AC-F14-01, AC-F14-02, AC-F14-03, AC-F14-04, AC-F14-05, AC-F14-06 | TEST-F14-01, TEST-F14-02, TEST-F14-03, TEST-F14-04, TEST-F14-05, TEST-F14-06, TEST-F14-08 | Verified (Sprint 2) |
+| BR-16 | Rule: F-04, F-06, F-07; later F-15. Notification: F-19 | 1 (rule); 2 (batch); 3 (notification) | AC-F04-06, AC-F04-07, AC-F06-02, AC-F07-05; AC-F12-05, AC-F15-04; notification (F-19) defined in Sprint 3 contract | TEST-F04-06, TEST-F04-07, TEST-F06-02, TEST-F07-05, TEST-F12-05, TEST-F15-04 | Verified (Sprint 1 and 2 parts, rule) |
 
 ### 2.3 Non-functional requirements
 
 | Req | Feature / responsibility | Sprint | AC | Test | Status |
 |---|---|---|---|---|---|
 | NFR-01 | R-01, F-01 | 1 | AC-F01-03 | TEST-F01-03 | Verified (Sprint 1) |
-| NFR-02 | R-01 (all protected endpoints) | 1; extended in 2, 3 | AC-R01-01; new endpoints defined in Sprint 2/3 contracts | TEST-R01-01 | Verified (Sprint 1 part) |
-| NFR-03 | R-01, F-04, F-05, F-06, F-07, F-09; later F-10 to F-14, F-17, F-18 | 1; extended in 2, 3 | AC-F04-05, AC-F05-02, AC-F06-04, AC-F07-07, AC-F09-03; later parts defined in Sprint 2/3 contracts | TEST-F04-05, TEST-F05-02, TEST-F06-04, TEST-F07-07, TEST-F09-03 | Verified (Sprint 1 part) |
+| NFR-02 | R-01 (all protected endpoints) | 1; extended in 2, 3 | AC-R01-01; Sprint 2 routes added to the route inventory (Sprint 2 DoD row 16); Sprint 3 routes defined in Sprint 3 contracts | TEST-R01-01 (now including the Sprint 2 routes) | Verified (Sprint 1 and 2 parts) |
+| NFR-03 | R-01, F-04, F-05, F-06, F-07, F-09; later F-10 to F-14, F-17, F-18 | 1; extended in 2, 3 | AC-F04-05, AC-F05-02, AC-F06-04, AC-F07-07, AC-F09-03; AC-F10-05, AC-F11-05, AC-F12-07, AC-F13-05, AC-F14-07, AC-F15-06; Sprint 3 part defined in Sprint 3 contracts | TEST-F04-05, TEST-F05-02, TEST-F06-04, TEST-F07-07, TEST-F09-03, TEST-F10-05, TEST-F11-05, TEST-F12-07, TEST-F13-05, TEST-F14-07, TEST-F15-06 | Verified (Sprint 1 and 2 parts) |
 | NFR-04 | F-07 | 1 | AC-F07-03 | TEST-F07-03 | Verified (Sprint 1) |
 | NFR-05 | F-04, F-06, F-07 | 1 | AC-F04-02, AC-F06-02, AC-F07-04, AC-F07-05 | TEST-F04-02, TEST-F06-02, TEST-F07-04, TEST-F07-05 | Verified (Sprint 1) |
 | NFR-06 | R-04 | 1 (local); 2 (GCP) | AC-R04-01; Sprint 2 part defined in Sprint 2 contract | TEST-R04-01 (manual restart check) | Verified (Sprint 1 part) |
@@ -125,7 +128,7 @@ expected results.
 | AC-F07-03 | 10 concurrent requests for one open slot create exactly 1 active booking. | BR-05, NFR-04 |
 | AC-F07-04 | Deadline boundaries: morning slot 17:59 previous day accepted, 18:00 rejected; afternoon slot 2 h 01 min before accepted, exactly 2 h rejected. | BR-06, NFR-05 |
 | AC-F07-05 | A late slot is bookable until 2 h before start and rejected from then on. | BR-16, NFR-05 |
-| AC-F07-06 | A student with an active booking cannot book a second slot; a booking whose slot has ended does not count. | BR-07 |
+| AC-F07-06 | A student holds at most two active bookings and at most one with the same advisor; ended and cancelled bookings do not count; this also holds for parallel requests by the same student (revised by #67). | BR-07 |
 | AC-F07-07 | An advisor booking gets 403; the student id is taken from the session, not the request. | BR-09, NFR-03 |
 | AC-F08-01 | Student sees only their own bookings, upcoming and past; an ended ACTIVE booking shows as "Passed". | FR-08, BR-07, BR-09 |
 | AC-F09-01 | The booking's student opens its detail. | FR-08 |
@@ -192,6 +195,14 @@ Recorded while writing the Sprint 1 contracts.
 |---|---|---|---|
 | Login email is trimmed and lowercased | D-26 | No requirement change | F-01 (AC-F01-01, AC-F01-06) |
 | Cut line if the Sprint 1 release is at risk | D-27 | No requirement change | F-08, F-09 (UI screens only) |
+
+### 6.3 Lab 7 change request #67 (SRS v0.4 to v0.5)
+
+Approved by TA Supachok Deetaweesukh on 2026-11-22, on two conditions: the teammate reviews the revised contract before the code change, and parallel booking requests by the same student are tested. Old baseline: tag `v0.1.0-sprint-1`; deployed pre-change version: `main` = `c4dc3b4`. The red tests run on the `sprint-2` commit right before the Lab 7 implementation commit (same BR-07 code as `c4dc3b4`); #67 merges before the F-13 code PR (F-07 section 8.1).
+
+| Change | Decision | Effect on requirements | Effect on features |
+|---|---|---|---|
+| At most two active bookings per student, at most one with the same advisor (was one in total) | D-31 (replaces D-10) | BR-07 changed; FR-07 unchanged | F-07 (check 4a/4b, new 409 `SAME_ADVISOR_BOOKING`, AC-F07-06, TEST-F07-06 revised, TEST-F07-08 new, E2E second-booking step); F-08 regression only; F-14 check 6 (`SAME_ADVISOR_BOOKING` only, AC-F14-05) |
 
 ## 7. Findings for SRS owner
 

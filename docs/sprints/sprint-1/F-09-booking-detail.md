@@ -16,6 +16,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-04 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
+| 0.2 | 2026-11-22 | Chanat (drafted with an AI agent) | Sprint 2 (F-10, PR #76): a Cancelled booking gains a `cancellation` object `{ cancelledAt, cancelledBy { id, name, role }, reason }`. The key is absent for Upcoming and Passed bookings, so the Sprint 1 bodies and tests are unchanged. |
 
 ## 1. Linked requirements
 
@@ -106,7 +107,7 @@ The check runs on the server after loading the row. A client that hides links is
 | `advisor` | `{ id, name }` | |
 | `student` | `{ id, name }` | No email, no other user data |
 
-The same shape is returned by F-07 on success and by both roles here. (Example values are placeholders.)
+The same shape is returned by F-07 on success and by both roles here. (Example values are placeholders.) From Sprint 2 a Cancelled booking also has a `cancellation` object (F-10 section 4.2).
 
 ### 4.3 Error responses
 

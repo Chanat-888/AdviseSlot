@@ -17,6 +17,7 @@
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Applied decisions D-14 to D-22: weekdays only, :00/:30 starts, late-slot exception and in-app notification (FR-19), "Passed" status, advisor cancels until start, 2-hour session. Closed Q-01 to Q-03. |
 | 0.3 | 2026-10-28 | Chanat (drafted with an AI agent) | Answered review on PR #1. FR-17 adds the open count (D-20). BR-15 checks BR-07 as if the old booking were released. BR-13 uses the BR-06 or BR-16 deadline. NFR-07 defines the Sprint 3 check. One status vocabulary in FR-05, BR-07 and A-04 (D-24). BR-16 rejects a late slot starting 2 hours or less from now with `SLOT_UNBOOKABLE`, and FR-19 notifies only for created late slots (D-23). A-06 moved after A-05. |
 | 0.4 | 2026-11-04 | Chanat (drafted with an AI agent) | Section 8 lists decisions D-01 to D-27 (added D-23 to D-27). No change to FR, BR or NFR text. |
+| 0.5 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67, approved by TA Supachok Deetaweesukh on 2026-11-22: BR-07 changes from one active booking in total to at most two, and at most one with the same advisor (D-31). Ended and cancelled bookings still do not count. No other FR, BR or NFR text changes. |
 
 ## 1. Stakeholder problem and context
 
@@ -95,7 +96,7 @@ All times are evaluated in the Asia/Bangkok time zone (UTC+7) and stored in UTC.
 | BR-04 | An advisor's slots cannot overlap each other. | D-05 | 1 |
 | BR-05 | A slot holds at most one active booking. When two students book the same slot at the same time, exactly one succeeds. | D-04 | 1 |
 | BR-06 | Booking deadline: for a slot starting before 12:00, booking closes at 18:00 on the previous day. For a slot starting at 12:00 or later, booking closes 2 hours before the start. A booking at or after the deadline is rejected. Exception: BR-16. | D-07 | 1 |
-| BR-07 | A student holds at most one active booking in total, across all advisors. An active booking has status ACTIVE and a slot end time in the future, and is shown as "Upcoming". A booking whose slot has ended no longer counts and is shown as "Passed". A cancelled booking is shown as "Cancelled". | D-10, D-17, D-24 | 1 |
+| BR-07 | A student holds at most two active bookings in total, and at most one active booking with the same advisor. An active booking has status ACTIVE and a slot end time in the future, and is shown as "Upcoming". A booking whose slot has ended no longer counts and is shown as "Passed". A cancelled booking is shown as "Cancelled" and does not count either. | D-10, D-17, D-24, D-31 | 1 |
 | BR-08 | Only advisors create and maintain slots, and only their own. | D-09, D-11 | 1 |
 | BR-09 | A student sees only their own bookings. An advisor sees only bookings on their own slots. The bookable-slot list never reveals who booked a slot. | D-11 | 1 |
 | BR-10 | A session expires 2 hours after login, with no renewal. Logout ends it immediately. | D-21 | 1 |

@@ -4,8 +4,8 @@ import { app } from "../src/app.js";
 import { prisma } from "../src/db.js";
 import { createStudents, createUsers, loginCookie, resetUsers, type Fixture } from "./helpers.js";
 
-// F-07 Book slot, tests TEST-F07-01 to TEST-F07-07 (API part) from
-// docs/sprints/sprint-1/F-07-book-slot.md (v0.2, section 8). The unit part of
+// F-07 Book slot, tests TEST-F07-01 to TEST-F07-08 (API part) from
+// docs/sprints/sprint-1/F-07-book-slot.md (v0.4, section 8; BR-07 revised by change request #67). The unit part of
 // TEST-F07-04 and -05 is in domain.rules.test.ts.
 // Times are Asia/Bangkok. Unless stated, now = Mon 9 Nov 2026 10:00. Slots and other rows are
 // inserted with Prisma. Bookings are emptied before each test, so the shared students start free
@@ -17,6 +17,7 @@ const HALF_HOUR = 30 * 60 * 1000;
 
 let advisor: Fixture;
 let advisorB: Fixture;
+let advisorC: Fixture;
 let students: Fixture[]; // S1 is students[0], and so on
 
 function at(local: string) {
@@ -56,6 +57,10 @@ beforeAll(async () => {
   advisor = base.advisor;
   advisorB = base.advisorB;
   students = [base.student, ...(await createStudents(11, "s"))];
+  const c = await prisma.user.create({
+    data: { name: "Dr. Advisor Three", email: "advisor3@example.test", passwordHash: "unused", role: "ADVISOR" },
+  });
+  advisorC = { id: c.id, name: c.name, email: c.email, role: "ADVISOR" };
 }, 60_000);
 
 beforeEach(async () => {
@@ -155,20 +160,9 @@ describe("TEST-F07-03 (AC-F07-03, NFR-04): 10 parallel requests for one slot", (
     // A CANCELLED row does not count against the index.
     await expect(
       prisma.booking.create({
-        data: { slotId: slot.id, studentId: students[2].id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00") },
+        data: { slotId: slot.id, studentId: students[2].id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00"), cancelledAt: bkk("2026-11-03T09:00:00"), cancelledById: students[2].id },
       }),
     ).resolves.toBeTruthy();
-  });
-
-  it("BR-07: two parallel requests by one student for two slots create exactly one booking", async () => {
-    const a = await insertSlot(advisor.id, "2026-11-10T09:00:00");
-    const b = await insertSlot(advisor.id, "2026-11-10T09:30:00");
-    const cookie = await loginCookie(students[0].email);
-
-    const results = await Promise.all([book(cookie, { slotId: a.id }), book(cookie, { slotId: b.id })]);
-    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
-    expect(results.find((r) => r.status === 409)!.body.error.code).toBe("ACTIVE_BOOKING_LIMIT");
-    expect(await prisma.booking.count({ where: { studentId: students[0].id, status: "ACTIVE" } })).toBe(1);
   });
 });
 
@@ -223,37 +217,124 @@ describe("TEST-F07-05 (AC-F07-05): a late slot is bookable until 2 h before star
   });
 });
 
-describe("TEST-F07-06 (AC-F07-06, BR-07): one active booking per student", () => {
-  it("rejects S1 (active booking on a future slot) and accepts S2 (only booking has ended)", async () => {
-    const [s1, s2] = students;
-    const future = await insertSlot(advisor.id, "2026-11-10T10:00:00");
-    const ended = await insertSlot(advisor.id, "2026-11-06T10:00:00");
-    await insertBooking(future.id, s1.id);
-    await insertBooking(ended.id, s2.id);
-    const open1 = await insertSlot(advisorB.id, "2026-11-10T09:00:00");
-    const open2 = await insertSlot(advisorB.id, "2026-11-10T09:30:00");
+const activeOf = (studentId: number) =>
+  prisma.booking.count({ where: { studentId, status: "ACTIVE", slot: { endAt: { gt: new Date() } } } });
 
-    const r1 = await book(await loginCookie(s1.email), { slotId: open1.id });
-    expect(r1.status).toBe(409);
-    expect(r1.body).toEqual({
-      error: { code: "ACTIVE_BOOKING_LIMIT", message: "You already have an upcoming booking." },
-    });
-    expect(await prisma.booking.count({ where: { studentId: s1.id } })).toBe(1);
+const SAME_ADVISOR = {
+  error: { code: "SAME_ADVISOR_BOOKING", message: "You already have an upcoming booking with this advisor." },
+};
+const LIMIT = { error: { code: "ACTIVE_BOOKING_LIMIT", message: "You already have 2 upcoming bookings." } };
 
-    const r2 = await book(await loginCookie(s2.email), { slotId: open2.id });
-    expect(r2.status).toBe(201);
-    expect(await prisma.booking.count({ where: { studentId: s2.id, status: "ACTIVE" } })).toBe(2);
-  });
-
-  it("a CANCELLED booking on a future slot does not count", async () => {
-    const [s1] = students;
-    const future = await insertSlot(advisor.id, "2026-11-10T10:00:00");
-    await prisma.booking.create({
-      data: { slotId: future.id, studentId: s1.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00") },
-    });
-    const open = await insertSlot(advisorB.id, "2026-11-10T09:00:00");
+// Section 8.2 (v0.4). Now = Mon 9 Nov 10:00. Revised for #67: the Sprint 1 case "one active
+// booking, books another slot" expected 409; it is now 201 with another advisor (S2) and
+// 409 SAME_ADVISOR_BOOKING with the same advisor (S3).
+describe("TEST-F07-06 (AC-F07-06, BR-07): at most two active bookings, at most one per advisor", () => {
+  it("S1: no bookings, books a slot of A: 201", async () => {
+    const s1 = students[0];
+    const open = await insertSlot(advisor.id, "2026-11-10T09:00:00");
     const res = await book(await loginCookie(s1.email), { slotId: open.id });
     expect(res.status).toBe(201);
+    expect(await activeOf(s1.id)).toBe(1);
+  });
+
+  it("S2: 1 active with A, books a slot of B: 201 (was 409 before #67)", async () => {
+    const s2 = students[1];
+    await insertBooking((await insertSlot(advisor.id, "2026-11-10T10:00:00")).id, s2.id);
+    const open = await insertSlot(advisorB.id, "2026-11-10T09:00:00");
+    const res = await book(await loginCookie(s2.email), { slotId: open.id });
+    expect(res.status).toBe(201);
+    expect(await activeOf(s2.id)).toBe(2);
+  });
+
+  it("S3: 1 active with A, books another slot of A: 409 SAME_ADVISOR_BOOKING, no new row", async () => {
+    const s3 = students[2];
+    await insertBooking((await insertSlot(advisor.id, "2026-11-10T10:00:00")).id, s3.id);
+    const open = await insertSlot(advisor.id, "2026-11-10T09:00:00");
+    const res = await book(await loginCookie(s3.email), { slotId: open.id });
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual(SAME_ADVISOR);
+    expect(await prisma.booking.count({ where: { studentId: s3.id } })).toBe(1);
+  });
+
+  it("S4: 1 active with A and 1 with B, books a slot of C: 409 ACTIVE_BOOKING_LIMIT, no new row", async () => {
+    const s4 = students[3];
+    await insertBooking((await insertSlot(advisor.id, "2026-11-10T10:00:00")).id, s4.id);
+    await insertBooking((await insertSlot(advisorB.id, "2026-11-10T10:00:00")).id, s4.id);
+    const open = await insertSlot(advisorC.id, "2026-11-10T09:00:00");
+    const res = await book(await loginCookie(s4.email), { slotId: open.id });
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual(LIMIT);
+    expect(await prisma.booking.count({ where: { studentId: s4.id } })).toBe(2);
+  });
+
+  it("S5: 1 active with A and 1 with B, books another slot of A: 409 SAME_ADVISOR_BOOKING (check 4a first)", async () => {
+    const s5 = students[4];
+    await insertBooking((await insertSlot(advisor.id, "2026-11-10T10:00:00")).id, s5.id);
+    await insertBooking((await insertSlot(advisorB.id, "2026-11-10T10:00:00")).id, s5.id);
+    const open = await insertSlot(advisor.id, "2026-11-10T09:00:00");
+    const res = await book(await loginCookie(s5.email), { slotId: open.id });
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual(SAME_ADVISOR);
+    expect(await prisma.booking.count({ where: { studentId: s5.id } })).toBe(2);
+  });
+
+  it("S6: 1 ACTIVE with A on an ended slot and 1 active with B, books a slot of A: 201 (D-17)", async () => {
+    const s6 = students[5];
+    await insertBooking((await insertSlot(advisor.id, "2026-11-06T10:00:00")).id, s6.id);
+    await insertBooking((await insertSlot(advisorB.id, "2026-11-10T10:00:00")).id, s6.id);
+    const open = await insertSlot(advisor.id, "2026-11-10T09:00:00");
+    const res = await book(await loginCookie(s6.email), { slotId: open.id });
+    expect(res.status).toBe(201);
+    expect(await activeOf(s6.id)).toBe(2);
+  });
+
+  it("S7: 1 CANCELLED with A on a future slot, books a slot of A: 201", async () => {
+    const s7 = students[6];
+    const future = await insertSlot(advisor.id, "2026-11-10T10:00:00");
+    await prisma.booking.create({
+      data: { slotId: future.id, studentId: s7.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00"), cancelledAt: bkk("2026-11-03T09:00:00"), cancelledById: s7.id },
+    });
+    const open = await insertSlot(advisor.id, "2026-11-10T09:00:00");
+    const res = await book(await loginCookie(s7.email), { slotId: open.id });
+    expect(res.status).toBe(201);
+  });
+
+  it("S10: 1 ACTIVE with A on a slot that ends exactly now, books another slot of A: 201 (D-17)", async () => {
+    const s10 = students[9];
+    await insertBooking((await insertSlot(advisor.id, "2026-11-09T09:30:00")).id, s10.id); // ends Mon 10:00 = now
+    const open = await insertSlot(advisor.id, "2026-11-10T09:00:00");
+    const res = await book(await loginCookie(s10.email), { slotId: open.id });
+    expect(res.status).toBe(201);
+    expect(await activeOf(s10.id)).toBe(1);
+  });
+});
+
+// TA condition for #67: two booking requests by the same student at the same time. The student
+// row lock makes them run one after the other; which one wins is not fixed.
+describe("TEST-F07-08 (AC-F07-06, BR-07): parallel requests by one student", () => {
+  it("(a) S8 with 1 active with A books slots of B and C together: one 201, one 409 ACTIVE_BOOKING_LIMIT", async () => {
+    const s8 = students[7];
+    await insertBooking((await insertSlot(advisor.id, "2026-11-10T10:00:00")).id, s8.id);
+    const b = await insertSlot(advisorB.id, "2026-11-10T09:00:00");
+    const c = await insertSlot(advisorC.id, "2026-11-10T09:00:00");
+    const cookie = await loginCookie(s8.email);
+
+    const results = await Promise.all([book(cookie, { slotId: b.id }), book(cookie, { slotId: c.id })]);
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(results.find((r) => r.status === 409)!.body).toEqual(LIMIT);
+    expect(await activeOf(s8.id)).toBe(2);
+  });
+
+  it("(b) S9 with no bookings books two slots of A together: one 201, one 409 SAME_ADVISOR_BOOKING", async () => {
+    const s9 = students[8];
+    const a1 = await insertSlot(advisor.id, "2026-11-10T09:00:00");
+    const a2 = await insertSlot(advisor.id, "2026-11-10T09:30:00");
+    const cookie = await loginCookie(s9.email);
+
+    const results = await Promise.all([book(cookie, { slotId: a1.id }), book(cookie, { slotId: a2.id })]);
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
+    expect(results.find((r) => r.status === 409)!.body).toEqual(SAME_ADVISOR);
+    expect(await activeOf(s9.id)).toBe(1);
   });
 });
 
@@ -316,7 +397,7 @@ describe("F-07 section 3.1 and 3.2: validation and check order", () => {
 
   it("check 3 before check 4: a student at the limit booking a closed slot gets the deadline error", async () => {
     const [s1] = students;
-    const held = await insertSlot(advisor.id, "2026-11-12T10:00:00");
+    const held = await insertSlot(advisorB.id, "2026-11-12T10:00:00");
     await insertBooking(held.id, s1.id);
     const closed = await insertSlot(advisorB.id, "2026-11-10T09:00:00");
     const res = await bookAt("2026-11-09T19:00:00", s1.email, { slotId: closed.id });

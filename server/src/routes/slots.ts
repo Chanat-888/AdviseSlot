@@ -2,7 +2,8 @@ import { Router } from "express";
 import { sendError } from "../errors.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
-import { createSlot, listBookableSlots, listOwnSlots } from "../services/slots.js";
+import { createSlot, createSlotBatch, deleteSlot, editSlot, listBookableSlots, listOwnSlots } from "../services/slots.js";
+import { parseId } from "./ids.js";
 
 export const slotsRouter = Router();
 
@@ -19,13 +20,25 @@ const MESSAGES = {
 // ISO 8601 with a time zone (Z or an offset), F-04 section 3.1.
 const ISO_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/;
 
-function parseStartAt(body: unknown): Date | null {
+function parseIsoField(body: unknown, field: string): Date | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-  const { startAt } = body as Record<string, unknown>;
-  if (typeof startAt !== "string" || !ISO_WITH_ZONE.test(startAt)) return null;
-  const d = new Date(startAt);
+  const value = (body as Record<string, unknown>)[field];
+  if (typeof value !== "string" || !ISO_WITH_ZONE.test(value)) return null;
+  const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }
+
+function parseStartAt(body: unknown): Date | null {
+  return parseIsoField(body, "startAt");
+}
+
+// F-15 section 3.2: the failing slot's Asia/Bangkok time, as " (slot at HH:MM)".
+const HHMM_BANGKOK = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Bangkok",
+});
 
 // F-04: create a slot. Only startAt is read; the advisor comes from the session (BR-08).
 slotsRouter.post("/", requireAuth, requireRole("ADVISOR", "Only advisors can create slots."), async (req, res, next) => {
@@ -44,6 +57,35 @@ slotsRouter.post("/", requireAuth, requireRole("ADVISOR", "Only advisors can cre
   }
 });
 
+// F-15: create consecutive 30-minute slots for one date, all or nothing (D-30).
+slotsRouter.post(
+  "/batch",
+  requireAuth,
+  requireRole("ADVISOR", "Only advisors can create slots."),
+  async (req, res, next) => {
+    try {
+      const startAt = parseIsoField(req.body, "startAt");
+      const endAt = parseIsoField(req.body, "endAt");
+      const result =
+        startAt && endAt
+          ? await createSlotBatch(req.user!.id, startAt, endAt, new Date())
+          : ({ ok: false, code: "VALIDATION_ERROR" } as const);
+      if (!result.ok) {
+        if (result.code === "VALIDATION_ERROR") {
+          return sendError(res, 400, "VALIDATION_ERROR", "Choose a start and end time on one day, in 30-minute steps.");
+        }
+        const [status, message] = MESSAGES[result.code];
+        // A 23P01 race names no slot, so the plain F-04 message (F-15 section 2 step 7).
+        const suffix = "slotStart" in result && result.slotStart ? ` (slot at ${HHMM_BANGKOK.format(result.slotStart)})` : "";
+        return sendError(res, status, result.code, message + suffix);
+      }
+      res.status(201).json({ slots: result.slots });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
 // F-05: the advisor's own slots with status.
 slotsRouter.get(
   "/mine",
@@ -57,6 +99,52 @@ slotsRouter.get(
     }
   },
 );
+
+// F-13 section 4.3 (SDS section 5).
+const DELETE_ERRORS = {
+  NOT_FOUND: [404, "Slot not found."],
+  SLOT_ALREADY_STARTED: [422, "This slot has already started."],
+  SLOT_HAS_ACTIVE_BOOKING: [409, "This slot has a booking. Cancel the booking first."],
+} as const;
+
+// F-12 section 4.3: the F-13 errors, plus the F-04 rule codes for the new start (MESSAGES).
+const EDIT_ERRORS = { ...DELETE_ERRORS, ...MESSAGES } as const;
+
+// F-12: change the start time of an own unbooked future slot. Only startAt is read (BR-01).
+slotsRouter.patch("/:id", requireAuth, requireRole("ADVISOR", "Only advisors can edit slots."), async (req, res, next) => {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return sendError(res, 400, "VALIDATION_ERROR", "The slot id must be a positive integer.");
+    const startAt = parseStartAt(req.body);
+    if (!startAt) return sendError(res, 400, "VALIDATION_ERROR", "A valid start time is required.");
+
+    const result = await editSlot(req.user!.id, id, startAt, new Date());
+    if (!result.ok) {
+      const [status, message] = EDIT_ERRORS[result.code];
+      return sendError(res, status, result.code, message);
+    }
+    res.json(result.slot);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// F-13: soft-delete an own unbooked future slot.
+slotsRouter.delete("/:id", requireAuth, requireRole("ADVISOR", "Only advisors can delete slots."), async (req, res, next) => {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return sendError(res, 400, "VALIDATION_ERROR", "The slot id must be a positive integer.");
+
+    const result = await deleteSlot(req.user!.id, id, new Date());
+    if (!result.ok) {
+      const [status, message] = DELETE_ERRORS[result.code];
+      return sendError(res, status, result.code, message);
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // F-06: bookable slots of all advisors, without booker identity (BR-09).
 slotsRouter.get(

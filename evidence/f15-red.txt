@@ -1,0 +1,239 @@
+# F-15 red run: TEST-F15-01 to -06 (API) and TEST-F15-05 unit part on 078e3e6 (sprint-2) plus the expandRange stub (returns null); no POST /api/slots/batch yet
+# Command: cd server && npx vitest run tests/slots.batch.test.ts tests/domain.rules.test.ts   (2026-11-23 13:01 +0700)
+# Expected red: every API test gets 404 (no route for POST /api/slots/batch); the expandRange "4 starts" and "22 starts" cases fail on assertions; the null cases pass. npx tsc --noEmit passes.
+
+
+ RUN  v2.1.5 C:/Users/Pedpro/AdviseSlot/server
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+4 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+ ❯ tests/slots.batch.test.ts (16 tests | 16 failed) 3412ms
+   × TEST-F15-01 (AC-F15-01): create consecutive 30-minute slots in one action > creates 4, 20 and 1 slots for the advisor, sorted, and all 25 appear in GET /api/slots/mine 226ms
+     → expected 404 to be 201 // Object.is equality
+   × TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Tue 17:00-18:30 gives 422 and creates no rows 197ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Tue 07:30-09:00 gives 422 and creates no rows 200ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Tue 07:00-18:00 (22 slots) gives 422 and creates no rows 200ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Sat 14 Nov 09:00-10:00 gives 422 and creates no rows 199ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Tue 09:15-10:15 gives 422 and creates no rows 198ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Mon 9 Nov 09:00-11:00 (three slots past) gives 422 and creates no rows 194ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F15-03 (AC-F15-03): a range overlapping a live slot of the advisor is rejected whole > returns 409 naming the first overlapping slot and creates no rows 196ms
+     → expected 404 to be 409 // Object.is equality
+   × TEST-F15-03 (AC-F15-03): a range overlapping a live slot of the advisor is rejected whole > back-to-back slots, another advisor's slot and an own deleted slot do not block 202ms
+     → expected 404 to be 201 // Object.is equality
+   × TEST-F15-04 (AC-F15-04): each slot gets its own isLate; a late slot 2 h or less away rejects the batch > mixed isLate at Mon 19:00, 422 SLOT_UNBOOKABLE at Tue 07:00, 201 at Tue 06:59 196ms
+     → expected 404 to be 201 // Object.is equality
+   × TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > 09:00 to 09:00 (empty) gives 400 VALIDATION_ERROR and creates no rows 200ms
+     → expected 404 to be 400 // Object.is equality
+   × TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > 11:00 to 09:00 (end before start) gives 400 VALIDATION_ERROR and creates no rows 195ms
+     → expected 404 to be 400 // Object.is equality
+   × TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > 09:00 to 09:45 (not a multiple of 30 minutes) gives 400 VALIDATION_ERROR and creates no rows 195ms
+     → expected 404 to be 400 // Object.is equality
+   × TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > Tue 23:30 to Wed 00:00 (two dates) gives 400 VALIDATION_ERROR and creates no rows 202ms
+     → expected 404 to be 400 // Object.is equality
+   × TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > a body without endAt gives 400 VALIDATION_ERROR and creates no rows 195ms
+     → expected 404 to be 400 // Object.is equality
+   × TEST-F15-06 (AC-F15-06): a student cannot batch-create slots > returns 403 FORBIDDEN_ROLE and creates no rows 195ms
+     → expected 404 to be 403 // Object.is equality
+ ❯ tests/domain.rules.test.ts (26 tests | 2 failed) 9ms
+   × TEST-F15-05 (AC-F15-05, unit part): expandRange cuts a range into 30-minute starts (F-15 section 3.1) > Tue 10 Nov 09:00 to 11:00 gives 4 starts 09:00, 09:30, 10:00, 10:30 4ms
+     → expected null to deeply equal [ 2026-11-10T02:00:00.000Z, …(3) ]
+   × TEST-F15-05 (AC-F15-05, unit part): expandRange cuts a range into 30-minute starts (F-15 section 3.1) > Tue 07:00 to 18:00 gives 22 starts (no size rule; BR-02 rejects it later) 1ms
+     → Target cannot be null or undefined.
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 18 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/domain.rules.test.ts > TEST-F15-05 (AC-F15-05, unit part): expandRange cuts a range into 30-minute starts (F-15 section 3.1) > Tue 10 Nov 09:00 to 11:00 gives 4 starts 09:00, 09:30, 10:00, 10:30
+AssertionError: expected null to deeply equal [ 2026-11-10T02:00:00.000Z, …(3) ]
+
+- Expected: 
+Array [
+  2026-11-10T02:00:00.000Z,
+  2026-11-10T02:30:00.000Z,
+  2026-11-10T03:00:00.000Z,
+  2026-11-10T03:30:00.000Z,
+]
+
++ Received: 
+null
+
+ ❯ tests/domain.rules.test.ts:128:81
+    126| describe("TEST-F15-05 (AC-F15-05, unit part): expandRange cuts a range…
+    127|   it("Tue 10 Nov 09:00 to 11:00 gives 4 starts 09:00, 09:30, 10:00, 10…
+    128|     expect(expandRange(bkk("2026-11-10T09:00:00"), bkk("2026-11-10T11:…
+       |                                                                                 ^
+    129|       bkk("2026-11-10T09:00:00"),
+    130|       bkk("2026-11-10T09:30:00"),
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/18]⎯
+
+ FAIL  tests/domain.rules.test.ts > TEST-F15-05 (AC-F15-05, unit part): expandRange cuts a range into 30-minute starts (F-15 section 3.1) > Tue 07:00 to 18:00 gives 22 starts (no size rule; BR-02 rejects it later)
+AssertionError: Target cannot be null or undefined.
+ ❯ tests/domain.rules.test.ts:147:20
+    145|   it("Tue 07:00 to 18:00 gives 22 starts (no size rule; BR-02 rejects …
+    146|     const starts = expandRange(bkk("2026-11-10T07:00:00"), bkk("2026-1…
+    147|     expect(starts).toHaveLength(22);
+       |                    ^
+    148|     expect(starts?.[0]).toEqual(bkk("2026-11-10T07:00:00"));
+    149|     expect(starts?.[21]).toEqual(bkk("2026-11-10T17:30:00"));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/18]⎯
+
+ FAIL  tests/slots.batch.test.ts > TEST-F15-01 (AC-F15-01): create consecutive 30-minute slots in one action > creates 4, 20 and 1 slots for the advisor, sorted, and all 25 appear in GET /api/slots/mine
+AssertionError: expected 404 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 404
+
+ ❯ tests/slots.batch.test.ts:117:24
+    115| 
+    116|     const tue = await batchRange(a, "2026-11-10T09:00:00", "2026-11-10…
+    117|     expect(tue.status).toBe(201);
+       |                        ^
+    118|     // F-04 section 4.2 item shape; morning slots have the previous da…
+    119|     expect(tue.body).toEqual({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/18]⎯
+
+ FAIL  tests/slots.batch.test.ts > TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Tue 17:00-18:30 gives 422 and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Tue 07:30-09:00 gives 422 and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Tue 07:00-18:00 (22 slots) gives 422 and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Sat 14 Nov 09:00-10:00 gives 422 and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Tue 09:15-10:15 gives 422 and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-02 (AC-F15-02): a range with a slot that breaks BR-02 or BR-03 is rejected whole > Mon 9 Nov 09:00-11:00 (three slots past) gives 422 and creates no rows
+AssertionError: expected 404 to be 422 // Object.is equality
+
+- Expected
++ Received
+
+- 422
++ 404
+
+ ❯ tests/slots.batch.test.ts:167:24
+    165|   ])("%s gives 422 and creates no rows", async (_name, from, to, code,…
+    166|     const res = await batchRange(await loginCookie(advisor.email), fro…
+    167|     expect(res.status).toBe(422);
+       |                        ^
+    168|     expect(res.body).toEqual({ error: { code, message } });
+    169|     expect(await slotCount()).toBe(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/18]⎯
+
+ FAIL  tests/slots.batch.test.ts > TEST-F15-03 (AC-F15-03): a range overlapping a live slot of the advisor is rejected whole > returns 409 naming the first overlapping slot and creates no rows
+AssertionError: expected 404 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 404
+
+ ❯ tests/slots.batch.test.ts:178:24
+    176| 
+    177|     const res = await batchRange(await loginCookie(advisor.email), "20…
+    178|     expect(res.status).toBe(409);
+       |                        ^
+    179|     expect(res.body).toEqual({ error: { code: "SLOT_OVERLAP", message:…
+    180|     const rows = await prisma.slot.findMany({ where: { advisorId: advi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/18]⎯
+
+ FAIL  tests/slots.batch.test.ts > TEST-F15-03 (AC-F15-03): a range overlapping a live slot of the advisor is rejected whole > back-to-back slots, another advisor's slot and an own deleted slot do not block
+AssertionError: expected 404 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 404
+
+ ❯ tests/slots.batch.test.ts:193:24
+    191| 
+    192|     const tue = await batchRange(a, "2026-11-10T09:00:00", "2026-11-10…
+    193|     expect(tue.status).toBe(201);
+       |                        ^
+    194|     expect(startsOf(tue.body)).toEqual(localStarts("2026-11-10", "09:0…
+    195|     await expectStored(tue.body.slots, advisor.id, bkk(NOW));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/18]⎯
+
+ FAIL  tests/slots.batch.test.ts > TEST-F15-04 (AC-F15-04): each slot gets its own isLate; a late slot 2 h or less away rejects the batch > mixed isLate at Mon 19:00, 422 SLOT_UNBOOKABLE at Tue 07:00, 201 at Tue 06:59
+AssertionError: expected 404 to be 201 // Object.is equality
+
+- Expected
++ Received
+
+- 201
++ 404
+
+ ❯ tests/slots.batch.test.ts:212:26
+    210|     at("2026-11-09T19:00:00");
+    211|     const mixed = await batchRange(await loginCookie(advisor.email), "…
+    212|     expect(mixed.status).toBe(201);
+       |                          ^
+    213|     expect(startsOf(mixed.body)).toEqual(localStarts("2026-11-10", "11…
+    214|     expect(mixed.body.slots.map((s: SlotItem) => s.isLate)).toEqual([t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/18]⎯
+
+ FAIL  tests/slots.batch.test.ts > TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > 09:00 to 09:00 (empty) gives 400 VALIDATION_ERROR and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > 11:00 to 09:00 (end before start) gives 400 VALIDATION_ERROR and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > 09:00 to 09:45 (not a multiple of 30 minutes) gives 400 VALIDATION_ERROR and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > Tue 23:30 to Wed 00:00 (two dates) gives 400 VALIDATION_ERROR and creates no rows
+ FAIL  tests/slots.batch.test.ts > TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before any rule check > a body without endAt gives 400 VALIDATION_ERROR and creates no rows
+AssertionError: expected 404 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 404
+
+ ❯ tests/slots.batch.test.ts:243:24
+    241|   ])("%s gives 400 VALIDATION_ERROR and creates no rows", async (_name…
+    242|     const res = await batch(await loginCookie(advisor.email), body);
+    243|     expect(res.status).toBe(400);
+       |                        ^
+    244|     expect(res.body).toEqual(VALIDATION);
+    245|     expect(await slotCount()).toBe(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/18]⎯
+
+ FAIL  tests/slots.batch.test.ts > TEST-F15-06 (AC-F15-06): a student cannot batch-create slots > returns 403 FORBIDDEN_ROLE and creates no rows
+AssertionError: expected 404 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 404
+
+ ❯ tests/slots.batch.test.ts:252:24
+    250|   it("returns 403 FORBIDDEN_ROLE and creates no rows", async () => {
+    251|     const res = await batchRange(await loginCookie(student.email), "20…
+    252|     expect(res.status).toBe(403);
+       |                        ^
+    253|     expect(res.body).toEqual({ error: { code: "FORBIDDEN_ROLE", messag…
+    254|     expect(await slotCount()).toBe(0);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/18]⎯
+
+ Test Files  2 failed (2)
+      Tests  18 failed | 24 passed (42)
+   Start at  13:01:24
+   Duration  5.35s (transform 75ms, setup 0ms, collect 471ms, tests 3.42s, environment 0ms, prepare 121ms)
+

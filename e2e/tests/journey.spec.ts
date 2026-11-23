@@ -125,10 +125,25 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await page.goto(detailUrl);
     await expect(page.getByRole("alert")).toHaveText("Booking not found.");
     await expect(page.getByRole("main").getByText(booker.name)).toHaveCount(0);
+    await logOut(page);
+
+    // F-10 section 8 (UI step): the student cancels the booking from the detail page, more than
+    // 12 hours ahead, and sees "Cancelled". The Cancel button is gone afterwards.
+    await logIn(page, booker.email, /\/slots$/);
+    await page.goto(detailUrl);
+    await page.getByRole("button", { name: "Cancel booking" }).click();
+    const confirm = page.getByRole("dialog", { name: "Cancel this booking?" });
+    await confirm.getByRole("button", { name: "Yes" }).click();
+    await expect(page.getByText("Booking cancelled.")).toBeVisible();
+    await expect(page.getByRole("main").getByText("Cancelled", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cancel booking" })).toHaveCount(0);
   });
-  // F-06 and F-07 in the browser: the student books from /slots, then a second booking is
-  // rejected by BR-07 and the UI shows the server's message (TEST-R02-02 / AC-R02-02).
+  // F-06 and F-07 in the browser: the student books a slot of Advisor One from /slots, then a
+  // second slot of the same advisor is rejected by BR-07 (#67) and the UI shows the server's
+  // message (TEST-R02-02 / AC-R02-02).
   test("student books a slot, then a second booking shows the server's message", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const bookAdvisor = page.getByRole("button", { name: new RegExp(`^Book ${advisor.name} `) });
     await page.goto("/login");
     await page.getByLabel("Email").fill(student.email);
     await page.getByLabel("Password").fill(DEMO_PASSWORD);
@@ -140,8 +155,8 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(rows.first()).toContainText("Advisor");
     const before = await rows.count();
 
-    // F-07: book the first slot, land on the booking and see the confirmation
-    await page.getByRole("button", { name: "Book" }).first().click();
+    // F-07: book Advisor One's first slot, land on the booking and see the confirmation
+    await bookAdvisor.first().click();
     await expect(page).toHaveURL(/\/bookings\/\d+$/);
     await expect(page.getByText("Booking confirmed.")).toBeVisible();
 
@@ -149,11 +164,95 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await page.goto("/slots");
     await expect(rows).toHaveCount(before - 1);
 
-    // BR-07: a second booking is refused and the server's message is shown
-    await page.getByRole("button", { name: "Book" }).first().click();
-    await expect(page.getByRole("alert")).toHaveText("You already have an upcoming booking.");
+    // BR-07 (#67): a second slot of the same advisor is refused and the server's message is shown
+    await bookAdvisor.first().click();
+    await expect(page.getByRole("alert")).toHaveText("You already have an upcoming booking with this advisor.");
     await expect(page).toHaveURL(/\/slots$/);
   });
+  // F-15 in the browser: the advisor creates a range of slots in one action and they are all in
+  // the list, also after a reload (TEST-F15-07, AC-F15-01). 15:00 to 16:00 because advisor1's demo
+  // slots are at 09:00, 09:30 and 14:00.
+  test("advisor creates several slots at once (F-15, TEST-F15-07)", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const day = weekdayAhead(5);
+
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByText("Several slots", { exact: true }).click(); // the Bootstrap toggle label
+    await expect(page.getByRole("radio", { name: "Several slots" })).toBeChecked();
+    await page.getByLabel("Date (Monday to Friday)").fill(day);
+    await page.getByLabel("From", { exact: true }).selectOption("15:00");
+    await page.getByLabel("To", { exact: true }).selectOption("16:00");
+    await expect(page.getByText("This creates 2 slots.")).toBeVisible();
+    await page.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("status")).toHaveText("2 slots created.");
+
+    const daySection = page.locator("section").filter({ has: page.getByRole("heading", { name: formatDate(`${day}T12:00:00+07:00`) }) });
+    await expect(daySection.getByRole("listitem").filter({ hasText: "15:00-15:30" })).toHaveCount(1);
+    await expect(daySection.getByRole("listitem").filter({ hasText: "15:30-16:00" })).toHaveCount(1);
+
+    // The slots are stored, not only shown: they are still listed after a reload
+    await page.reload();
+    await expect(page.getByRole("listitem").first()).toBeVisible();
+    await expect(daySection.getByRole("listitem").filter({ hasText: "15:00-15:30" })).toHaveCount(1);
+    await expect(daySection.getByRole("listitem").filter({ hasText: "15:30-16:00" })).toHaveCount(1);
+  });
+  // F-13 (TEST-F13-08, AC-F13-01): the advisor deletes an Open slot from /schedule, confirms,
+  // and the row is gone, also after a reload (so the delete was stored, not just hidden).
+  test("advisor deletes an Open slot and it stays gone after a reload", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const day = weekdayAhead(4);
+    const startAt = new Date(`${day}T17:00:00+07:00`).toISOString(); // no demo slot at 17:00
+
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByLabel("Date (Monday to Friday)").fill(day);
+    await page.getByLabel("Start time").selectOption("17:00");
+    await page.getByRole("button", { name: "Create" }).click();
+    const sameRow = () => page.getByRole("listitem").filter({ hasText: "17:00-17:30" });
+    await expect(sameRow()).toHaveCount(1);
+
+    // Delete, then the inline confirm names the slot; Cancel keeps it, Delete removes it
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+    await expect(sameRow()).toContainText(`Delete the slot on ${formatDate(startAt)}, 17:00-17:30?`);
+    await sameRow().getByRole("button", { name: "Cancel" }).click();
+    await expect(sameRow()).toHaveCount(1);
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+
+    await expect(page.getByText("Slot deleted.")).toBeVisible();
+    await expect(sameRow()).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("listitem").first()).toBeVisible(); // the list (demo slots) has loaded
+    await expect(sameRow()).toHaveCount(0);
+  });
+
+  // F-12 UI check (F-12 section 5; the contract's STS has no E2E row, so no TEST id): the advisor
+  // edits an Open slot inline, and the new time is stored (still there after a reload).
+  test("advisor edits an Open slot inline and the new time is stored (F-12)", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const day = weekdayAhead(6);
+    const moved = new Date(`${day}T17:00:00+07:00`).toISOString();
+
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByLabel("Date (Monday to Friday)").fill(day);
+    await page.getByLabel("Start time").selectOption("16:30");
+    await page.getByRole("button", { name: "Create" }).click();
+    const rowAt = (t: string) => page.getByRole("listitem").filter({ hasText: t });
+    await expect(rowAt("16:30-17:00")).toHaveCount(1);
+
+    await rowAt("16:30-17:00").getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByLabel("New date")).toHaveValue(day); // prefilled
+    await page.getByLabel("New start time").selectOption("17:00");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(`Slot updated: ${formatDate(moved)}, 17:00-17:30.`)).toBeVisible();
+    await expect(rowAt("16:30-17:00")).toHaveCount(0);
+    await expect(rowAt("17:00-17:30")).toHaveCount(1);
+
+    await page.reload();
+    await expect(page.getByRole("listitem").first()).toBeVisible(); // the list has loaded
+    await expect(rowAt("17:00-17:30")).toHaveCount(1);
+    await expect(rowAt("16:30-17:00")).toHaveCount(0);
+  });
+
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);

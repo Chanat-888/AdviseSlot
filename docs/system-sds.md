@@ -16,6 +16,8 @@
 | 0.4 | 2026-10-28 | Jeerasak (with an AI agent) | Applied D-25: local PostgreSQL 17 in Docker on port 5433 (section 3.3), `DATABASE_URL` example matches the skeleton (section 8), app image built in Lab 5 (section 9). |
 | 0.5 | 2026-11-04 | Chanat (drafted with an AI agent) | Section 7 (from the F-01 to F-03 contracts): the `sid` cookie gets `Max-Age=7200`; the login email is trimmed and lowercased (D-26); a 401 from `requireAuth` clears the cookie but does not delete the expired row (no session cleanup in Sprint 1). For the SDS owner to review. |
 | 0.6 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): section 3.1 and 3.3 add the `User.email` lowercase CHECK constraint (D-26), written as raw SQL in the F-01 migration. For the SDS owner to review. |
+| 0.7 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Sprint 2 slot contracts (F-12, F-13, F-15). Closed O-03 (D-28). New 422 code `SLOT_ALREADY_STARTED` (D-29). Section 3.1: slot row lock so an edit or delete cannot race a booking (BR-14). Section 5.1: request shapes of the three slot endpoints. Section 5: 409 `BOOKING_NOT_ACTIVE` from the F-10/F-11/F-14 contracts (#76). Issue #68. |
+| 0.8 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67, approved by TA Supachok Deetaweesukh on 2026-11-22 (D-31): section 3.1 BR-07 row now allows two active bookings, at most one per advisor (student row lock unchanged); section 5 adds 409 `SAME_ADVISOR_BOOKING`. For the SDS owner to review. |
 
 ## 1. Stack and rationale
 
@@ -124,8 +126,9 @@ zone) would make the exclusion constraint below fail, because casting it to
 | `Slot.endAt = startAt + 30 min` | BR-01 | Computed by the service. `CHECK ("endAt" = "startAt" + interval '30 minutes')` in a raw SQL migration. |
 | No overlapping slots per advisor | BR-04 | Service check in a transaction, plus an exclusion constraint `EXCLUDE USING gist ("advisorId" WITH =, tstzrange("startAt", "endAt") WITH &&) WHERE ("deletedAt" IS NULL)` (needs `CREATE EXTENSION IF NOT EXISTS btree_gist`). Identifiers are quoted because Prisma creates camelCase column names. |
 | One ACTIVE booking per slot | BR-05 | Partial unique index `CREATE UNIQUE INDEX ON "Booking"("slotId") WHERE status = 'ACTIVE'`. A second concurrent insert fails, and the service returns 409 `SLOT_TAKEN`. |
-| One active booking per student | BR-07 | Depends on the current time, so a static index cannot express it. The booking transaction first locks the student's `User` row (`SELECT ... FOR UPDATE`), then counts active bookings. Two parallel requests by one student run one after the other. |
+| At most two active bookings per student, at most one with the same advisor | BR-07 | Depends on the current time, so a static index cannot express it. The booking transaction first locks the student's `User` row (`SELECT ... FOR UPDATE`), then reads the student's active bookings: one with the slot's advisor gives 409 `SAME_ADVISOR_BOOKING`, otherwise two or more give 409 `ACTIVE_BOOKING_LIMIT` (D-31). The lock is unchanged: two parallel requests by one student run one after the other, so neither limit can be passed by a race. |
 | Late slot flag | BR-06, BR-16 | When a slot is created, the service compares the server's "now" with the slot's normal BR-06 deadline and stores `isLate`. A late slot that starts 2 hours or less from now is rejected with 422 `SLOT_UNBOOKABLE` (D-23), so no notification is sent for it. The booking deadline is then the normal BR-06 deadline if `isLate` is false, and start - 2 hours if it is true. The flag is stored so the deadline does not change later. |
+| Booked slot cannot be edited or deleted | BR-14 | Edit (F-12), delete (F-13) and booking (F-07, and the new slot of F-14) each lock the slot row (`SELECT ... FROM "Slot" WHERE id = $1 FOR UPDATE`) inside their transaction before their checks. Booking and reschedule lock the student's `User` row first and the slot row second; edit and delete lock only the slot row, so no deadlock cycle is possible. An edit or delete and a parallel booking of the same slot run one after the other, so a deleted or moved slot never ends up with a booking made against its old state. |
 | One notification per student per late slot | FR-19 | Unique index on `Notification("studentId", "slotId")`. The late slot and one `Notification` row per student are inserted in the same transaction. |
 | Foreign keys | Ownership links | `Slot.advisorId`, `Booking.slotId`, `Booking.studentId`, `Booking.cancelledById`, `Notification.studentId`, `Notification.slotId` reference their parents. Deletes are restricted. |
 
@@ -198,8 +201,8 @@ client calls `GET /api/auth/me` and sends students to `/slots` and advisors to
 | 401 | No valid session, or wrong login | `UNAUTHENTICATED`, `INVALID_CREDENTIALS` |
 | 403 | Logged in, but the role may not do this | `FORBIDDEN_ROLE` |
 | 404 | Not found, or belongs to someone else (do not reveal it exists) | `NOT_FOUND` |
-| 409 | Conflict with existing data | `SLOT_TAKEN`, `SLOT_OVERLAP`, `ACTIVE_BOOKING_LIMIT`, `SLOT_HAS_ACTIVE_BOOKING` (Sprint 2) |
-| 422 | Valid input that breaks a business rule | `SLOT_OUTSIDE_HOURS`, `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_IN_PAST`, `SLOT_UNBOOKABLE`, `BOOKING_DEADLINE_PASSED`, `CANCEL_WINDOW_PASSED` (Sprint 2) |
+| 409 | Conflict with existing data | `SLOT_TAKEN`, `SLOT_OVERLAP`, `ACTIVE_BOOKING_LIMIT`, `SAME_ADVISOR_BOOKING` (Lab 7, #67, D-31), `SLOT_HAS_ACTIVE_BOOKING` (Sprint 2), `BOOKING_NOT_ACTIVE` (Sprint 2, F-10, F-11, F-14) |
+| 422 | Valid input that breaks a business rule | `SLOT_OUTSIDE_HOURS`, `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_IN_PAST`, `SLOT_UNBOOKABLE`, `BOOKING_DEADLINE_PASSED`, `CANCEL_WINDOW_PASSED` (Sprint 2), `SLOT_ALREADY_STARTED` (Sprint 2, D-29) |
 | 500 | Unexpected error. Generic message only; details go to the server log. | `INTERNAL_ERROR` |
 
 ### 5.1 Endpoint overview
@@ -219,9 +222,9 @@ Detailed request and response shapes belong in each feature contract.
 | `GET /api/bookings/:id` | Student owner, slot's advisor | Booking detail | 1 |
 | `POST /api/bookings/:id/cancel` | Student owner, slot's advisor | Cancel (advisor sends `{ reason }`) | 2 |
 | `POST /api/bookings/:id/reschedule` | Student owner | Move to another slot (`{ newSlotId }`) | 2 |
-| `PATCH /api/slots/:id` | Advisor owner | Change start time | 2 |
-| `DELETE /api/slots/:id` | Advisor owner | Delete unbooked slot | 2 |
-| `POST /api/slots/batch` | Advisor | Create consecutive slots | 2 |
+| `PATCH /api/slots/:id` | Advisor owner | Change start time (`{ startAt }`, F-12) | 2 |
+| `DELETE /api/slots/:id` | Advisor owner | Soft-delete an unbooked future slot (F-13) | 2 |
+| `POST /api/slots/batch` | Advisor | Create consecutive slots (`{ startAt, endAt }`, all-or-nothing, F-15) | 2 |
 | `GET /api/advisors` | Student | Advisor list for filtering | 3 |
 | `GET /api/summary?from=&to=` | Advisor | Appointment summary | 3 |
 | `GET /api/bookings/history` | Student, Advisor | Cancelled and passed bookings with who cancelled and the reason (FR-18). Student: own bookings. Advisor: bookings on own slots. | 3 |
@@ -313,4 +316,4 @@ teammate review before a merge.
 |---|---|---|
 | O-01 | A late slot created less than 2 hours before its start can never be booked, but would still notify every student. Reject its creation, or create it without notifications? | Closed in v0.3: rejected with `SLOT_UNBOOKABLE` (D-23) |
 | O-02 | Slot status names for `/schedule` (FR-05): is an unbooked slot past its booking deadline "open" or "closed"? | Closed in v0.3: "Closed" (D-24, section 4.2) |
-| O-03 | Does editing a slot's start time (FR-12) recompute `isLate`? | Team decision in Sprint 2 |
+| O-03 | Does editing a slot's start time (FR-12) recompute `isLate`? | Closed in v0.7: yes, recomputed as if created now (D-28) |

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "./api";
-import { bangkokToIso, formatDate, formatTime, isWeekend, START_TIMES } from "./time";
+import { bangkokDate, bangkokToIso, END_TIMES, formatDate, formatTime, isWeekend, minutesOf, START_TIMES } from "./time";
 
 // The slot shape of F-04 section 4.2 and F-05 section 4.2.
 export type Slot = {
@@ -25,7 +25,7 @@ const BADGE: Record<Slot["status"], string> = {
 const message = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong.");
 
 // F-04 section 5: date and start time, then Create.
-function CreateSlotForm({ onCreated }: { onCreated: (slot: Slot) => void }) {
+function OneSlotForm({ onCreated }: { onCreated: () => void }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +46,7 @@ function CreateSlotForm({ onCreated }: { onCreated: (slot: Slot) => void }) {
         body: JSON.stringify({ startAt: bangkokToIso(date, time) }),
       });
       setSuccess(`Slot created: ${formatDate(slot.startAt)}, ${formatTime(slot.startAt)}-${formatTime(slot.endAt)}.`);
-      onCreated(slot);
+      onCreated();
     } catch (err) {
       setError(message(err)); // the form keeps its values
     } finally {
@@ -55,8 +55,7 @@ function CreateSlotForm({ onCreated }: { onCreated: (slot: Slot) => void }) {
   }
 
   return (
-    <form className="card card-body mb-4" onSubmit={onSubmit} noValidate>
-      <h2 className="h5 mb-3">Create a slot</h2>
+    <form onSubmit={onSubmit} noValidate>
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {success && <div className="alert alert-success" role="status">{success}</div>}
       <div className="row g-3 align-items-end">
@@ -85,8 +84,210 @@ function CreateSlotForm({ onCreated }: { onCreated: (slot: Slot) => void }) {
   );
 }
 
+// F-15 section 5: one date, a From and a To time, then Create. The server cuts the range into
+// 30-minute slots and creates all of them or none (D-30).
+function SeveralSlotsForm({ onCreated }: { onCreated: () => void }) {
+  const [date, setDate] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const count = from && to && minutesOf(to) > minutesOf(from) ? (minutesOf(to) - minutesOf(from)) / 30 : 0;
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    if (!date || !from || !to) return setError("Choose a date, a From time and a To time.");
+    if (isWeekend(date)) return setError("Slots can only be on Monday to Friday.");
+    if (minutesOf(to) <= minutesOf(from)) return setError("To must be after From.");
+
+    setSubmitting(true);
+    try {
+      const { slots } = await api<{ slots: Slot[] }>("/api/slots/batch", {
+        method: "POST",
+        body: JSON.stringify({ startAt: bangkokToIso(date, from), endAt: bangkokToIso(date, to) }),
+      });
+      setSuccess(`${slots.length} ${slots.length === 1 ? "slot" : "slots"} created.`);
+      onCreated();
+    } catch (err) {
+      setError(message(err)); // the form keeps its values; nothing was created (D-30)
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} noValidate>
+      {error && <div className="alert alert-danger" role="alert">{error}</div>}
+      {success && <div className="alert alert-success" role="status">{success}</div>}
+      <div className="row g-3 align-items-end">
+        <div className="col-sm-4">
+          <label htmlFor="batch-date" className="form-label">Date (Monday to Friday)</label>
+          <input id="batch-date" type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        <div className="col-sm-3">
+          <label htmlFor="batch-from" className="form-label">From</label>
+          <select id="batch-from" className="form-select" value={from} onChange={(e) => setFrom(e.target.value)}>
+            <option value="">Choose...</option>
+            {START_TIMES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-sm-3">
+          <label htmlFor="batch-to" className="form-label">To</label>
+          <select id="batch-to" className="form-select" value={to} onChange={(e) => setTo(e.target.value)}>
+            <option value="">Choose...</option>
+            {END_TIMES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-sm-2">
+          <button type="submit" className="btn btn-primary w-100" disabled={submitting}>
+            {submitting && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}
+            Create
+          </button>
+        </div>
+      </div>
+      <div className="form-text mt-2">
+        {count > 0 ? `This creates ${count} ${count === 1 ? "slot" : "slots"}.` : "Choose a To time after the From time."}{" "}
+        Each slot is 30 minutes. Times are Asia/Bangkok.
+      </div>
+    </form>
+  );
+}
+
+// F-04 / F-15 section 5: the create form with a "One slot" / "Several slots" switch.
+function CreateSlotForm({ onCreated }: { onCreated: () => void }) {
+  const [mode, setMode] = useState<"one" | "several">("one");
+
+  return (
+    <div className="card card-body mb-4">
+      <h2 className="h5 mb-3">Create a slot</h2>
+      <div className="btn-group mb-3" role="group" aria-label="How many slots">
+        <input type="radio" className="btn-check" name="create-mode" id="mode-one" checked={mode === "one"} onChange={() => setMode("one")} />
+        <label className="btn btn-outline-primary" htmlFor="mode-one">One slot</label>
+        <input type="radio" className="btn-check" name="create-mode" id="mode-several" checked={mode === "several"} onChange={() => setMode("several")} />
+        <label className="btn btn-outline-primary" htmlFor="mode-several">Several slots</label>
+      </div>
+      {mode === "one" ? <OneSlotForm onCreated={onCreated} /> : <SeveralSlotsForm onCreated={onCreated} />}
+    </div>
+  );
+}
+
+// What an Edit or Delete in a row reports to the page: a success text, or the server's message
+// and whether the list must be reloaded because the slot changed meanwhile.
+type ActionResult = { ok: true; text: string } | { ok: false; error: string; reload: boolean };
+
+// F-12 section 5: Edit turns the row into a date and start-time form, prefilled; Save / Cancel.
+// The server decides (F-04 rules, overlap, 404, 409, 422); the form keeps its values on an error.
+function EditSlot({ slot, onDone, onClose }: { slot: Slot; onDone: (r: ActionResult) => void; onClose: () => void }) {
+  const [date, setDate] = useState(bangkokDate(slot.startAt));
+  const [time, setTime] = useState(formatTime(slot.startAt));
+  const [busy, setBusy] = useState(false);
+
+  async function onSave(e: FormEvent) {
+    e.preventDefault();
+    if (isWeekend(date)) return onDone({ ok: false, error: "Slots can only be on Monday to Friday.", reload: false });
+    setBusy(true);
+    try {
+      const updated = await api<Slot>(`/api/slots/${slot.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ startAt: bangkokToIso(date, time) }),
+      });
+      onDone({ ok: true, text: `Slot updated: ${formatDate(updated.startAt)}, ${formatTime(updated.startAt)}-${formatTime(updated.endAt)}.` });
+      onClose();
+    } catch (err) {
+      // 404, or 409 for a booking made meanwhile: the slot changed, so reload (F-12 section 5).
+      const reload = err instanceof ApiError && (err.status === 404 || err.code === "SLOT_HAS_ACTIVE_BOOKING");
+      onDone({ ok: false, error: message(err), reload });
+      if (reload) onClose();
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="ms-auto d-flex align-items-center gap-2" onSubmit={onSave} noValidate>
+      <label className="visually-hidden" htmlFor={`edit-date-${slot.id}`}>New date</label>
+      <input id={`edit-date-${slot.id}`} type="date" className="form-control form-control-sm" value={date} onChange={(e) => setDate(e.target.value)} />
+      <label className="visually-hidden" htmlFor={`edit-time-${slot.id}`}>New start time</label>
+      <select id={`edit-time-${slot.id}`} className="form-select form-select-sm" value={time} onChange={(e) => setTime(e.target.value)}>
+        {START_TIMES.map((t) => (
+          <option key={t} value={t}>{t}</option>
+        ))}
+      </select>
+      <button type="submit" className="btn btn-sm btn-primary" disabled={busy || !date}>
+        {busy && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}
+        Save
+      </button>
+      <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose} disabled={busy}>
+        Cancel
+      </button>
+    </form>
+  );
+}
+
+// Edit (F-12) and Delete (F-13) on an Open or Closed row. While editing, Delete is hidden.
+function SlotActions({ slot, onDone }: { slot: Slot; onDone: (r: ActionResult) => void }) {
+  const [editing, setEditing] = useState(false);
+  if (editing) return <EditSlot slot={slot} onDone={onDone} onClose={() => setEditing(false)} />;
+  return (
+    <span className="ms-auto d-flex align-items-center gap-2">
+      <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setEditing(true)}>
+        Edit
+      </button>
+      <DeleteSlot slot={slot} onDone={onDone} />
+    </span>
+  );
+}
+
+// F-13 section 5: Delete on an Open or Closed row, confirmed inline with Delete / Cancel.
+// The server decides (404, 409, 422); the button is only shown where a delete can succeed.
+function DeleteSlot({ slot, onDone }: { slot: Slot; onDone: (r: ActionResult) => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function onDelete() {
+    setBusy(true);
+    try {
+      await api<void>(`/api/slots/${slot.id}`, { method: "DELETE" });
+      onDone({ ok: true, text: "Slot deleted." });
+    } catch (err) {
+      // 404 or 409: the slot changed in the meantime, so the list is reloaded (F-13 section 5).
+      const reload = err instanceof ApiError && (err.status === 404 || err.status === 409);
+      onDone({ ok: false, error: message(err), reload });
+      setBusy(false);
+      setConfirming(false);
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setConfirming(true)}>
+        Delete
+      </button>
+    );
+  }
+  return (
+    <span className="d-flex align-items-center gap-2">
+      <span>Delete the slot on {formatDate(slot.startAt)}, {formatTime(slot.startAt)}-{formatTime(slot.endAt)}?</span>
+      <button type="button" className="btn btn-sm btn-danger" onClick={onDelete} disabled={busy}>
+        {busy && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}
+        Delete
+      </button>
+      <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setConfirming(false)} disabled={busy}>
+        Cancel
+      </button>
+    </span>
+  );
+}
+
 // F-05 section 5: own slots grouped by date, with D-24 status badges.
-function SlotList({ slots }: { slots: Slot[] }) {
+function SlotList({ slots, onAction }: { slots: Slot[]; onAction: (r: ActionResult) => void }) {
   if (slots.length === 0) return <p className="text-muted">You have no slots yet. Create one above.</p>;
 
   const groups = new Map<string, Slot[]>();
@@ -109,6 +310,7 @@ function SlotList({ slots }: { slots: Slot[] }) {
                 {s.student && s.bookingId !== null && (
                   <Link to={`/bookings/${s.bookingId}`} className="ms-auto">{s.student.name}</Link>
                 )}
+                {(s.status === "Open" || s.status === "Closed") && <SlotActions slot={s} onDone={onAction} />}
               </li>
             ))}
           </ul>
@@ -121,6 +323,7 @@ function SlotList({ slots }: { slots: Slot[] }) {
 export function Schedule() {
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ kind: "success" | "danger"; text: string } | null>(null);
 
   const load = useCallback(() => {
     api<Slot[]>("/api/slots/mine")
@@ -139,7 +342,25 @@ export function Schedule() {
       <CreateSlotForm onCreated={load} />
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {!error && slots === null && <div className="spinner-border" role="status" />}
-      {slots && <SlotList slots={slots} />}
+      {notice && (
+        <div className={`alert alert-${notice.kind}`} role={notice.kind === "success" ? "status" : "alert"}>
+          {notice.text}
+        </div>
+      )}
+      {slots && (
+        <SlotList
+          slots={slots}
+          onAction={(r) => {
+            if (r.ok) {
+              setNotice({ kind: "success", text: r.text });
+              load();
+            } else {
+              setNotice({ kind: "danger", text: r.error });
+              if (r.reload) load();
+            }
+          }}
+        />
+      )}
     </main>
   );
 }

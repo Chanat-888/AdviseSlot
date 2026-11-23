@@ -10,18 +10,23 @@ import { createUsers, loginCookie, resetUsers, type Fixture } from "./helpers.js
 // app without being listed here or in PUBLIC, so a Sprint 2 or 3 endpoint cannot be missed.
 
 // `route` is the Express pattern for the inventory; `path` is the URL actually called.
-type Endpoint = { method: "get" | "post"; path: string; route?: string; body?: object };
+type Endpoint = { method: "get" | "post" | "patch" | "delete"; path: string; route?: string; body?: object };
 
 // Every route that needs a session. `:id` paths use a well-formed id, so a 401 cannot be a 400.
 const PROTECTED: Endpoint[] = [
   { method: "get", path: "/api/auth/me" },
   { method: "post", path: "/api/auth/logout" },
   { method: "post", path: "/api/slots", body: { startAt: "2026-11-10T02:00:00.000Z" } },
+  { method: "post", path: "/api/slots/batch", body: { startAt: "2026-11-10T02:00:00.000Z", endAt: "2026-11-10T04:00:00.000Z" } },
   { method: "get", path: "/api/slots/mine" },
   { method: "get", path: "/api/slots/bookable" },
+  { method: "delete", path: "/api/slots/1", route: "/api/slots/:id" }, // F-13 (Sprint 2)
+  { method: "patch", path: "/api/slots/1", route: "/api/slots/:id", body: { startAt: "2026-11-10T07:00:00.000Z" } }, // F-12
   { method: "post", path: "/api/bookings", body: { slotId: 1 } },
   { method: "get", path: "/api/bookings/mine" },
   { method: "get", path: "/api/bookings/1", route: "/api/bookings/:id" },
+  { method: "post", path: "/api/bookings/1/cancel", route: "/api/bookings/:id/cancel", body: {} }, // F-10, F-11 (Sprint 2)
+  { method: "post", path: "/api/bookings/1/reschedule", route: "/api/bookings/:id/reschedule", body: { newSlotId: 1 } }, // F-14 (Sprint 2)
 ];
 
 // Routes that are deliberately open (SDS section 5.1).

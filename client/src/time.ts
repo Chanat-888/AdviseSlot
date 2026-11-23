@@ -27,6 +27,11 @@ export function bangkokToIso(date: string, time: string): string {
   return new Date(`${date}T${time}:00+07:00`).toISOString();
 }
 
+/** The Bangkok date of an instant as a date input value ("2026-11-10"). */
+export function bangkokDate(iso: string): string {
+  return new Date(new Date(iso).getTime() + 7 * 3600_000).toISOString().slice(0, 10);
+}
+
 /** True if a date input value ("2026-11-14") is a Saturday or Sunday. */
 export function isWeekend(date: string): boolean {
   const day = new Date(`${date}T12:00:00Z`).getUTCDay();
@@ -38,3 +43,12 @@ export const START_TIMES: string[] = Array.from({ length: 20 }, (_, i) => {
   const minutes = 8 * 60 + i * 30;
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${minutes % 60 === 0 ? "00" : "30"}`;
 });
+
+/** 08:30 to 18:00 in 30-minute steps: the end times of a batch (F-15 section 5). */
+export const END_TIMES: string[] = [...START_TIMES.slice(1), "18:00"];
+
+/** Minutes since midnight of "09:30". */
+export function minutesOf(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
