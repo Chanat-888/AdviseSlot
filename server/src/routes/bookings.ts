@@ -31,8 +31,10 @@ bookingsRouter.post("/", requireAuth, requireRole("STUDENT", "Only students can 
         return sendError(res, 404, "NOT_FOUND", "This slot does not exist.");
       case "SLOT_TAKEN":
         return sendError(res, 409, "SLOT_TAKEN", "This slot has just been booked by someone else.");
+      case "SAME_ADVISOR_BOOKING":
+        return sendError(res, 409, "SAME_ADVISOR_BOOKING", "You already have an upcoming booking with this advisor.");
       case "ACTIVE_BOOKING_LIMIT":
-        return sendError(res, 409, "ACTIVE_BOOKING_LIMIT", "You already have an upcoming booking.");
+        return sendError(res, 409, "ACTIVE_BOOKING_LIMIT", "You already have 2 upcoming bookings.");
       case "BOOKING_DEADLINE_PASSED":
         return sendError(res, 422, "BOOKING_DEADLINE_PASSED", deadlineMessage(result.deadline!));
     }
