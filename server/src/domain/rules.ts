@@ -91,6 +91,6 @@ export function bookingStatus(
 }
 
 /** BR-11 (F-10): a student may cancel while the slot starts at least 12 hours from now. */
-export function studentCanCancel(_startAt: Date, _now: Date): boolean {
-  return false; // TDD red: placeholder so the tests fail on their assertions; implemented in the green commit
+export function studentCanCancel(startAt: Date, now: Date): boolean {
+  return startAt.getTime() - now.getTime() >= 12 * HOUR;
 }
