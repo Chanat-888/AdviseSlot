@@ -181,6 +181,76 @@ export async function cancelBookingAsStudent(studentId: number, bookingId: numbe
   });
 }
 
+export type RescheduleResult =
+  | { ok: true; booking: BookingDto & { previousBookingId: number } }
+  | { ok: false; code: "NOT_FOUND" | "SLOT_NOT_FOUND" | "SAME_SLOT" | "BOOKING_NOT_ACTIVE" | "SLOT_TAKEN" | "SAME_ADVISOR_BOOKING" }
+  | { ok: false; code: "CANCEL_WINDOW_PASSED"; limit: Date }
+  | { ok: false; code: "BOOKING_DEADLINE_PASSED"; deadline: Date };
+
+/**
+ * F-14 section 2, step 5, and section 3.2 checks 1 to 7: a student moves their own booking to
+ * another slot in one transaction (BR-15). Any rejection returns before a write, and a lost race
+ * on the new slot (check 7) throws P2002, so the old booking's cancel is rolled back with it.
+ */
+export async function rescheduleBooking(studentId: number, bookingId: number, newSlotId: number, now: Date): Promise<RescheduleResult> {
+  try {
+    return await prisma.$transaction(async (tx): Promise<RescheduleResult> => {
+      // Steps 5.1 and 5.2: locks in the SDS 3.1 order, the student, then the new slot (as F-07). The
+      // old booking is changed by the conditional update below, so its slot is not locked.
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${studentId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Slot" WHERE id = ${newSlotId} FOR UPDATE`;
+
+      // Check 1: a missing booking and another student's booking give the same 404 (BR-09).
+      const old = await tx.booking.findUnique({ where: { id: bookingId }, include: { slot: true } });
+      if (!old || old.studentId !== studentId) return { ok: false, code: "NOT_FOUND" };
+
+      // Check 2: still active (not cancelled, slot not ended).
+      if (old.status !== "ACTIVE" || old.slot.endAt.getTime() <= now.getTime()) return { ok: false, code: "BOOKING_NOT_ACTIVE" };
+
+      // Check 3: BR-11 on the old booking (F-10).
+      if (!studentCanCancel(old.slot.startAt, now)) {
+        return { ok: false, code: "CANCEL_WINDOW_PASSED", limit: new Date(old.slot.startAt.getTime() - 12 * 60 * 60 * 1000) };
+      }
+
+      // Check 4: the new slot exists, is not deleted, and is not the old booking's slot.
+      const slot = await tx.slot.findFirst({ where: { id: newSlotId, deletedAt: null } });
+      if (!slot) return { ok: false, code: "SLOT_NOT_FOUND" };
+      if (slot.id === old.slotId) return { ok: false, code: "SAME_SLOT" };
+
+      // Check 5: free, and before its BR-06 / BR-16 deadline (F-07 checks 2 and 3).
+      const taken = await tx.booking.findFirst({ where: { slotId: newSlotId, status: "ACTIVE" }, select: { id: true } });
+      if (taken) return { ok: false, code: "SLOT_TAKEN" };
+      const deadline = bookingDeadline(slot);
+      if (now.getTime() >= deadline.getTime()) return { ok: false, code: "BOOKING_DEADLINE_PASSED", deadline };
+
+      // Check 6: BR-07 with the old booking released (BR-15, section 0). At most one other active
+      // booking remains, so only the same-advisor part (F-07 check 4a) can fail.
+      const others = await tx.booking.findMany({
+        where: { studentId, status: "ACTIVE", id: { not: bookingId }, slot: { endAt: { gt: now } } },
+        select: { slot: { select: { advisorId: true } } },
+      });
+      if (others.some((o) => o.slot.advisorId === slot.advisorId)) return { ok: false, code: "SAME_ADVISOR_BOOKING" };
+
+      // Step 5.4: cancel the old booking. 0 rows cannot happen under the student lock, but is still refused.
+      const { count } = await tx.booking.updateMany({
+        where: { id: bookingId, status: "ACTIVE" },
+        data: { status: "CANCELLED", cancelledAt: now, cancelledById: studentId, cancelReason: null },
+      });
+      if (count === 0) return { ok: false, code: "BOOKING_NOT_ACTIVE" };
+
+      // Step 5.5: the new booking. A P2002 here (check 7) aborts the whole transaction.
+      const booking = await tx.booking.create({
+        data: { slotId: newSlotId, studentId, status: "ACTIVE", createdAt: now },
+        include: INCLUDE,
+      });
+      return { ok: true, booking: { ...toBookingDto(booking, now), previousBookingId: bookingId } };
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) return { ok: false, code: "SLOT_TAKEN" }; // check 7: a parallel insert won
+    throw err;
+  }
+}
+
 /**
  * F-11 section 2, steps 5 to 7, and section 3.2 checks 1 to 4: the slot's advisor cancels a booking
  * with a reason that the route has already trimmed and checked (section 3.1). `now` is the server clock.
