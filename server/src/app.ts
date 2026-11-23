@@ -3,6 +3,7 @@ import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { prisma } from "./db.js";
 import { sendError } from "./errors.js";
+import { advisorsRouter } from "./routes/advisors.js";
 import { authRouter } from "./routes/auth.js";
 import { bookingsRouter } from "./routes/bookings.js";
 import { slotsRouter } from "./routes/slots.js";
@@ -43,6 +44,7 @@ app.get("/api/version", (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/slots", slotsRouter);
 app.use("/api/bookings", bookingsRouter);
+app.use("/api/advisors", advisorsRouter);
 
 // R-02: an unknown /api path (or wrong method) gets the SDS error shape, not Express's HTML page.
 app.use("/api", (_req, res) => {

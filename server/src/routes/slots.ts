@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { bangkokDay } from "../domain/rules.js";
 import { sendError } from "../errors.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
@@ -146,14 +147,35 @@ slotsRouter.delete("/:id", requireAuth, requireRole("ADVISOR", "Only advisors ca
   }
 });
 
+/**
+ * F-16 section 3.1: an optional query value. Absent or empty is "no filter" (undefined); anything
+ * that is not one plain string (given twice, `advisorId[]=1`, `date[a]=...`) is null, so `parseId`
+ * never reads `["1"]` as `"1"`.
+ */
+function queryValue(value: unknown): string | undefined | null {
+  if (value === undefined || value === "") return undefined;
+  return typeof value === "string" ? value : null;
+}
+
 // F-06: bookable slots of all advisors, without booker identity (BR-09).
+// F-16: optional `advisorId` and `date` (a Bangkok day) filters, checked before any database read.
 slotsRouter.get(
   "/bookable",
   requireAuth,
   requireRole("STUDENT", "Only students can view bookable slots."),
-  async (_req, res, next) => {
+  async (req, res, next) => {
     try {
-      res.json(await listBookableSlots(new Date()));
+      const rawAdvisor = queryValue(req.query.advisorId);
+      const advisorId = rawAdvisor === undefined ? undefined : rawAdvisor === null ? null : parseId(rawAdvisor);
+      if (advisorId === null) {
+        return sendError(res, 400, "VALIDATION_ERROR", "The advisor filter must be a positive whole number.");
+      }
+      const rawDate = queryValue(req.query.date);
+      const day = rawDate === undefined ? undefined : rawDate === null ? null : bangkokDay(rawDate);
+      if (day === null) {
+        return sendError(res, 400, "VALIDATION_ERROR", "The date filter must be a real date written as YYYY-MM-DD.");
+      }
+      res.json(await listBookableSlots(new Date(), { advisorId, day }));
     } catch (err) {
       next(err);
     }
