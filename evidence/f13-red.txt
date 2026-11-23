@@ -1,0 +1,173 @@
+# F-13 red run: TEST-F13-01 to -07 on 078e3e6 (sprint-2, no DELETE /api/slots/:id yet)
+# Command: cd server && npx vitest run tests/slots.delete.test.ts   (2026-11-23 12:42 +0700)
+
+
+ RUN  v2.1.5 C:/Users/Pedpro/AdviseSlot/server
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+4 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+ ❯ tests/slots.delete.test.ts (7 tests | 7 failed) 2100ms
+   × TEST-F13-01 (AC-F13-01): delete own unbooked future slot > soft-deletes an Open and a Closed slot, and both leave F-05 and F-06 259ms
+     → expected 404 to be 204 // Object.is equality
+   × TEST-F13-02 (AC-F13-02): a slot with an ACTIVE booking cannot be deleted > returns 409 SLOT_HAS_ACTIVE_BOOKING and changes nothing 201ms
+     → expected 404 to be 409 // Object.is equality
+   × TEST-F13-03 (AC-F13-03): a cancelled booking does not block > deletes a slot whose only booking is CANCELLED and leaves the booking row as it was 199ms
+     → expected 404 to be 204 // Object.is equality
+   × TEST-F13-04 (AC-F13-04): a slot that has started cannot be deleted > rejects a slot in progress and one starting now; accepts the next half hour 199ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F13-05 (AC-F13-05): only the slot's advisor can delete it > gives 404 to another advisor, 403 to a student, 404 for deleted or unknown, 400 for a bad id 388ms
+     → expected { error: { code: 'NOT_FOUND', …(1) } } to deeply equal { error: { code: 'NOT_FOUND', …(1) } }
+   × TEST-F13-06 (AC-F13-06): a deleted slot cannot be booked and its time is free > returns 404 to a booking and 201 to a new slot at the same time 199ms
+     → expected 404 to be 204 // Object.is equality
+   × TEST-F13-07 (AC-F13-07): delete and book of the same slot in parallel > never leaves a deleted slot with an ACTIVE booking (10 rounds) 406ms
+     → expected [ '204/404', '409/201' ] to include '404/201'
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/slots.delete.test.ts > TEST-F13-01 (AC-F13-01): delete own unbooked future slot > soft-deletes an Open and a Closed slot, and both leave F-05 and F-06
+AssertionError: expected 404 to be 204 // Object.is equality
+
+- Expected
++ Received
+
+- 204
++ 404
+
+ ❯ tests/slots.delete.test.ts:72:26
+     70|     for (const slot of [open, closed]) {
+     71|       const res = await del(a, slot.id);
+     72|       expect(res.status).toBe(204);
+       |                          ^
+     73|       expect(res.text).toBe("");
+     74|       expect(await deletedAt(slot.id)).toEqual(bkk(NOW));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  tests/slots.delete.test.ts > TEST-F13-02 (AC-F13-02): a slot with an ACTIVE booking cannot be deleted > returns 409 SLOT_HAS_ACTIVE_BOOKING and changes nothing
+AssertionError: expected 404 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 404
+
+ ❯ tests/slots.delete.test.ts:93:24
+     91| 
+     92|     const res = await del(await loginCookie(advisor.email), slot.id);
+     93|     expect(res.status).toBe(409);
+       |                        ^
+     94|     expect(res.body).toEqual({
+     95|       error: { code: "SLOT_HAS_ACTIVE_BOOKING", message: "This slot ha…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  tests/slots.delete.test.ts > TEST-F13-03 (AC-F13-03): a cancelled booking does not block > deletes a slot whose only booking is CANCELLED and leaves the booking row as it was
+AssertionError: expected 404 to be 204 // Object.is equality
+
+- Expected
++ Received
+
+- 204
++ 404
+
+ ❯ tests/slots.delete.test.ts:109:24
+    107| 
+    108|     const res = await del(await loginCookie(advisor.email), slot.id);
+    109|     expect(res.status).toBe(204);
+       |                        ^
+    110|     expect(await deletedAt(slot.id)).toEqual(bkk(NOW));
+    111|     expect(await prisma.booking.findUniqueOrThrow({ where: { id: booki…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  tests/slots.delete.test.ts > TEST-F13-04 (AC-F13-04): a slot that has started cannot be deleted > rejects a slot in progress and one starting now; accepts the next half hour
+AssertionError: expected 404 to be 422 // Object.is equality
+
+- Expected
++ Received
+
+- 422
++ 404
+
+ ❯ tests/slots.delete.test.ts:124:26
+    122|     for (const slot of [inProgress, startsNow]) {
+    123|       const res = await del(a, slot.id);
+    124|       expect(res.status).toBe(422);
+       |                          ^
+    125|       expect(res.body).toEqual({ error: { code: "SLOT_ALREADY_STARTED"…
+    126|       expect(await deletedAt(slot.id)).toBeNull();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  tests/slots.delete.test.ts > TEST-F13-05 (AC-F13-05): only the slot's advisor can delete it > gives 404 to another advisor, 403 to a student, 404 for deleted or unknown, 400 for a bad id
+AssertionError: expected { error: { code: 'NOT_FOUND', …(1) } } to deeply equal { error: { code: 'NOT_FOUND', …(1) } }
+
+- Expected
++ Received
+
+  Object {
+    "error": Object {
+      "code": "NOT_FOUND",
+-     "message": "Slot not found.",
++     "message": "Not found.",
+    },
+  }
+
+ ❯ tests/slots.delete.test.ts:141:24
+    139|     const other = await del(await loginCookie(advisorB.email), slot.id…
+    140|     expect(other.status).toBe(404);
+    141|     expect(other.body).toEqual(notFound);
+       |                        ^
+    142| 
+    143|     const asStudent = await del(await loginCookie(student.email), slot…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  tests/slots.delete.test.ts > TEST-F13-06 (AC-F13-06): a deleted slot cannot be booked and its time is free > returns 404 to a booking and 201 to a new slot at the same time
+AssertionError: expected 404 to be 204 // Object.is equality
+
+- Expected
++ Received
+
+- 204
++ 404
+
+ ❯ tests/slots.delete.test.ts:169:44
+    167|     const slot = await insertSlot(advisor.id, "2026-11-10T09:00:00");
+    168|     const a = await loginCookie(advisor.email);
+    169|     expect((await del(a, slot.id)).status).toBe(204);
+       |                                            ^
+    170| 
+    171|     const book = await request(app)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  tests/slots.delete.test.ts > TEST-F13-07 (AC-F13-07): delete and book of the same slot in parallel > never leaves a deleted slot with an ACTIVE booking (10 rounds)
+AssertionError: expected [ '204/404', '409/201' ] to include '404/201'
+ ❯ tests/slots.delete.test.ts:204:38
+    202|       const pair = `${d.status}/${b.status}`;
+    203|       outcomes.push(pair);
+    204|       expect(["204/404", "409/201"]).toContain(pair);
+       |                                      ^
+    205| 
+    206|       const deleted = (await deletedAt(slot.id)) !== null;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+ Test Files  1 failed (1)
+      Tests  7 failed (7)
+   Start at  12:42:36
+   Duration  7.30s (transform 118ms, setup 0ms, collect 1.92s, tests 2.10s, environment 0ms, prepare 250ms)
+
+npm notice
+npm notice New minor version of npm available! 11.11.0 -> 11.21.3
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.3
+npm notice To update run: npm install -g npm@11.21.3
+npm notice
