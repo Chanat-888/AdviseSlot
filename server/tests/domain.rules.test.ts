@@ -6,6 +6,7 @@ import {
   isLateSlot,
   normalDeadline,
   slotStatus,
+  studentCanCancel,
 } from "../src/domain/rules.js";
 
 // Unit tests of the pure rule functions (SDS section 2, server/src/domain/rules.ts):
@@ -13,6 +14,7 @@ import {
 // - TEST-F05-03 (unit part), docs/sprints/sprint-1/F-05-view-own-slots.md section 8
 // - TEST-F07-04 and TEST-F07-05 (unit part), docs/sprints/sprint-1/F-07-book-slot.md section 8
 // - TEST-F08-01 (unit part), docs/sprints/sprint-1/F-08-view-own-bookings.md section 8
+// - TEST-F10-02 (unit part), docs/sprints/sprint-2/F-10-student-cancel.md section 8
 // All times are Asia/Bangkok (UTC+7, NFR-05).
 
 const bkk = (local: string) => new Date(`${local}+07:00`);
@@ -118,5 +120,19 @@ describe("TEST-F08-01 (unit part): booking display status (D-24, F-08 section 3.
   it("a CANCELLED booking is Cancelled, before and after the slot ends", () => {
     expect(bookingStatus({ status: "CANCELLED" }, slot, bkk("2026-11-10T09:00:00"))).toBe("Cancelled");
     expect(bookingStatus({ status: "CANCELLED" }, slot, bkk("2026-11-10T11:00:00"))).toBe("Cancelled");
+  });
+});
+
+describe("TEST-F10-02 (unit part): BR-11 student cancel window, at least 12 hours before the start", () => {
+  const startAt = bkk("2026-11-11T10:00:00"); // Wed 11 Nov 10:00
+
+  it("allows a cancel at Tue 22:00 (exactly 12 h) and refuses it at Tue 22:01 (11 h 59 min)", () => {
+    expect(studentCanCancel(startAt, bkk("2026-11-10T22:00:00"))).toBe(true);
+    expect(studentCanCancel(startAt, bkk("2026-11-10T22:01:00"))).toBe(false);
+  });
+
+  it("refuses one millisecond inside the window and allows days ahead", () => {
+    expect(studentCanCancel(startAt, new Date(bkk("2026-11-10T22:00:00").getTime() + 1))).toBe(false);
+    expect(studentCanCancel(startAt, bkk("2026-11-09T10:00:00"))).toBe(true);
   });
 });

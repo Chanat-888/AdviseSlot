@@ -25,6 +25,7 @@ model User {
   sessions     Session[]
   slots        Slot[]    @relation("AdvisorSlots")
   bookings     Booking[] @relation("StudentBookings")
+  cancelledBookings Booking[] @relation("CancelledBookings") // F-10, F-11: bookings this user cancelled
 }
 
 // F-01: server-side login session. Only the SHA-256 hash of the cookie token is stored.
@@ -59,8 +60,8 @@ enum BookingStatus {
 }
 
 // F-07: a student's booking of a slot (SDS section 3). The partial unique index
-// "Booking_one_active_per_slot" is raw SQL in the add_booking migration. The cancel fields
-// are added by F-10 and F-11 in Sprint 2.
+// "Booking_one_active_per_slot" is raw SQL in the add_booking migration. The cancel fields are
+// from F-10 section 6; their CHECK constraints are raw SQL in the add_booking_cancel migration.
 model Booking {
   id        Int           @id @default(autoincrement())
   slotId    Int
@@ -69,6 +70,10 @@ model Booking {
   student   User          @relation("StudentBookings", fields: [studentId], references: [id], onDelete: Restrict)
   status    BookingStatus @default(ACTIVE)
   createdAt DateTime      @db.Timestamptz(3) // set from the server clock, no database default
+  cancelledAt   DateTime? @db.Timestamptz(3)
+  cancelledById Int?
+  cancelledBy   User?     @relation("CancelledBookings", fields: [cancelledById], references: [id], onDelete: Restrict)
+  cancelReason  String? // written by F-11 only (BR-12)
 
   @@index([studentId])
 }

@@ -103,7 +103,7 @@ describe("TEST-F05-01 (AC-F05-01): advisor sees only their own slots with status
       data: { slotId: booked.id, studentId: student.id, status: "ACTIVE", createdAt: bkk("2026-11-02T09:00:00") },
     });
     await prisma.booking.create({
-      data: { slotId: cancelled.id, studentId: student.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00") },
+      data: { slotId: cancelled.id, studentId: student.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00"), cancelledAt: bkk("2026-11-03T09:00:00"), cancelledById: student.id },
     });
 
     const res = await mine(await loginCookie(advisor.email));

@@ -150,7 +150,7 @@ describe("TEST-F06-02 (AC-F06-02): booked, ended and past-deadline slots are exc
   it("lists a slot again when its only booking is CANCELLED", async () => {
     const s = await insertSlot(advisor.id, "2026-11-10T09:00:00");
     await prisma.booking.create({
-      data: { slotId: s.id, studentId: student2.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00") },
+      data: { slotId: s.id, studentId: student2.id, status: "CANCELLED", createdAt: bkk("2026-11-02T09:00:00"), cancelledAt: bkk("2026-11-03T09:00:00"), cancelledById: student2.id },
     });
     const res = await bookable(await loginCookie(student.email));
     expect(res.body.map((x: { id: number }) => x.id)).toEqual([s.id]);
