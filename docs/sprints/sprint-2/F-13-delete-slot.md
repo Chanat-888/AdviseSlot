@@ -17,6 +17,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review (Issue #68). |
 | 0.2 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Section 2.1: lock order student row, then slot row, in F-07 and F-14, to avoid a deadlock. Section 6: the F-07 change is a reorder plus the slot lock. |
+| 0.3 | 2026-11-23 | Jeerasak (drafted with an AI agent) | During implementation (Issue #73): TEST-F13-07 gets two forced-order cases, because the random rounds almost always let the delete win and so did not show the race; section 8.1 says the forced-order case is the lock check; R-01 (`r01.auth.test.ts`) lists `DELETE /api/slots/:id`; section 5 confirm is inline in the row. No AC changes. |
 
 ## 1. Linked requirements
 
@@ -149,7 +150,7 @@ Screen `/schedule`, role advisor, the F-05 slot list.
 | Part | Behavior |
 |---|---|
 | Delete button | Shown on rows with status Open or Closed. Not shown on Booked or Passed rows. The server still enforces every check. |
-| Confirm | A confirm dialog: "Delete the slot on Tue 10 Nov 2026, 09:00-09:30?" with Delete and Cancel. |
+| Confirm | An inline confirm in the row: "Delete the slot on Tue 10 Nov 2026, 09:00-09:30?" with Delete and Cancel buttons. |
 | Loading | The row's buttons are disabled while the request runs. |
 | Success (204) | The row disappears without a page reload, and a short "Slot deleted." message shows. |
 | Error | A Bootstrap alert shows the server's `message`. On 404 or 409 the client reloads the list, because the slot changed in the meantime. |
@@ -192,12 +193,12 @@ Test clock: `vi.useFakeTimers({ toFake: ['Date'] })`, now = **Mon 9 Nov 2026 10:
 | TEST-F13-04 | AC-F13-04 | API | A has slots Mon 9 Nov 09:30 (in progress), Mon 10:00 (starts now), Mon 10:30. | `DELETE` each. | 422 `SLOT_ALREADY_STARTED`, 422 `SLOT_ALREADY_STARTED`, 204. |
 | TEST-F13-05 | AC-F13-05 | API | A has Tue 09:00; advisor B and student S logged in; A also has a deleted slot. | B deletes A's slot; S deletes it; A deletes the deleted slot; A deletes id 999999; A deletes id `abc`. | 404, 403, 404, 404, 400. A's slot `deletedAt` still null. |
 | TEST-F13-06 | AC-F13-06 | API | A's Tue 09:00 deleted. | S: `POST /api/bookings {slotId}`. A: `POST /api/slots` Tue 09:00. | 404 `NOT_FOUND` (no booking row); 201. |
-| TEST-F13-07 | AC-F13-07 | Integration | 10 rounds: A creates a fresh Open slot. | Each round: `Promise.all` of A's `DELETE` and S's `POST /api/bookings` on that slot. | After each round: never `deletedAt` set together with an ACTIVE booking. Responses are (204, 404) or (409, 201). |
+| TEST-F13-07 | AC-F13-07 | Integration | 10 rounds: A creates a fresh Open slot. | Each round: `Promise.all` of A's `DELETE` and S's `POST /api/bookings` on that slot (alternating which starts first). Plus two forced-order cases: a test transaction holds the slot lock (1) like a booking that has inserted its row, then A deletes; (2) like a delete that has set `deletedAt`, then S books. | After each round: never `deletedAt` set together with an ACTIVE booking. Responses are (204, 404) or (409, 201). Forced order: the second request waits for the lock, then (1) 409 `SLOT_HAS_ACTIVE_BOOKING`, (2) 404. |
 | TEST-F13-08 | AC-F13-01 | E2E | Seeded advisor with a future Open slot. | Log in, `/schedule`, Delete on that row, confirm. Reload the page. | The row is gone and stays gone after reload. |
 
 ### 8.1 TDD plan
 
-TEST-F13-01 to -07 are written first and run against `sprint-2` without the endpoint: they fail with 404 from Express (no route), which is the missing behavior, not a compile error. TEST-F13-07 is also run once with the endpoint but without the F-07 lock (section 2.1) to show the race, if it shows within 10 rounds; the output is kept either way. Then the endpoint and the lock make them pass. Red and green runs go to `evidence/f13-red.txt` and `evidence/f13-green.txt`.
+TEST-F13-01 to -07 are written first and run against `sprint-2` without the endpoint: they fail with 404 from Express (no route), which is the missing behavior, not a compile error. TEST-F13-07 is also run once with the endpoint but without the F-07 lock (section 2.1) to show the race. The random rounds almost always let the delete win, so the forced-order case (2) is the check that shows it: without the lock the booking gets 201 on the deleted slot. Then the endpoint and the lock make them pass. Red and green runs go to `evidence/f13-red.txt` and `evidence/f13-green.txt`.
 
 ## 9. Known limitations
 
