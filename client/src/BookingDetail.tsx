@@ -105,7 +105,9 @@ function AdvisorCancelBooking({ id, onDone }: { id: number; onDone: (result: Can
 export function BookingDetail() {
   const { id } = useParams();
   const { user } = useAuth();
-  const confirmed = (useLocation().state as { confirmed?: boolean } | null)?.confirmed;
+  const state = useLocation().state as { confirmed?: boolean; moved?: boolean } | null;
+  const confirmed = state?.confirmed;
+  const moved = state?.moved; // F-14 section 2, step 7
   const [booking, setBooking] = useState<BookingDetailDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cancelled, setCancelled] = useState(false);
@@ -141,6 +143,7 @@ export function BookingDetail() {
   return (
     <main className="container py-4">
       {confirmed && booking && !cancelled && <div className="alert alert-success" role="status">Booking confirmed.</div>}
+      {moved && booking && !cancelled && <div className="alert alert-success" role="status">Booking moved.</div>}
       {cancelled && <div className="alert alert-success" role="status">Booking cancelled.</div>}
       {cancelError && <div className="alert alert-danger" role="alert">{cancelError}</div>}
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
@@ -168,7 +171,13 @@ export function BookingDetail() {
               </>
             )}
           </dl>
-          {user?.role === "STUDENT" && booking.status === "Upcoming" && <CancelBooking id={booking.id} onDone={onCancelDone} />}
+          {user?.role === "STUDENT" && booking.status === "Upcoming" && (
+            <div className="d-flex flex-wrap gap-2 align-items-start">
+              {/* F-14 section 5: Reschedule next to Cancel; the server decides BR-15. */}
+              <Link to={`/slots?reschedule=${booking.id}`} className="btn btn-outline-primary">Reschedule</Link>
+              <CancelBooking id={booking.id} onDone={onCancelDone} />
+            </div>
+          )}
           {user?.role === "ADVISOR" && booking.status === "Upcoming" && <AdvisorCancelBooking id={booking.id} onDone={onCancelDone} />}
         </>
       )}

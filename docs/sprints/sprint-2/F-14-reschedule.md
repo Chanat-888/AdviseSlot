@@ -5,7 +5,7 @@
 | Feature | F-14 Reschedule booking |
 | Sprint | 2 |
 | Owner | Contract and implementation: Chanat Dachkhumhang (Issues #68, #71), reviewed by Jeerasak Phisawong. |
-| Status | Contract draft. Implementation not started (Issue #71). Built after F-10 (it needs the cancel columns). |
+| Status | Implemented on `feat/f14-reschedule` (Issue #71). |
 | Linked requirements | FR-14, BR-05, BR-06, BR-07, BR-11, BR-14, BR-15, BR-16 (rule), BR-09, NFR-03, NFR-04, NFR-05 (see section 1) |
 | Depends on | F-07 (booking checks), F-10 (cancel columns and the BR-11 check) |
 | Needed by | F-18 (the old booking appears as cancelled by the student) |
@@ -18,6 +18,7 @@
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, against the new BR-07 of change request #67. Awaiting team review. |
 | 0.2 | 2026-11-22 | Chanat (drafted with an AI agent) | Review of PR #76: step 5.2 locks the new slot row (BR-14, SDS 3.1), lock order student then slot; race test TEST-F14-08. Built against the current BR-07; the #67 dependency, `SAME_ADVISOR_BOOKING` and the same-advisor cases move to #67's impact analysis. |
 | 0.3 | 2026-11-23 | Chanat (drafted with an AI agent) | New BR-07 of #67 (D-31, approved by the TA on 2026-11-22), from review of PR #80: with the old booking released at most one other active booking remains, so check 6 can only give 409 `SAME_ADVISOR_BOOKING`, never `ACTIVE_BOOKING_LIMIT`. Sections 0, 1, 3.2, 3.3, 4.3 updated; AC-F14-05 and TEST-F14-05 get the rejected case (old A + B, move to another B slot). |
+| 0.4 | 2026-11-23 | Chanat (drafted with an AI agent) | Status: implemented (Issue #71). No change to the contract itself. |
 
 ## 0. BR-07 and change request #67
 

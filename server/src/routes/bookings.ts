@@ -2,7 +2,14 @@ import { Router } from "express";
 import { sendError } from "../errors.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
-import { cancelBookingAsAdvisor, cancelBookingAsStudent, createBooking, getBookingFor, listOwnBookings } from "../services/bookings.js";
+import {
+  cancelBookingAsAdvisor,
+  cancelBookingAsStudent,
+  createBooking,
+  getBookingFor,
+  listOwnBookings,
+  rescheduleBooking,
+} from "../services/bookings.js";
 
 export const bookingsRouter = Router();
 
@@ -12,9 +19,9 @@ const hourMinute = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Bangkok", 
 // "Booking for this slot closed at 18:00 on 9 Nov." (F-07 section 4.3, Asia/Bangkok)
 const deadlineMessage = (d: Date) => `Booking for this slot closed at ${hourMinute.format(d)} on ${dayMonth.format(d)}.`;
 
-function parseSlotId(body: unknown): number | null {
+function parseSlotId(body: unknown, key = "slotId"): number | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
-  const { slotId } = body as Record<string, unknown>;
+  const slotId = (body as Record<string, unknown>)[key];
   return typeof slotId === "number" && Number.isSafeInteger(slotId) && slotId > 0 ? slotId : null;
 }
 
@@ -132,3 +139,42 @@ bookingsRouter.post("/:id/cancel", requireAuth, async (req, res, next) => {
     next(err);
   }
 });
+
+// F-14: reschedule. Only newSlotId is read; the student comes from the session (BR-09).
+bookingsRouter.post(
+  "/:id/reschedule",
+  requireAuth,
+  requireRole("STUDENT", "Only students can reschedule bookings."),
+  async (req, res, next) => {
+    try {
+      // Section 3.1: both inputs are checked before any database read.
+      const id = parseBookingId(req.params.id);
+      if (id === null) return sendError(res, 400, "VALIDATION_ERROR", BAD_BOOKING_ID);
+      const newSlotId = parseSlotId(req.body, "newSlotId");
+      if (newSlotId === null) return sendError(res, 400, "VALIDATION_ERROR", "A new slot is required.");
+
+      const result = await rescheduleBooking(req.user!.id, id, newSlotId, new Date());
+      if (result.ok) return void res.status(201).json(result.booking);
+      switch (result.code) {
+        case "NOT_FOUND":
+          return sendError(res, 404, "NOT_FOUND", "Booking not found.");
+        case "SLOT_NOT_FOUND":
+          return sendError(res, 404, "NOT_FOUND", "This slot does not exist.");
+        case "SAME_SLOT":
+          return sendError(res, 400, "VALIDATION_ERROR", "Choose a different slot.");
+        case "BOOKING_NOT_ACTIVE":
+          return sendError(res, 409, "BOOKING_NOT_ACTIVE", "This booking is no longer upcoming.");
+        case "SLOT_TAKEN":
+          return sendError(res, 409, "SLOT_TAKEN", "This slot has just been booked by someone else.");
+        case "SAME_ADVISOR_BOOKING":
+          return sendError(res, 409, "SAME_ADVISOR_BOOKING", "You already have an upcoming booking with this advisor.");
+        case "CANCEL_WINDOW_PASSED":
+          return sendError(res, 422, "CANCEL_WINDOW_PASSED", cancelLimitMessage(result.limit));
+        case "BOOKING_DEADLINE_PASSED":
+          return sendError(res, 422, "BOOKING_DEADLINE_PASSED", deadlineMessage(result.deadline));
+      }
+    } catch (err) {
+      next(err);
+    }
+  },
+);
