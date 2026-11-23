@@ -254,6 +254,41 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
   });
 
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
+  // F-16 section 8 (UI/E2E): the student narrows /slots by advisor, then by date, clears the
+  // filters, and a bad date in the URL shows the server's message (NFR-07, Sprint 3 check).
+  // Only seeded open slots are used (two or more days ahead), so it passes at any time of day.
+  test("student filters bookable slots by advisor and date (F-16)", async ({ page }) => {
+    const one = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const two = SEED_USERS.find((u) => u.email === "advisor2@example.test")!;
+    await logIn(page, student.email, /\/slots$/);
+    const rows = page.getByRole("listitem");
+    await expect(rows.first()).toBeVisible();
+
+    // Advisor: at least one row, and every row is Advisor Two's
+    await page.getByLabel("Advisor", { exact: true }).selectOption({ label: two.name });
+    await expect(page).toHaveURL(/[?&]advisor=\d+/);
+    await expect(rows.filter({ hasNotText: two.name })).toHaveCount(0);
+    await expect(rows.first()).toContainText(two.name);
+
+    // Date: the day of the first listed row; at least one row, all under that one day
+    const day = (await page.locator("main section h2").first().textContent())!; // "Wed 25 Nov 2026"
+    await page.getByLabel("Date", { exact: true }).fill(inputDate(day));
+    await expect(page).toHaveURL(new RegExp(`[?&]date=${inputDate(day)}`));
+    await expect(page.locator("main section h2")).toHaveText([day]);
+    await expect(rows.filter({ hasNotText: two.name })).toHaveCount(0);
+    await expect(rows.first()).toContainText(two.name);
+
+    // Clear filters: both advisors are back
+    await page.getByRole("link", { name: "Clear filters" }).first().click();
+    await expect(page).toHaveURL(/\/slots$/);
+    await expect(rows.filter({ hasText: one.name }).first()).toBeVisible();
+    await expect(rows.filter({ hasText: two.name }).first()).toBeVisible();
+
+    // A hand-typed bad date: the server's 400 message is shown (NFR-07)
+    await page.goto("/slots?date=2026-02-30");
+    await expect(page.getByRole("alert")).toHaveText("The date filter must be a real date written as YYYY-MM-DD.");
+  });
+
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);
     await page.goto("/schedule");
@@ -281,4 +316,11 @@ function weekdayAhead(days: number): string {
   const d = new Date(Date.now() + 7 * 3600_000 + days * 86_400_000); // shifted to Bangkok wall time
   while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().slice(0, 10);
+}
+
+/** A /slots day heading ("Wed 25 Nov 2026") as a date input value ("2026-11-25"). */
+function inputDate(heading: string): string {
+  const [, day, month, year] = heading.trim().split(/\s+/);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${year}-${String(months.indexOf(month!) + 1).padStart(2, "0")}-${day!.padStart(2, "0")}`;
 }
