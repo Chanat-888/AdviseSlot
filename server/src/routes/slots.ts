@@ -2,7 +2,8 @@ import { Router } from "express";
 import { sendError } from "../errors.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
-import { createSlot, deleteSlot, listBookableSlots, listOwnSlots } from "../services/slots.js";
+import { createSlot, deleteSlot, editSlot, listBookableSlots, listOwnSlots } from "../services/slots.js";
+import { parseId } from "./ids.js";
 
 export const slotsRouter = Router();
 
@@ -65,12 +66,27 @@ const DELETE_ERRORS = {
   SLOT_HAS_ACTIVE_BOOKING: [409, "This slot has a booking. Cancel the booking first."],
 } as const;
 
-// A positive whole number in plain digits that fits the INT column (same rule as F-09).
-const POSITIVE_ID = /^[1-9]\d{0,9}$/;
-function parseId(raw: string): number | null {
-  const id = POSITIVE_ID.test(raw) ? Number(raw) : NaN;
-  return Number.isSafeInteger(id) && id <= 2147483647 ? id : null;
-}
+// F-12 section 4.3: the F-13 errors, plus the F-04 rule codes for the new start (MESSAGES).
+const EDIT_ERRORS = { ...DELETE_ERRORS, ...MESSAGES } as const;
+
+// F-12: change the start time of an own unbooked future slot. Only startAt is read (BR-01).
+slotsRouter.patch("/:id", requireAuth, requireRole("ADVISOR", "Only advisors can edit slots."), async (req, res, next) => {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return sendError(res, 400, "VALIDATION_ERROR", "The slot id must be a positive integer.");
+    const startAt = parseStartAt(req.body);
+    if (!startAt) return sendError(res, 400, "VALIDATION_ERROR", "A valid start time is required.");
+
+    const result = await editSlot(req.user!.id, id, startAt, new Date());
+    if (!result.ok) {
+      const [status, message] = EDIT_ERRORS[result.code];
+      return sendError(res, status, result.code, message);
+    }
+    res.json(result.slot);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // F-13: soft-delete an own unbooked future slot.
 slotsRouter.delete("/:id", requireAuth, requireRole("ADVISOR", "Only advisors can delete slots."), async (req, res, next) => {

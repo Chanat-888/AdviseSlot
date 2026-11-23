@@ -10,7 +10,7 @@ import { createUsers, loginCookie, resetUsers, type Fixture } from "./helpers.js
 // app without being listed here or in PUBLIC, so a Sprint 2 or 3 endpoint cannot be missed.
 
 // `route` is the Express pattern for the inventory; `path` is the URL actually called.
-type Endpoint = { method: "get" | "post" | "delete"; path: string; route?: string; body?: object };
+type Endpoint = { method: "get" | "post" | "patch" | "delete"; path: string; route?: string; body?: object };
 
 // Every route that needs a session. `:id` paths use a well-formed id, so a 401 cannot be a 400.
 const PROTECTED: Endpoint[] = [
@@ -20,6 +20,7 @@ const PROTECTED: Endpoint[] = [
   { method: "get", path: "/api/slots/mine" },
   { method: "get", path: "/api/slots/bookable" },
   { method: "delete", path: "/api/slots/1", route: "/api/slots/:id" }, // F-13 (Sprint 2)
+  { method: "patch", path: "/api/slots/1", route: "/api/slots/:id", body: { startAt: "2026-11-10T07:00:00.000Z" } }, // F-12
   { method: "post", path: "/api/bookings", body: { slotId: 1 } },
   { method: "get", path: "/api/bookings/mine" },
   { method: "get", path: "/api/bookings/1", route: "/api/bookings/:id" },

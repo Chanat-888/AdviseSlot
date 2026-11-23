@@ -1,0 +1,49 @@
+# F-12 green run on feat/f12-edit-slot (working tree on top of ed58299, committed right after this run)
+# 2026-11-23 14:17 +0700
+
+## 1. cd server && npx vitest run tests/slots.edit.test.ts
+
+ RUN  v2.1.5 C:/Users/Pedpro/AdviseSlot/server
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+4 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+ ✓ tests/slots.edit.test.ts (13 tests) 3741ms
+   ✓ TEST-F12-05 (AC-F12-05): isLate is recomputed for the new start as if created now (D-28) > becomes late, goes back to normal, then follows the exactly-2-hours boundary 606ms
+   ✓ TEST-F12-07 (AC-F12-07): only the slot's advisor can edit it; input is validated > gives 403 to a student, 404 to another advisor and for deleted or unknown slots, 400 for bad input 608ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  14:16:18
+   Duration  5.46s (transform 73ms, setup 0ms, collect 447ms, tests 3.74s, environment 0ms, prepare 59ms)
+
+
+## 2. Full server suite: cd server && npx vitest run
+ ✓ tests/bookings.create.test.ts (31 tests) 9082ms
+ ✓ tests/slots.delete.test.ts (9 tests) 3966ms
+ ✓ tests/slots.edit.test.ts (13 tests) 3686ms
+ ✓ tests/auth.login.test.ts (13 tests) 1987ms
+ ✓ tests/slots.create.test.ts (16 tests) 3419ms
+ ✓ tests/slots.bookable.test.ts (8 tests) 2801ms
+ ✓ tests/r02.errors.test.ts (9 tests) 899ms
+ ✓ tests/domain.rules.test.ts (20 tests) 3ms
+ ✓ tests/bookings.mine.test.ts (7 tests) 1846ms
+ ✓ tests/r01.auth.test.ts (43 tests) 2458ms
+ ✓ tests/slots.mine.test.ts (6 tests) 1268ms
+ ✓ tests/bookings.detail.test.ts (10 tests) 8344ms
+ ✓ tests/seed.test.ts (8 tests) 4002ms
+ ✓ tests/r03.secrets.test.ts (5 tests) 75ms
+ ✓ tests/auth.logout.test.ts (3 tests) 830ms
+ ✓ tests/ready.test.ts (5 tests) 51ms
+ ✓ tests/auth.me.test.ts (2 tests) 646ms
+ ✓ tests/version.test.ts (2 tests) 16ms
+ ✓ tests/health.test.ts (1 test) 28ms
+ Test Files  19 passed (19)
+      Tests  211 passed (211)
+
+## 3. Builds: server and client npm run build OK
