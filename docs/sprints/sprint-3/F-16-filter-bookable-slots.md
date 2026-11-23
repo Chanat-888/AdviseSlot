@@ -5,7 +5,7 @@
 | Feature | F-16 Filter bookable slots |
 | Sprint | 3 |
 | Owner | Contract and implementation: Jeerasak Phisawong (Issue #75), reviewed by Chanat Dachkhumhang. |
-| Status | Contract draft. Implementation not started. |
+| Status | Implemented (Issue #75): red 528cf2d, green 0cbd8ba, UI and E2E d588451. Contract unchanged from v0.2. |
 | Linked requirements | FR-16, FR-06, BR-06, BR-09, BR-16 (rule), NFR-03, NFR-05, NFR-07 (see section 1) |
 | Depends on | F-06 (`GET /api/slots/bookable`, the list being filtered), F-14 (`/slots?reschedule=:id` uses the same page) |
 | Needed by | none |
@@ -17,6 +17,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-23 | Jeerasak (drafted with an AI agent) | First contract, written before implementation, on the released Sprint 2 (`v0.2.0-sprint-2`). Awaiting team review. |
 | 0.2 | 2026-11-23 | Jeerasak (drafted with an AI agent) | Review of PR #94: a query value that is not one plain string (given twice, `advisorId[]=1`, `date[a]=...`, which Express parses into an array or object) is 400, since `parseId` would read `["1"]` as `"1"`; TEST-F16-04 adds those cases. The E2E step asserts at least one row after each filter, so it cannot pass on an empty list. TEST-F16-06 names the exact advisor order (the API tests use `createUsers()`, not the seed). |
+| 0.3 | 2026-11-23 | Jeerasak (drafted with an AI agent) | Status line only: implemented on `feat/f16-filter-slots` (red 528cf2d, green 0cbd8ba, UI and E2E d588451). No change to the contract. |
 
 ## 1. Linked requirements
 
