@@ -1,6 +1,6 @@
 import { Prisma, type Booking, type Slot } from "@prisma/client";
 import { prisma } from "../db.js";
-import { bookingDeadline, bookingStatus, studentCanCancel, type BookingDisplayStatus } from "../domain/rules.js";
+import { advisorCanCancel, bookingDeadline, bookingStatus, studentCanCancel, type BookingDisplayStatus } from "../domain/rules.js";
 
 // F-10 section 4.2: present only when the booking is cancelled.
 export type CancellationDto = {
@@ -141,9 +141,13 @@ export type CancelResult =
   | { ok: false; code: "NOT_FOUND" | "BOOKING_NOT_ACTIVE" }
   | { ok: false; code: "CANCEL_WINDOW_PASSED"; limit: Date };
 
+export type AdvisorCancelResult =
+  | { ok: true; booking: BookingDto }
+  | { ok: false; code: "NOT_FOUND" | "BOOKING_NOT_ACTIVE" | "CANCEL_WINDOW_PASSED" };
+
 /**
  * F-10 section 2, steps 5 to 7, and section 3.2 checks 1 to 4: a student cancels their own booking.
- * `now` is the server clock, passed in. The F-11 advisor path is a separate function.
+ * `now` is the server clock, passed in. The F-11 advisor path is cancelBookingAsAdvisor below.
  */
 export async function cancelBookingAsStudent(studentId: number, bookingId: number, now: Date): Promise<CancelResult> {
   return prisma.$transaction(async (tx): Promise<CancelResult> => {
@@ -169,6 +173,43 @@ export async function cancelBookingAsStudent(studentId: number, bookingId: numbe
     const { count } = await tx.booking.updateMany({
       where: { id: bookingId, status: "ACTIVE" },
       data: { status: "CANCELLED", cancelledAt: now, cancelledById: studentId },
+    });
+    if (count === 0) return { ok: false, code: "BOOKING_NOT_ACTIVE" };
+
+    const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: INCLUDE });
+    return { ok: true, booking: toBookingDto(updated, now) };
+  });
+}
+
+/**
+ * F-11 section 2, steps 5 to 7, and section 3.2 checks 1 to 4: the slot's advisor cancels a booking
+ * with a reason that the route has already trimmed and checked (section 3.1). `now` is the server clock.
+ */
+export async function cancelBookingAsAdvisor(
+  advisorId: number,
+  bookingId: number,
+  reason: string,
+  now: Date,
+): Promise<AdvisorCancelResult> {
+  return prisma.$transaction(async (tx): Promise<AdvisorCancelResult> => {
+    // Check 1: a missing booking and a booking on another advisor's slot give the same 404 (BR-08, BR-09).
+    const b = await tx.booking.findUnique({ where: { id: bookingId }, include: { slot: true } });
+    if (!b || b.slot.advisorId !== advisorId) return { ok: false, code: "NOT_FOUND" };
+
+    // Same locks and order as the student path (SDS 3.1): the booking's student, then the slot.
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${b.studentId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM "Slot" WHERE id = ${b.slotId} FOR UPDATE`;
+
+    // Check 2: still active. A cancelled booking or an ended slot is refused before the window check.
+    if (b.status !== "ACTIVE" || b.slot.endAt.getTime() <= now.getTime()) return { ok: false, code: "BOOKING_NOT_ACTIVE" };
+
+    // Check 3: BR-12, until the slot starts.
+    if (!advisorCanCancel(b.slot.startAt, now)) return { ok: false, code: "CANCEL_WINDOW_PASSED" };
+
+    // Check 4: conditional update, as in F-10. 0 rows means a parallel cancel won.
+    const { count } = await tx.booking.updateMany({
+      where: { id: bookingId, status: "ACTIVE" },
+      data: { status: "CANCELLED", cancelledAt: now, cancelledById: advisorId, cancelReason: reason },
     });
     if (count === 0) return { ok: false, code: "BOOKING_NOT_ACTIVE" };
 

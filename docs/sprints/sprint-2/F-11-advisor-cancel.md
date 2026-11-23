@@ -5,7 +5,7 @@
 | Feature | F-11 Advisor cancels booking |
 | Sprint | 2 |
 | Owner | Contract and implementation: Chanat Dachkhumhang (Issues #68, #70), reviewed by Jeerasak Phisawong. |
-| Status | Contract draft. Implementation not started (Issue #70). |
+| Status | Implemented on `feat/f11-advisor-cancel` (Issue #70). |
 | Linked requirements | FR-11, BR-12, BR-13, BR-08, BR-09, NFR-03, NFR-05 (see section 1) |
 | Depends on | F-07, F-09, F-10 (shares the endpoint, the cancel columns and the response shape) |
 | Needed by | F-17 (cancelled count), F-18 (history with reason) |
@@ -17,6 +17,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation. Awaiting team review. |
 | 0.2 | 2026-11-22 | Chanat (drafted with an AI agent) | Review of PR #76: `cancelReason` length CHECK decided (yes), added in the F-10 migration. |
+| 0.3 | 2026-11-23 | Chanat (drafted with an AI agent) | Status: implemented (Issue #70). No change to the contract itself. |
 
 ## 1. Linked requirements
 
