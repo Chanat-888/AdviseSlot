@@ -18,6 +18,7 @@
 | 0.6 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67, approved by TA Supachok Deetaweesukh on 2026-11-22 (D-31): BR-07 and AC-F07-06 rows revised, TEST-F07-08 added (parallel requests by one student), section 6.3 records the baseline change. |
 | 0.7 | 2026-11-23 | Chanat (drafted with an AI agent) | Review of PR #80: red-test base and merge order in section 6.3; F-14 check 6 can fail only with `SAME_ADVISOR_BOOKING`. |
 | 0.8 | 2026-11-23 | Chanat (drafted with an AI agent) | Release of Sprint 2: FR-10 to FR-15 and BR-11 to BR-15 filled with the AC and test IDs of the Sprint 2 contracts and set to Verified (Sprint 2); the Sprint 2 parts of BR-01 to BR-08, BR-16, NFR-02 and NFR-03 added and verified. NFR-06 (GCP part) and NFR-09 wait for the post-deploy check. Tested on `sprint-2` at `209af9a`. |
+| 0.9 | 2026-11-23 | Chanat (drafted with an AI agent) | Sections 4 and 5 recounted against SRS v0.5 (same 45 requirements; BR-07 text changed by #67, D-31). The coverage check now counts requirements with AC/test IDs from Sprint 1 or 2 (39) and those still only allocated (6). No change to the matrix rows. |
 
 ## 1. How to read this matrix
 
@@ -142,19 +143,23 @@ expected results.
 
 ## 4. Coverage check
 
-| Type | In SRS v0.4 | Mapped to a feature or responsibility | With Sprint 1 AC/test IDs | Allocated to Sprint 2/3 only | Uncovered |
+| Type | In SRS v0.5 | Mapped to a feature or responsibility | With AC/test IDs (Sprint 1 or 2) | Allocated, AC/test not yet written | Uncovered |
 |---|---|---|---|---|---|
-| FR | 19 (FR-01 to FR-19) | 19 | 9 (FR-01 to FR-09) | 10 (FR-10 to FR-19) | 0 |
-| BR | 16 (BR-01 to BR-16) | 16 | 11 (BR-01 to BR-10, BR-16 rule) | 5 (BR-11 to BR-15) | 0 |
-| NFR | 10 (NFR-01 to NFR-10) | 10 | 8 (NFR-01 to NFR-08) | 2 (NFR-09, NFR-10) | 0 |
-| **Total** | **45** | **45** | **28** | **17** | **0** |
+| FR | 19 (FR-01 to FR-19) | 19 | 15 (FR-01 to FR-15) | 4 (FR-16 to FR-19, Sprint 3) | 0 |
+| BR | 16 (BR-01 to BR-16) | 16 | 16 (BR-01 to BR-16) | 0 | 0 |
+| NFR | 10 (NFR-01 to NFR-10) | 10 | 8 (NFR-01 to NFR-08) | 2 (NFR-09, Sprint 2; NFR-10, Sprint 3) | 0 |
+| **Total** | **45** | **45** | **39** | **6** | **0** |
+
+SRS v0.5 changes the text of BR-07 only (#67, D-31), so the counts are the same as in SRS v0.4.
+Some requirements with IDs still have a later part without AC: BR-08, BR-09, BR-16
+(notification), NFR-02, NFR-03 and NFR-07 (Sprint 3), and NFR-06 (GCP part, Sprint 2).
 
 Every feature F-01 to F-19 and responsibility R-01 to R-04 traces back to at least one
 requirement, so no feature exists without a requirement.
 
 ## 5. Uncovered requirements
 
-None. Every FR, BR and NFR in SRS v0.4 is mapped to a feature or responsibility and a sprint.
+None. Every FR, BR and NFR in SRS v0.5 is mapped to a feature or responsibility and a sprint.
 
 ## 6. Approved changes (SRS v0.1 to v0.2)
 
