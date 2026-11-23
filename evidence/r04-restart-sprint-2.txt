@@ -1,0 +1,27 @@
+# TEST-R04-01 / AC-R04-01 / NFR-06, Sprint 2 DoD R4
+# Date: 2026-11-23T17:51:48+07:00   Commit: 209af9a (sprint-2 after PR #88)   DB: container adviseslot-lab7impl-db-1, port 5433, seeded
+# build: ok
+# 1. start server
+health: {"status":"ok","db":"up"}
+# 2. log in as student3, make sure two upcoming bookings (two advisors, more than 12 hours ahead) exist, cancel the second
+login -> {"id":5,"name":"Student Three","email":"student3@example.test","role":"STUDENT"}
+upcoming at start: 3/advisor 1, 2/advisor 2
+active booking: 3; booking to cancel: 2
+cancel 2 -> {"id":2,"status":"Cancelled","createdAt":"2026-11-23T10:48:05.511Z","slot":{"id":10,"startAt":"2026-11-25T03:00:00.000Z","endAt":"2026-11-25T03:30:00.000Z"},"advisor":{"id":2,"name":"Advisor Two"},"student":{"id":5,"name":"Student Three"},"cancellation":{"cancelledAt":"2026-11-23T10:51:51.305Z","cancelledBy":{"id":5,"name":"Student Three","role":"STUDENT"},"reason":null}}
+mine-before: [{"id":3,"status":"Upcoming","createdAt":"2026-11-23T10:51:18.925Z","slot":{"id":2,"startAt":"2026-11-25T02:30:00.000Z","endAt":"2026-11-25T03:00:00.000Z"},"advisor":{"id":1,"name":"Advisor One"}},{"id":2,"status":"Cancelled","createdAt":"2026-11-23T10:48:05.511Z","slot":{"id":10,"startAt":"2026-11-25T03:00:00.000Z","endAt":"2026-11-25T03:30:00.000Z"},"advisor":{"id":2,"name":"Advisor Two"},"cancellation":{"cancelledAt":"2026-11-23T10:51:51.305Z","cancelledBy":{"id":5,"name":"Student Three","role":"STUDENT"},"reason":null}}]
+cancelled-before: {"id":2,"status":"Cancelled","createdAt":"2026-11-23T10:48:05.511Z","slot":{"id":10,"startAt":"2026-11-25T03:00:00.000Z","endAt":"2026-11-25T03:30:00.000Z"},"advisor":{"id":2,"name":"Advisor Two"},"student":{"id":5,"name":"Student Three"},"cancellation":{"cancelledAt":"2026-11-23T10:51:51.305Z","cancelledBy":{"id":5,"name":"Student Three","role":"STUDENT"},"reason":null}}
+# 3. stop server, restart db container
+server stopped (no answer)
+adviseslot-lab7impl-db-1
+db health: healthy
+# 4. start server again
+health: {"status":"ok","db":"up"}
+# 5. log in again, repeat requests
+login -> {"id":5,"name":"Student Three","email":"student3@example.test","role":"STUDENT"}
+# 6. diff
+mine: identical
+active: identical
+cancelled: identical
+cancellation object present after restart
+
+# Result: PASS

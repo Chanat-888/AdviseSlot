@@ -1,0 +1,19 @@
+# Sprint 2 release checks R2/R3 on sprint-2 = 209af9a (Merge pull request #88 from Chanat-888/feat/f14-reschedule). 2026-11-23T17:47:54+07:00
+# DB: adviseslot_f10 on port 5433, prisma migrate deploy: No pending migrations to apply; seed run.
+# Command: cd server && npm test
+ Test Files  22 passed (22)
+      Tests  292 passed (292)
+# Command: cd e2e && npx playwright test --reporter=list
+  ok 1 [chromium] › tests\journey.spec.ts:13:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (1.1s)
+  ok 2 [chromium] › tests\journey.spec.ts:42:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (673ms)
+  ok 3 [chromium] › tests\journey.spec.ts:57:7 › E2E journey (Sprint 1, issue #13) › a second user who logs in in the same tab can log out (F-02) (1.4s)
+  ok 4 [chromium] › tests\journey.spec.ts:77:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking (4.3s)
+  ok 5 [chromium] › tests\journey.spec.ts:144:7 › E2E journey (Sprint 1, issue #13) › student books a slot, then a second booking shows the server's message (1.0s)
+  ok 6 [chromium] › tests\journey.spec.ts:175:7 › E2E journey (Sprint 1, issue #13) › advisor creates several slots at once (F-15, TEST-F15-07) (971ms)
+  ok 7 [chromium] › tests\journey.spec.ts:201:7 › E2E journey (Sprint 1, issue #13) › advisor deletes an Open slot and it stays gone after a reload (1.2s)
+  ok 8 [chromium] › tests\journey.spec.ts:230:7 › E2E journey (Sprint 1, issue #13) › advisor edits an Open slot inline and the new time is stored (F-12) (1.2s)
+  ok 9 [chromium] › tests\journey.spec.ts:257:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (724ms)
+  9 passed (25.2s)
+# Command: cd server && npm run build -> tsc, exit 0
+# Command: cd client && npm run build -> vite build OK (dist/assets/index-D5_rcdTs.js 190.59 kB)
+# Client: no npm test script (no client unit tests; see release notes Known limitations)
