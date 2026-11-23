@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "./api";
-import { bangkokToIso, END_TIMES, formatDate, formatTime, isWeekend, minutesOf, START_TIMES } from "./time";
+import { bangkokDate, bangkokToIso, END_TIMES, formatDate, formatTime, isWeekend, minutesOf, START_TIMES } from "./time";
 
 // The slot shape of F-04 section 4.2 and F-05 section 4.2.
 export type Slot = {
@@ -179,9 +179,75 @@ function CreateSlotForm({ onCreated }: { onCreated: () => void }) {
   );
 }
 
+// What an Edit or Delete in a row reports to the page: a success text, or the server's message
+// and whether the list must be reloaded because the slot changed meanwhile.
+type ActionResult = { ok: true; text: string } | { ok: false; error: string; reload: boolean };
+
+// F-12 section 5: Edit turns the row into a date and start-time form, prefilled; Save / Cancel.
+// The server decides (F-04 rules, overlap, 404, 409, 422); the form keeps its values on an error.
+function EditSlot({ slot, onDone, onClose }: { slot: Slot; onDone: (r: ActionResult) => void; onClose: () => void }) {
+  const [date, setDate] = useState(bangkokDate(slot.startAt));
+  const [time, setTime] = useState(formatTime(slot.startAt));
+  const [busy, setBusy] = useState(false);
+
+  async function onSave(e: FormEvent) {
+    e.preventDefault();
+    if (isWeekend(date)) return onDone({ ok: false, error: "Slots can only be on Monday to Friday.", reload: false });
+    setBusy(true);
+    try {
+      const updated = await api<Slot>(`/api/slots/${slot.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ startAt: bangkokToIso(date, time) }),
+      });
+      onDone({ ok: true, text: `Slot updated: ${formatDate(updated.startAt)}, ${formatTime(updated.startAt)}-${formatTime(updated.endAt)}.` });
+      onClose();
+    } catch (err) {
+      // 404, or 409 for a booking made meanwhile: the slot changed, so reload (F-12 section 5).
+      const reload = err instanceof ApiError && (err.status === 404 || err.code === "SLOT_HAS_ACTIVE_BOOKING");
+      onDone({ ok: false, error: message(err), reload });
+      if (reload) onClose();
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="ms-auto d-flex align-items-center gap-2" onSubmit={onSave} noValidate>
+      <label className="visually-hidden" htmlFor={`edit-date-${slot.id}`}>New date</label>
+      <input id={`edit-date-${slot.id}`} type="date" className="form-control form-control-sm" value={date} onChange={(e) => setDate(e.target.value)} />
+      <label className="visually-hidden" htmlFor={`edit-time-${slot.id}`}>New start time</label>
+      <select id={`edit-time-${slot.id}`} className="form-select form-select-sm" value={time} onChange={(e) => setTime(e.target.value)}>
+        {START_TIMES.map((t) => (
+          <option key={t} value={t}>{t}</option>
+        ))}
+      </select>
+      <button type="submit" className="btn btn-sm btn-primary" disabled={busy || !date}>
+        {busy && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}
+        Save
+      </button>
+      <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose} disabled={busy}>
+        Cancel
+      </button>
+    </form>
+  );
+}
+
+// Edit (F-12) and Delete (F-13) on an Open or Closed row. While editing, Delete is hidden.
+function SlotActions({ slot, onDone }: { slot: Slot; onDone: (r: ActionResult) => void }) {
+  const [editing, setEditing] = useState(false);
+  if (editing) return <EditSlot slot={slot} onDone={onDone} onClose={() => setEditing(false)} />;
+  return (
+    <span className="ms-auto d-flex align-items-center gap-2">
+      <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setEditing(true)}>
+        Edit
+      </button>
+      <DeleteSlot slot={slot} onDone={onDone} />
+    </span>
+  );
+}
+
 // F-13 section 5: Delete on an Open or Closed row, confirmed inline with Delete / Cancel.
 // The server decides (404, 409, 422); the button is only shown where a delete can succeed.
-function DeleteSlot({ slot, onDone }: { slot: Slot; onDone: (result: { ok: true } | { ok: false; error: string; reload: boolean }) => void }) {
+function DeleteSlot({ slot, onDone }: { slot: Slot; onDone: (r: ActionResult) => void }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -189,7 +255,7 @@ function DeleteSlot({ slot, onDone }: { slot: Slot; onDone: (result: { ok: true 
     setBusy(true);
     try {
       await api<void>(`/api/slots/${slot.id}`, { method: "DELETE" });
-      onDone({ ok: true });
+      onDone({ ok: true, text: "Slot deleted." });
     } catch (err) {
       // 404 or 409: the slot changed in the meantime, so the list is reloaded (F-13 section 5).
       const reload = err instanceof ApiError && (err.status === 404 || err.status === 409);
@@ -201,13 +267,13 @@ function DeleteSlot({ slot, onDone }: { slot: Slot; onDone: (result: { ok: true 
 
   if (!confirming) {
     return (
-      <button type="button" className="btn btn-sm btn-outline-danger ms-auto" onClick={() => setConfirming(true)}>
+      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setConfirming(true)}>
         Delete
       </button>
     );
   }
   return (
-    <span className="ms-auto d-flex align-items-center gap-2">
+    <span className="d-flex align-items-center gap-2">
       <span>Delete the slot on {formatDate(slot.startAt)}, {formatTime(slot.startAt)}-{formatTime(slot.endAt)}?</span>
       <button type="button" className="btn btn-sm btn-danger" onClick={onDelete} disabled={busy}>
         {busy && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}
@@ -221,7 +287,7 @@ function DeleteSlot({ slot, onDone }: { slot: Slot; onDone: (result: { ok: true 
 }
 
 // F-05 section 5: own slots grouped by date, with D-24 status badges.
-function SlotList({ slots, onDeleted }: { slots: Slot[]; onDeleted: Parameters<typeof DeleteSlot>[0]["onDone"] }) {
+function SlotList({ slots, onAction }: { slots: Slot[]; onAction: (r: ActionResult) => void }) {
   if (slots.length === 0) return <p className="text-muted">You have no slots yet. Create one above.</p>;
 
   const groups = new Map<string, Slot[]>();
@@ -244,7 +310,7 @@ function SlotList({ slots, onDeleted }: { slots: Slot[]; onDeleted: Parameters<t
                 {s.student && s.bookingId !== null && (
                   <Link to={`/bookings/${s.bookingId}`} className="ms-auto">{s.student.name}</Link>
                 )}
-                {(s.status === "Open" || s.status === "Closed") && <DeleteSlot slot={s} onDone={onDeleted} />}
+                {(s.status === "Open" || s.status === "Closed") && <SlotActions slot={s} onDone={onAction} />}
               </li>
             ))}
           </ul>
@@ -284,9 +350,9 @@ export function Schedule() {
       {slots && (
         <SlotList
           slots={slots}
-          onDeleted={(r) => {
+          onAction={(r) => {
             if (r.ok) {
-              setNotice({ kind: "success", text: "Slot deleted." });
+              setNotice({ kind: "success", text: r.text });
               load();
             } else {
               setNotice({ kind: "danger", text: r.error });
