@@ -9,17 +9,18 @@
 | Linked requirements | FR-17, BR-08, BR-09, NFR-03, NFR-05, NFR-07 (see section 1) |
 | Depends on | F-05 (`slotStatus`, D-24 statuses), F-10 and F-11 (cancelled bookings), F-13 (soft delete keeps history, D-29), F-16 (`bangkokDay`, PR #98) |
 | Needed by | none |
-| Related documents | `docs/srs.md` (v0.5), `docs/features.md`, `docs/system-sds.md` sections 4.1, 5, 5.1, 6, `docs/decisions.md` (D-17, D-20, D-24, D-29), `docs/sprints/sprint-1/F-05-view-own-slots.md`, `docs/sprints/sprint-3/F-16-filter-bookable-slots.md` section 3.2 |
+| Related documents | `docs/srs.md` (v0.5), `docs/features.md`, `docs/system-sds.md` sections 4.1, 5, 5.1, 6, `docs/decisions.md` (D-17, D-20, D-24, D-29, D-33), `docs/sprints/sprint-1/F-05-view-own-slots.md`, `docs/sprints/sprint-3/F-16-filter-bookable-slots.md` section 3.2 |
 
 ## Version history
 
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-23 | Jeerasak (drafted with an AI agent) | First contract, written before implementation, on the released Sprint 2 (`v0.2.0-sprint-2`). Awaiting team review. |
+| 0.2 | 2026-11-23 | Jeerasak (drafted with an AI agent) | Review of PR #100: the count definitions, `upcoming` limited to the range and the 90-day cap are recorded as D-33 (cited in the header, section 0 and section 3.1). The E2E step opens a fixed range from its URL instead of checking today's default range, so it no longer depends on the clock (a plain date on the UTC CI runner is yesterday between 00:00 and 07:00 Bangkok). TEST-F17-05 adds the object form `from[a]=`. |
 
 ## 0. What each count means
 
-D-20 says the summary shows "counts (slots, booked, cancelled, open) plus a list of upcoming appointments". This contract fixes what each one counts, over the advisor's own slots that **start** inside the range (section 3.2):
+D-20 says the summary shows "counts (slots, booked, cancelled, open) plus a list of upcoming appointments". This contract, recorded as **D-33**, fixes what each one counts, over the advisor's own slots that **start** inside the range (section 3.2):
 
 | Count | Counts | Notes |
 |---|---|---|
@@ -65,14 +66,14 @@ Checked in this order; the first failure is returned.
 
 | Rule | Bad value | Response |
 |---|---|---|
-| `from` and `to` are both given, each as one plain string (not twice, not `from[]=`), each a real `YYYY-MM-DD` date (`bangkokDay` not null) | Missing, empty, `2026-02-30`, `10/11/2026`, given twice | 400 `VALIDATION_ERROR`, "from and to must be real dates written as YYYY-MM-DD." |
+| `from` and `to` are both given, each as one plain string (not twice, not `from[]=`, not `from[a]=`), each a real `YYYY-MM-DD` date (`bangkokDay` not null) | Missing, empty, `2026-02-30`, `10/11/2026`, given twice | 400 `VALIDATION_ERROR`, "from and to must be real dates written as YYYY-MM-DD." |
 | `to` is on or after `from` | `from=2026-11-20&to=2026-11-10` | 400 `VALIDATION_ERROR`, "to must be on or after from." |
 | The range is at most 90 days, both ends included | `from=2026-11-01&to=2027-01-30` (91 days) | 400 `VALIDATION_ERROR`, "The range can be at most 90 days." |
 | Any other parameter | | Ignored. |
 
 A one-day range (`from` = `to`) is allowed. A range in the past or the future is allowed: past slots still count, and the upcoming list is then empty or full.
 
-The 90-day limit keeps one request small (about 13 weeks, one semester's advising); it is not a business rule from the SRS.
+The 90-day limit keeps one request small (about 13 weeks, one semester's advising); it is not a business rule from the SRS (D-33).
 
 ### 3.2 The range
 
@@ -219,12 +220,12 @@ Setup "A's week" (all A's slots unless stated):
 | TEST-F17-02 | AC-F17-02 | API | A's week. | A: `?from=2026-11-10&to=2026-11-10`; `?from=2026-11-12&to=2026-11-12`; `?from=2026-11-06&to=2026-11-06`. | Tue: `{ slots: 3, booked: 1, cancelled: 1, open: 2 }`, upcoming [Tue 09:00]. Thu: `{ slots: 0, booked: 0, cancelled: 1, open: 0 }`, `[]`. Fri 6: `{ slots: 1, booked: 1, cancelled: 0, open: 0 }`, `[]`. |
 | TEST-F17-03 | AC-F17-03 | API | A's week. | A at Tue 09:10 and at Tue 09:30 (log in again each time): `?from=2026-11-10&to=2026-11-10`. | 09:10: upcoming [Tue 09:00]; 09:30: upcoming `[]`. `booked` 1 both times. |
 | TEST-F17-04 | AC-F17-04 | API | A's week. | B: `?from=2026-11-09&to=2026-11-13`; A: `?from=2026-11-23&to=2026-11-27`. | B: `{ slots: 1, booked: 1, cancelled: 0, open: 0 }`, upcoming [B's Tue 09:00 with S1], no A slot or booking id in the body. A, empty week: all 0, `[]`. |
-| TEST-F17-05 | AC-F17-05 | API | A logged in. | `?to=2026-11-13`; `?from=2026-11-09`; `?from=&to=`; `?from=2026-02-30&to=2026-03-01`; `?from=10/11/2026&to=2026-11-13`; `?from=2026-11-09&from=2026-11-10&to=2026-11-13`; `?from[]=2026-11-09&to=2026-11-13`; `?from=2026-11-20&to=2026-11-10`; `?from=2026-11-01&to=2027-01-30`; `?from=2026-11-01&to=2027-01-29`. | 400 with the dates message for the first seven, 400 with the order message for the eighth, 400 with the range message for the ninth; the body is only `error`. The last (90 days) is 200. |
+| TEST-F17-05 | AC-F17-05 | API | A logged in. | `?to=2026-11-13`; `?from=2026-11-09`; `?from=&to=`; `?from=2026-02-30&to=2026-03-01`; `?from=10/11/2026&to=2026-11-13`; `?from=2026-11-09&from=2026-11-10&to=2026-11-13`; `?from[]=2026-11-09&to=2026-11-13`; `?from[a]=2026-11-09&to=2026-11-13`; `?from=2026-11-20&to=2026-11-10`; `?from=2026-11-01&to=2027-01-30`; `?from=2026-11-01&to=2027-01-29`. | 400 with the dates message for the first eight, 400 with the order message for the ninth, 400 with the range message for the tenth; the body is only `error`. The last (90 days) is 200. |
 | TEST-F17-06 | AC-F17-06 | API | S1 logged in. | `GET /api/summary?from=2026-11-09&to=2026-11-13`. | 403 `FORBIDDEN_ROLE`, "Only advisors have an appointment summary.", error shape only. |
 
 R-01: `server/tests/r01.auth.test.ts` adds `GET /api/summary` to `PROTECTED` (with a valid `from` and `to`, so a 401 cannot be a 400).
 
-UI/E2E (`e2e/tests/journey.spec.ts`, real clock, seed data): advisor1 opens `/summary`; the From and To inputs hold today and today + 6 days, and the page shows the four labels Slots, Booked, Cancelled, Open, each with a number. Then it opens `/summary?from=2026-11-20&to=2026-11-10` and sees "to must be on or after from." (NFR-07). The step checks no exact counts, so it does not depend on the time of day or on the earlier journey steps.
+UI/E2E (`e2e/tests/journey.spec.ts`): advisor1 opens `/summary?from=2026-11-09&to=2026-11-15` (a fixed range given in the URL); the From and To inputs hold those two dates, and the page shows the four labels Slots, Booked, Cancelled, Open, each with a whole number. Then it opens `/summary?from=2026-11-20&to=2026-11-10` and sees "to must be on or after from." (NFR-07). The step never computes today and checks no exact counts, so it gives the same result at any time of day, on any runner time zone, and after any earlier journey step. The default range (today to today + 6) is covered by a manual check on `/summary` with no parameters, not by E2E.
 
 ### 8.1 TDD plan (when F-17 is built)
 
