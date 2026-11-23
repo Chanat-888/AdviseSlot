@@ -17,6 +17,7 @@ const PROTECTED: Endpoint[] = [
   { method: "get", path: "/api/auth/me" },
   { method: "post", path: "/api/auth/logout" },
   { method: "post", path: "/api/slots", body: { startAt: "2026-11-10T02:00:00.000Z" } },
+  { method: "post", path: "/api/slots/batch", body: { startAt: "2026-11-10T02:00:00.000Z", endAt: "2026-11-10T04:00:00.000Z" } },
   { method: "get", path: "/api/slots/mine" },
   { method: "get", path: "/api/slots/bookable" },
   { method: "post", path: "/api/bookings", body: { slotId: 1 } },
