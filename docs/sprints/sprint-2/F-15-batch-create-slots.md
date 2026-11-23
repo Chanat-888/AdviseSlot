@@ -5,7 +5,7 @@
 | Feature | F-15 Batch create slots |
 | Sprint | 2 |
 | Owner | Jeerasak Phisawong (reviewer: Chanat Dachkhumhang) |
-| Status | Contract draft. Implementation not started (Issue #74). |
+| Status | Implemented on `feat/f15-batch-create` (Issue #74), not yet merged. |
 | Linked requirements | FR-15, BR-01, BR-02, BR-03, BR-04, BR-08, BR-16 (rule), NFR-03, NFR-05, NFR-07 (see section 1) |
 | Depends on | F-04 (rules, `checkSlotStart`, `toSlotDto`, 23P01 mapping) |
 | Needed by | F-19 (Sprint 3: a late slot created by a batch also notifies students) |
@@ -17,6 +17,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Jeerasak (drafted with an AI agent) | First contract, written before implementation. Awaiting team review (Issue #68). |
 | 0.2 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Review on PR #77: removed the 20-slot size rule (BR-02 already limits a batch to 20 and gives the clearer 422); a 23P01 race answers 409 with the plain F-04 message; insert with `createManyAndReturn`; past-slot note corrected (three slots, `startAt <= now`). |
+| 0.3 | 2026-11-23 | Jeerasak (drafted with an AI agent) | During implementation (Issue #74): TEST-F15-07 uses 15:00 to 16:00, because 09:00 and 09:30 are demo slots of advisor 1 and would overlap; TEST-F15-05 also covers a missing `startAt` and a time without a zone (section 3.1). Status updated. No AC changes. |
 
 ## 1. Linked requirements
 
@@ -196,7 +197,7 @@ Test clock: now = **Mon 9 Nov 2026 10:00** Asia/Bangkok (`2026-11-09T03:00:00Z`)
 | TEST-F15-04 | AC-F15-04 | API | Advisors A and B logged in, no slots. | Now Mon 19:00: A batch Tue 11:00-13:00. Now Tue 10 Nov 07:00: B batch Tue 09:00-10:00. Now Tue 06:59: B batch Tue 09:00-10:00 again. | 201 with `isLate` [true, true, false, false]. Then 422 `SLOT_UNBOOKABLE` "(slot at 09:00)", no rows for B. Then 201, both `isLate` true. |
 | TEST-F15-05 | AC-F15-05 | Unit + API | A logged in. | Unit: `expandRange` with 09:00-11:00 (4 starts), 09:00-09:00, 11:00-09:00, 09:00-09:45, Tue 23:30-Wed 00:00, and Tue 07:00-18:00. API: the bad ranges (not 07:00-18:00, which is in TEST-F15-02), and a body without `endAt`. | Unit: 4 starts, null for each of the next four, 22 starts for 07:00-18:00 (no size rule). API: 400 `VALIDATION_ERROR` each, `Slot` count unchanged. |
 | TEST-F15-06 | AC-F15-06 | API | Student S logged in. | `POST /batch` Tue 09:00-10:00. | 403 `FORBIDDEN_ROLE`, `Slot` count unchanged. |
-| TEST-F15-07 | AC-F15-01 | E2E | Seeded advisor. | `/schedule`, "Several slots", next weekday 09:00 to 10:00, Create. Reload. | "2 slots created."; both rows are in the list after reload. |
+| TEST-F15-07 | AC-F15-01 | E2E | Seeded advisor 1. | `/schedule`, "Several slots", a weekday 5 days ahead, 15:00 to 16:00 (advisor 1's demo slots are 09:00, 09:30 and 14:00), Create. Reload. | "2 slots created."; both rows are in the list after reload. |
 
 ### 8.1 TDD plan
 
