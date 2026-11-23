@@ -207,10 +207,10 @@ export type BookableSlotDto = {
   advisor: { id: number; name: string };
 };
 
-/** F-06 section 3.2: slots of all advisors with status Open, sorted by start. */
 /** F-16 section 2, step 4.3: the optional filters, already validated by the route. */
 export type BookableFilters = { advisorId?: number; day?: { start: Date; end: Date } };
 
+/** F-06 section 3.2: slots of all advisors with status Open, sorted by start. F-16: narrowed by `filters`. */
 export async function listBookableSlots(now: Date, filters: BookableFilters = {}): Promise<BookableSlotDto[]> {
   const slots = await prisma.slot.findMany({
     where: {

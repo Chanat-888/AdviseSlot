@@ -253,7 +253,6 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(rowAt("16:30-17:00")).toHaveCount(0);
   });
 
-  // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   // F-16 section 8 (UI/E2E): the student narrows /slots by advisor, then by date, clears the
   // filters, and a bad date in the URL shows the server's message (NFR-07, Sprint 3 check).
   // Only seeded open slots are used (two or more days ahead), so it passes at any time of day.
@@ -289,6 +288,7 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByRole("alert")).toHaveText("The date filter must be a real date written as YYYY-MM-DD.");
   });
 
+  // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);
     await page.goto("/schedule");
