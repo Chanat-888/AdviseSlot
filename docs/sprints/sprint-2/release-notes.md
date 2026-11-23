@@ -44,15 +44,16 @@ On `sprint-2` commit `209af9a`, 2026-11-23 (`evidence/release-sprint-2-tests.txt
 | `cd e2e && npx playwright test` | 9 passed, 0 failed, 0 skipped |
 
 All 40 planned Sprint 2 tests (TEST-F10-01 to TEST-F15-07) exist in `server/tests` or
-`e2e/tests`. The E2E journey adds Sprint 2 steps for batch create (F-15), delete (F-13) and
-edit (F-12), and keeps the Lab 7 second-booking step.
+`e2e/tests`. The E2E journey adds Sprint 2 steps for student cancel from the detail page
+(F-10), batch create (F-15), delete (F-13) and edit (F-12), and keeps the Lab 7
+second-booking step.
 
 ## 3. Release checks
 
 | DoD | Check | Result | Evidence |
 |---|---|---|---|
 | R1 | F-10 to F-15 Done | Issues #69 to #74 closed, cards in Done. FR-10 to FR-15 and BR-11 to BR-15 are Verified (Sprint 2) in `docs/traceability.md` v0.8 | Board, traceability matrix |
-| R2 | E2E journey passes | Passed (9/9). No E2E step for cancel or reschedule, see section 4 | `evidence/release-sprint-2-tests.txt` |
+| R2 | E2E journey passes | Passed (9/9), including the F-10 step: a student cancels from the detail page and sees "Cancelled" | `evidence/release-sprint-2-tests.txt` |
 | R3 | Build and tests on the release commit | Passed on `209af9a` | `evidence/release-sprint-2-tests.txt` |
 | R4 | Restart check (TEST-R04-01) | Passed: an Upcoming booking and a Cancelled booking with its `cancellation` read the same before and after a server stop and a database container restart | `evidence/r04-restart-sprint-2.txt` |
 | R5 | Fresh clone follows the README | To be done by the reviewer (Jeerasak) on the release PR | Release PR review |
@@ -75,7 +76,7 @@ From the feature contracts (section 9 of each):
 
 Found during this release:
 
-- The E2E journey has no step for cancel or reschedule. F-10, F-11 and F-14 are covered by API tests only. DoD R2 gives "a student cancels from the detail page" as an example; we did not add it.
+- F-11 (advisor cancel) and F-14 (reschedule) have no E2E step; their STS plans none, so they are covered by API tests only.
 - The client still has no unit tests (`client` has no `npm test`), as in Sprint 1. The UI is covered by the Playwright journey only.
 
 ## 5. AI use
