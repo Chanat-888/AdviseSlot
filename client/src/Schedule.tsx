@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError } from "./api";
-import { bangkokDate, bangkokToIso, formatDate, formatTime, isWeekend, START_TIMES } from "./time";
+import { bangkokDate, bangkokToIso, END_TIMES, formatDate, formatTime, isWeekend, minutesOf, START_TIMES } from "./time";
 
 // The slot shape of F-04 section 4.2 and F-05 section 4.2.
 export type Slot = {
@@ -25,7 +25,7 @@ const BADGE: Record<Slot["status"], string> = {
 const message = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong.");
 
 // F-04 section 5: date and start time, then Create.
-function CreateSlotForm({ onCreated }: { onCreated: (slot: Slot) => void }) {
+function OneSlotForm({ onCreated }: { onCreated: () => void }) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +46,7 @@ function CreateSlotForm({ onCreated }: { onCreated: (slot: Slot) => void }) {
         body: JSON.stringify({ startAt: bangkokToIso(date, time) }),
       });
       setSuccess(`Slot created: ${formatDate(slot.startAt)}, ${formatTime(slot.startAt)}-${formatTime(slot.endAt)}.`);
-      onCreated(slot);
+      onCreated();
     } catch (err) {
       setError(message(err)); // the form keeps its values
     } finally {
@@ -55,8 +55,7 @@ function CreateSlotForm({ onCreated }: { onCreated: (slot: Slot) => void }) {
   }
 
   return (
-    <form className="card card-body mb-4" onSubmit={onSubmit} noValidate>
-      <h2 className="h5 mb-3">Create a slot</h2>
+    <form onSubmit={onSubmit} noValidate>
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {success && <div className="alert alert-success" role="status">{success}</div>}
       <div className="row g-3 align-items-end">
@@ -82,6 +81,101 @@ function CreateSlotForm({ onCreated }: { onCreated: (slot: Slot) => void }) {
       </div>
       <div className="form-text mt-2">Each slot is 30 minutes. Times are Asia/Bangkok.</div>
     </form>
+  );
+}
+
+// F-15 section 5: one date, a From and a To time, then Create. The server cuts the range into
+// 30-minute slots and creates all of them or none (D-30).
+function SeveralSlotsForm({ onCreated }: { onCreated: () => void }) {
+  const [date, setDate] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const count = from && to && minutesOf(to) > minutesOf(from) ? (minutesOf(to) - minutesOf(from)) / 30 : 0;
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    if (!date || !from || !to) return setError("Choose a date, a From time and a To time.");
+    if (isWeekend(date)) return setError("Slots can only be on Monday to Friday.");
+    if (minutesOf(to) <= minutesOf(from)) return setError("To must be after From.");
+
+    setSubmitting(true);
+    try {
+      const { slots } = await api<{ slots: Slot[] }>("/api/slots/batch", {
+        method: "POST",
+        body: JSON.stringify({ startAt: bangkokToIso(date, from), endAt: bangkokToIso(date, to) }),
+      });
+      setSuccess(`${slots.length} ${slots.length === 1 ? "slot" : "slots"} created.`);
+      onCreated();
+    } catch (err) {
+      setError(message(err)); // the form keeps its values; nothing was created (D-30)
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} noValidate>
+      {error && <div className="alert alert-danger" role="alert">{error}</div>}
+      {success && <div className="alert alert-success" role="status">{success}</div>}
+      <div className="row g-3 align-items-end">
+        <div className="col-sm-4">
+          <label htmlFor="batch-date" className="form-label">Date (Monday to Friday)</label>
+          <input id="batch-date" type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        <div className="col-sm-3">
+          <label htmlFor="batch-from" className="form-label">From</label>
+          <select id="batch-from" className="form-select" value={from} onChange={(e) => setFrom(e.target.value)}>
+            <option value="">Choose...</option>
+            {START_TIMES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-sm-3">
+          <label htmlFor="batch-to" className="form-label">To</label>
+          <select id="batch-to" className="form-select" value={to} onChange={(e) => setTo(e.target.value)}>
+            <option value="">Choose...</option>
+            {END_TIMES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-sm-2">
+          <button type="submit" className="btn btn-primary w-100" disabled={submitting}>
+            {submitting && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}
+            Create
+          </button>
+        </div>
+      </div>
+      <div className="form-text mt-2">
+        {count > 0 ? `This creates ${count} ${count === 1 ? "slot" : "slots"}.` : "Choose a To time after the From time."}{" "}
+        Each slot is 30 minutes. Times are Asia/Bangkok.
+      </div>
+    </form>
+  );
+}
+
+// F-04 / F-15 section 5: the create form with a "One slot" / "Several slots" switch.
+function CreateSlotForm({ onCreated }: { onCreated: () => void }) {
+  const [mode, setMode] = useState<"one" | "several">("one");
+
+  return (
+    <div className="card card-body mb-4">
+      <h2 className="h5 mb-3">Create a slot</h2>
+      <div className="btn-group mb-3" role="group" aria-label="How many slots">
+        <input type="radio" className="btn-check" name="create-mode" id="mode-one" checked={mode === "one"} onChange={() => setMode("one")} />
+        <label className="btn btn-outline-primary" htmlFor="mode-one">One slot</label>
+        <input type="radio" className="btn-check" name="create-mode" id="mode-several" checked={mode === "several"} onChange={() => setMode("several")} />
+        <label className="btn btn-outline-primary" htmlFor="mode-several">Several slots</label>
+      </div>
+      {mode === "one" ? <OneSlotForm onCreated={onCreated} /> : <SeveralSlotsForm onCreated={onCreated} />}
+    </div>
   );
 }
 

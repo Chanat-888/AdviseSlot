@@ -3,6 +3,7 @@ import {
   bookingDeadline,
   bookingStatus,
   checkSlotStart,
+  expandRange,
   isLateSlot,
   normalDeadline,
   slotStatus,
@@ -13,6 +14,7 @@ import {
 // - TEST-F05-03 (unit part), docs/sprints/sprint-1/F-05-view-own-slots.md section 8
 // - TEST-F07-04 and TEST-F07-05 (unit part), docs/sprints/sprint-1/F-07-book-slot.md section 8
 // - TEST-F08-01 (unit part), docs/sprints/sprint-1/F-08-view-own-bookings.md section 8
+// - TEST-F15-05 (unit part), docs/sprints/sprint-2/F-15-batch-create-slots.md section 8
 // All times are Asia/Bangkok (UTC+7, NFR-05).
 
 const bkk = (local: string) => new Date(`${local}+07:00`);
@@ -118,5 +120,32 @@ describe("TEST-F08-01 (unit part): booking display status (D-24, F-08 section 3.
   it("a CANCELLED booking is Cancelled, before and after the slot ends", () => {
     expect(bookingStatus({ status: "CANCELLED" }, slot, bkk("2026-11-10T09:00:00"))).toBe("Cancelled");
     expect(bookingStatus({ status: "CANCELLED" }, slot, bkk("2026-11-10T11:00:00"))).toBe("Cancelled");
+  });
+});
+
+describe("TEST-F15-05 (AC-F15-05, unit part): expandRange cuts a range into 30-minute starts (F-15 section 3.1)", () => {
+  it("Tue 10 Nov 09:00 to 11:00 gives 4 starts 09:00, 09:30, 10:00, 10:30", () => {
+    expect(expandRange(bkk("2026-11-10T09:00:00"), bkk("2026-11-10T11:00:00"))).toEqual([
+      bkk("2026-11-10T09:00:00"),
+      bkk("2026-11-10T09:30:00"),
+      bkk("2026-11-10T10:00:00"),
+      bkk("2026-11-10T10:30:00"),
+    ]);
+  });
+
+  it.each([
+    ["09:00 to 09:00 (empty)", "2026-11-10T09:00:00", "2026-11-10T09:00:00"],
+    ["11:00 to 09:00 (end before start)", "2026-11-10T11:00:00", "2026-11-10T09:00:00"],
+    ["09:00 to 09:45 (not a multiple of 30 minutes)", "2026-11-10T09:00:00", "2026-11-10T09:45:00"],
+    ["Tue 23:30 to Wed 00:00 (two dates)", "2026-11-10T23:30:00", "2026-11-11T00:00:00"],
+  ])("returns null for %s", (_name, start, end) => {
+    expect(expandRange(bkk(start), bkk(end))).toBeNull();
+  });
+
+  it("Tue 07:00 to 18:00 gives 22 starts (no size rule; BR-02 rejects it later)", () => {
+    const starts = expandRange(bkk("2026-11-10T07:00:00"), bkk("2026-11-10T18:00:00"));
+    expect(starts).toHaveLength(22);
+    expect(starts?.[0]).toEqual(bkk("2026-11-10T07:00:00"));
+    expect(starts?.[21]).toEqual(bkk("2026-11-10T17:30:00"));
   });
 });

@@ -1,6 +1,6 @@
 import type { Prisma, Slot } from "@prisma/client";
 import { prisma } from "../db.js";
-import { bookingDeadline, checkSlotStart, isLateSlot, SLOT_MS, slotStatus, type SlotRuleCode } from "../domain/rules.js";
+import { bookingDeadline, checkSlotStart, expandRange, isLateSlot, SLOT_MS, slotStatus, type SlotRuleCode } from "../domain/rules.js";
 
 // One slot as F-04 section 4.2 and F-05 section 4.2 return it.
 export type SlotDto = {
@@ -59,6 +59,62 @@ export async function createSlot(advisorId: number, startAt: Date, now: Date): P
     });
     if (!slot) return { ok: false, code: "SLOT_OVERLAP" };
     return { ok: true, slot: toSlotDto(slot, null, now) };
+  } catch (err) {
+    if (isOverlapViolation(err)) return { ok: false, code: "SLOT_OVERLAP" }; // a parallel insert won
+    throw err;
+  }
+}
+
+export type CreateSlotBatchResult =
+  | { ok: true; slots: SlotDto[] }
+  | { ok: false; code: "VALIDATION_ERROR" } // F-15 section 3.1, no database access
+  // `slotStart` names the failing slot; it is absent when a parallel insert won (23P01).
+  | { ok: false; code: SlotRuleCode | "SLOT_OVERLAP"; slotStart?: Date };
+
+/**
+ * F-15 section 2, steps 4 to 8. All or nothing (D-30): the first failing slot rejects the
+ * batch and no row is created. `now` is the server clock, passed in.
+ */
+export async function createSlotBatch(
+  advisorId: number,
+  startAt: Date,
+  endAt: Date,
+  now: Date,
+): Promise<CreateSlotBatchResult> {
+  const starts = expandRange(startAt, endAt); // F-15 section 3.1, in time order
+  if (!starts) return { ok: false, code: "VALIDATION_ERROR" };
+
+  for (const start of starts) {
+    const code = checkSlotStart(start, now);
+    if (code) return { ok: false, code, slotStart: start };
+  }
+
+  try {
+    return await prisma.$transaction(async (tx): Promise<CreateSlotBatchResult> => {
+      const overlap = await tx.slot.findFirst({
+        where: { advisorId, deletedAt: null, startAt: { lt: endAt }, endAt: { gt: startAt } },
+        orderBy: { startAt: "asc" },
+        select: { startAt: true, endAt: true },
+      });
+      if (overlap) {
+        // The first new slot that overlaps the earliest clashing live slot.
+        const first = starts.find(
+          (s) => s.getTime() < overlap.endAt.getTime() && s.getTime() + SLOT_MS > overlap.startAt.getTime(),
+        );
+        return { ok: false, code: "SLOT_OVERLAP", slotStart: first };
+      }
+      const rows = await tx.slot.createManyAndReturn({
+        data: starts.map((s) => ({
+          advisorId,
+          startAt: s,
+          endAt: new Date(s.getTime() + SLOT_MS),
+          createdAt: now,
+          isLate: isLateSlot(s, now),
+        })),
+      });
+      rows.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+      return { ok: true, slots: rows.map((slot) => toSlotDto(slot, null, now)) };
+    });
   } catch (err) {
     if (isOverlapViolation(err)) return { ok: false, code: "SLOT_OVERLAP" }; // a parallel insert won
     throw err;
