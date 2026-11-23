@@ -113,3 +113,11 @@ export function studentCanCancel(startAt: Date, now: Date): boolean {
 export function advisorCanCancel(startAt: Date, now: Date): boolean {
   return now.getTime() < startAt.getTime();
 }
+
+/**
+ * F-16 section 3.2 (NFR-05): the Bangkok calendar day "2026-11-10" as [start, end) instants,
+ * or null if it is not a real date written as YYYY-MM-DD.
+ */
+export function bangkokDay(_date: string): { start: Date; end: Date } | null {
+  return null; // F-16 red step: not implemented yet
+}
