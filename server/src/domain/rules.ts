@@ -94,3 +94,8 @@ export function bookingStatus(
 export function studentCanCancel(startAt: Date, now: Date): boolean {
   return startAt.getTime() - now.getTime() >= 12 * HOUR;
 }
+
+/** BR-12 (F-11): the slot's advisor may cancel until the slot starts. */
+export function advisorCanCancel(_startAt: Date, _now: Date): boolean {
+  return false; // TDD red: placeholder so the tests fail on their assertions; implemented in the green commit
+}
