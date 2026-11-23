@@ -126,9 +126,12 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByRole("alert")).toHaveText("Booking not found.");
     await expect(page.getByRole("main").getByText(booker.name)).toHaveCount(0);
   });
-  // F-06 and F-07 in the browser: the student books from /slots, then a second booking is
-  // rejected by BR-07 and the UI shows the server's message (TEST-R02-02 / AC-R02-02).
+  // F-06 and F-07 in the browser: the student books a slot of Advisor One from /slots, then a
+  // second slot of the same advisor is rejected by BR-07 (#67) and the UI shows the server's
+  // message (TEST-R02-02 / AC-R02-02).
   test("student books a slot, then a second booking shows the server's message", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const bookAdvisor = page.getByRole("button", { name: new RegExp(`^Book ${advisor.name} `) });
     await page.goto("/login");
     await page.getByLabel("Email").fill(student.email);
     await page.getByLabel("Password").fill(DEMO_PASSWORD);
@@ -140,8 +143,8 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(rows.first()).toContainText("Advisor");
     const before = await rows.count();
 
-    // F-07: book the first slot, land on the booking and see the confirmation
-    await page.getByRole("button", { name: "Book" }).first().click();
+    // F-07: book Advisor One's first slot, land on the booking and see the confirmation
+    await bookAdvisor.first().click();
     await expect(page).toHaveURL(/\/bookings\/\d+$/);
     await expect(page.getByText("Booking confirmed.")).toBeVisible();
 
@@ -149,9 +152,9 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await page.goto("/slots");
     await expect(rows).toHaveCount(before - 1);
 
-    // BR-07: a second booking is refused and the server's message is shown
-    await page.getByRole("button", { name: "Book" }).first().click();
-    await expect(page.getByRole("alert")).toHaveText("You already have an upcoming booking.");
+    // BR-07 (#67): a second slot of the same advisor is refused and the server's message is shown
+    await bookAdvisor.first().click();
+    await expect(page.getByRole("alert")).toHaveText("You already have an upcoming booking with this advisor.");
     await expect(page).toHaveURL(/\/slots$/);
   });
   // F-15 in the browser: the advisor creates a range of slots in one action and they are all in
@@ -181,6 +184,35 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(daySection.getByRole("listitem").filter({ hasText: "15:00-15:30" })).toHaveCount(1);
     await expect(daySection.getByRole("listitem").filter({ hasText: "15:30-16:00" })).toHaveCount(1);
   });
+  // F-13 (TEST-F13-08, AC-F13-01): the advisor deletes an Open slot from /schedule, confirms,
+  // and the row is gone, also after a reload (so the delete was stored, not just hidden).
+  test("advisor deletes an Open slot and it stays gone after a reload", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const day = weekdayAhead(4);
+    const startAt = new Date(`${day}T17:00:00+07:00`).toISOString(); // no demo slot at 17:00
+
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByLabel("Date (Monday to Friday)").fill(day);
+    await page.getByLabel("Start time").selectOption("17:00");
+    await page.getByRole("button", { name: "Create" }).click();
+    const sameRow = () => page.getByRole("listitem").filter({ hasText: "17:00-17:30" });
+    await expect(sameRow()).toHaveCount(1);
+
+    // Delete, then the inline confirm names the slot; Cancel keeps it, Delete removes it
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+    await expect(sameRow()).toContainText(`Delete the slot on ${formatDate(startAt)}, 17:00-17:30?`);
+    await sameRow().getByRole("button", { name: "Cancel" }).click();
+    await expect(sameRow()).toHaveCount(1);
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+
+    await expect(page.getByText("Slot deleted.")).toBeVisible();
+    await expect(sameRow()).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("listitem").first()).toBeVisible(); // the list (demo slots) has loaded
+    await expect(sameRow()).toHaveCount(0);
+  });
+
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);

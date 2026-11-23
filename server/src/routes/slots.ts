@@ -2,7 +2,7 @@ import { Router } from "express";
 import { sendError } from "../errors.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
-import { createSlot, createSlotBatch, listBookableSlots, listOwnSlots } from "../services/slots.js";
+import { createSlot, createSlotBatch, deleteSlot, listBookableSlots, listOwnSlots } from "../services/slots.js";
 
 export const slotsRouter = Router();
 
@@ -98,6 +98,37 @@ slotsRouter.get(
     }
   },
 );
+
+// F-13 section 4.3 (SDS section 5).
+const DELETE_ERRORS = {
+  NOT_FOUND: [404, "Slot not found."],
+  SLOT_ALREADY_STARTED: [422, "This slot has already started."],
+  SLOT_HAS_ACTIVE_BOOKING: [409, "This slot has a booking. Cancel the booking first."],
+} as const;
+
+// A positive whole number in plain digits that fits the INT column (same rule as F-09).
+const POSITIVE_ID = /^[1-9]\d{0,9}$/;
+function parseId(raw: string): number | null {
+  const id = POSITIVE_ID.test(raw) ? Number(raw) : NaN;
+  return Number.isSafeInteger(id) && id <= 2147483647 ? id : null;
+}
+
+// F-13: soft-delete an own unbooked future slot.
+slotsRouter.delete("/:id", requireAuth, requireRole("ADVISOR", "Only advisors can delete slots."), async (req, res, next) => {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return sendError(res, 400, "VALIDATION_ERROR", "The slot id must be a positive integer.");
+
+    const result = await deleteSlot(req.user!.id, id, new Date());
+    if (!result.ok) {
+      const [status, message] = DELETE_ERRORS[result.code];
+      return sendError(res, status, result.code, message);
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
 
 // F-06: bookable slots of all advisors, without booker identity (BR-09).
 slotsRouter.get(

@@ -29,7 +29,12 @@ export function toBookingDto(b: BookingWithParts, now: Date): BookingDto {
   };
 }
 
-export type BookingFailure = "NOT_FOUND" | "SLOT_TAKEN" | "BOOKING_DEADLINE_PASSED" | "ACTIVE_BOOKING_LIMIT";
+export type BookingFailure =
+  | "NOT_FOUND"
+  | "SLOT_TAKEN"
+  | "BOOKING_DEADLINE_PASSED"
+  | "SAME_ADVISOR_BOOKING"
+  | "ACTIVE_BOOKING_LIMIT";
 
 export type CreateBookingResult =
   | { ok: true; booking: BookingDto }
@@ -47,6 +52,13 @@ const isUniqueViolation = (err: unknown) => err instanceof Prisma.PrismaClientKn
 export async function createBooking(studentId: number, slotId: number, now: Date): Promise<CreateBookingResult> {
   try {
     return await prisma.$transaction(async (tx): Promise<CreateBookingResult> => {
+      // Locks first, always student then slot (SDS 3.1, F-13 section 2.1). The student lock makes two
+      // parallel requests by one student run one after the other (BR-07). The slot lock makes a booking
+      // and a parallel edit or delete of the slot (F-12, F-13) run one after the other (BR-14), so the
+      // checks below see the slot as it is when the booking is written. F-14 locks in the same order.
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${studentId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Slot" WHERE id = ${slotId} FOR UPDATE`;
+
       // Check 1: the slot exists.
       const slot = await tx.slot.findFirst({ where: { id: slotId, deletedAt: null } });
       if (!slot) return { ok: false, code: "NOT_FOUND" };
@@ -59,12 +71,14 @@ export async function createBooking(studentId: number, slotId: number, now: Date
       const deadline = bookingDeadline(slot);
       if (now.getTime() >= deadline.getTime()) return { ok: false, code: "BOOKING_DEADLINE_PASSED", deadline };
 
-      // Check 4: BR-07. The row lock makes two parallel requests by one student run one after the other.
-      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${studentId} FOR UPDATE`;
-      const active = await tx.booking.count({
+      // Check 4: BR-07 (#67, D-31), checked under the student lock taken at the top.
+      const active = await tx.booking.findMany({
         where: { studentId, status: "ACTIVE", slot: { endAt: { gt: now } } },
+        select: { slot: { select: { advisorId: true } } },
       });
-      if (active > 0) return { ok: false, code: "ACTIVE_BOOKING_LIMIT" };
+      // 4a: at most one active booking with the same advisor; 4b: at most two in total.
+      if (active.some((b) => b.slot.advisorId === slot.advisorId)) return { ok: false, code: "SAME_ADVISOR_BOOKING" };
+      if (active.length >= 2) return { ok: false, code: "ACTIVE_BOOKING_LIMIT" };
 
       const booking = await tx.booking.create({
         data: { slotId, studentId, status: "ACTIVE", createdAt: now },

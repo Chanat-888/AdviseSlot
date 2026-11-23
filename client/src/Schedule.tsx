@@ -179,8 +179,49 @@ function CreateSlotForm({ onCreated }: { onCreated: () => void }) {
   );
 }
 
+// F-13 section 5: Delete on an Open or Closed row, confirmed inline with Delete / Cancel.
+// The server decides (404, 409, 422); the button is only shown where a delete can succeed.
+function DeleteSlot({ slot, onDone }: { slot: Slot; onDone: (result: { ok: true } | { ok: false; error: string; reload: boolean }) => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function onDelete() {
+    setBusy(true);
+    try {
+      await api<void>(`/api/slots/${slot.id}`, { method: "DELETE" });
+      onDone({ ok: true });
+    } catch (err) {
+      // 404 or 409: the slot changed in the meantime, so the list is reloaded (F-13 section 5).
+      const reload = err instanceof ApiError && (err.status === 404 || err.status === 409);
+      onDone({ ok: false, error: message(err), reload });
+      setBusy(false);
+      setConfirming(false);
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <button type="button" className="btn btn-sm btn-outline-danger ms-auto" onClick={() => setConfirming(true)}>
+        Delete
+      </button>
+    );
+  }
+  return (
+    <span className="ms-auto d-flex align-items-center gap-2">
+      <span>Delete the slot on {formatDate(slot.startAt)}, {formatTime(slot.startAt)}-{formatTime(slot.endAt)}?</span>
+      <button type="button" className="btn btn-sm btn-danger" onClick={onDelete} disabled={busy}>
+        {busy && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}
+        Delete
+      </button>
+      <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => setConfirming(false)} disabled={busy}>
+        Cancel
+      </button>
+    </span>
+  );
+}
+
 // F-05 section 5: own slots grouped by date, with D-24 status badges.
-function SlotList({ slots }: { slots: Slot[] }) {
+function SlotList({ slots, onDeleted }: { slots: Slot[]; onDeleted: Parameters<typeof DeleteSlot>[0]["onDone"] }) {
   if (slots.length === 0) return <p className="text-muted">You have no slots yet. Create one above.</p>;
 
   const groups = new Map<string, Slot[]>();
@@ -203,6 +244,7 @@ function SlotList({ slots }: { slots: Slot[] }) {
                 {s.student && s.bookingId !== null && (
                   <Link to={`/bookings/${s.bookingId}`} className="ms-auto">{s.student.name}</Link>
                 )}
+                {(s.status === "Open" || s.status === "Closed") && <DeleteSlot slot={s} onDone={onDeleted} />}
               </li>
             ))}
           </ul>
@@ -215,6 +257,7 @@ function SlotList({ slots }: { slots: Slot[] }) {
 export function Schedule() {
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ kind: "success" | "danger"; text: string } | null>(null);
 
   const load = useCallback(() => {
     api<Slot[]>("/api/slots/mine")
@@ -233,7 +276,25 @@ export function Schedule() {
       <CreateSlotForm onCreated={load} />
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {!error && slots === null && <div className="spinner-border" role="status" />}
-      {slots && <SlotList slots={slots} />}
+      {notice && (
+        <div className={`alert alert-${notice.kind}`} role={notice.kind === "success" ? "status" : "alert"}>
+          {notice.text}
+        </div>
+      )}
+      {slots && (
+        <SlotList
+          slots={slots}
+          onDeleted={(r) => {
+            if (r.ok) {
+              setNotice({ kind: "success", text: "Slot deleted." });
+              load();
+            } else {
+              setNotice({ kind: "danger", text: r.error });
+              if (r.reload) load();
+            }
+          }}
+        />
+      )}
     </main>
   );
 }
