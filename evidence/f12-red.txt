@@ -1,0 +1,225 @@
+# F-12 red run: TEST-F12-01 to -07 on 2e75ebe (sprint-2, no PATCH /api/slots/:id yet)
+# Command: cd server && npx vitest run tests/slots.edit.test.ts   (2026-11-23 14:13 +0700)
+# Expected red: every test gets 404 from the router (no route); tsc --noEmit passes.
+
+
+ RUN  v2.1.5 C:/Users/Pedpro/AdviseSlot/server
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+4 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+ ❯ tests/slots.edit.test.ts (13 tests | 13 failed) 3139ms
+   × TEST-F12-01 (AC-F12-01): change the start time of an own unbooked future slot > returns 200 with the F-05 item shape, keeps the id and ignores a client endAt 226ms
+     → expected 404 to be 200 // Object.is equality
+   × TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Sat 14 Nov 10:00 with 422 and leaves X unchanged 200ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Tue 10:15 with 422 and leaves X unchanged 196ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Tue 07:30 with 422 and leaves X unchanged 194ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Tue 18:00 with 422 and leaves X unchanged 201ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Mon 9 Nov 09:30 (past) with 422 and leaves X unchanged 197ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > accepts the first (08:00) and last (17:30) allowed starts 201ms
+     → expected 404 to be 200 // Object.is equality
+   × TEST-F12-03 (AC-F12-03): no overlap with another own live slot; the slot itself does not count > rejects an own overlap, accepts the unchanged start, another advisor's time and an own deleted slot's time 202ms
+     → expected 404 to be 409 // Object.is equality
+   × TEST-F12-03 (AC-F12-03): no overlap with another own live slot; the slot itself does not count > accepts a start back-to-back with the old range (09:30) 200ms
+     → expected 404 to be 200 // Object.is equality
+   × TEST-F12-04 (AC-F12-04): an ACTIVE booking blocks the edit, a CANCELLED one does not > returns 409 SLOT_HAS_ACTIVE_BOOKING for X and 200 for the slot with only a cancelled booking 201ms
+     → expected 404 to be 409 // Object.is equality
+   × TEST-F12-05 (AC-F12-05): isLate is recomputed for the new start as if created now (D-28) > becomes late, goes back to normal, then follows the exactly-2-hours boundary 196ms
+     → expected 404 to be 200 // Object.is equality
+   × TEST-F12-06 (AC-F12-06): a slot that has started cannot be edited (D-29) > rejects a slot in progress and one starting now 197ms
+     → expected 404 to be 422 // Object.is equality
+   × TEST-F12-07 (AC-F12-07): only the slot's advisor can edit it; input is validated > gives 403 to a student, 404 to another advisor and for deleted or unknown slots, 400 for bad input 394ms
+     → expected 404 to be 403 // Object.is equality
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 13 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-01 (AC-F12-01): change the start time of an own unbooked future slot > returns 200 with the F-05 item shape, keeps the id and ignores a client endAt
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/slots.edit.test.ts:87:24
+     85|     });
+     86| 
+     87|     expect(res.status).toBe(200);
+       |                        ^
+     88|     expect(res.body).toEqual({
+     89|       id: X.id,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Sat 14 Nov 10:00 with 422 and leaves X unchanged
+ FAIL  tests/slots.edit.test.ts > TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Tue 10:15 with 422 and leaves X unchanged
+ FAIL  tests/slots.edit.test.ts > TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Tue 07:30 with 422 and leaves X unchanged
+ FAIL  tests/slots.edit.test.ts > TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Tue 18:00 with 422 and leaves X unchanged
+ FAIL  tests/slots.edit.test.ts > TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > rejects Mon 9 Nov 09:30 (past) with 422 and leaves X unchanged
+AssertionError: expected 404 to be 422 // Object.is equality
+
+- Expected
++ Received
+
+- 422
++ 404
+
+ ❯ tests/slots.edit.test.ts:120:24
+    118|   ])("rejects %s with 422 and leaves X unchanged", async (_name, local…
+    119|     const res = await moveTo(await loginCookie(advisor.email), X.id, l…
+    120|     expect(res.status).toBe(422);
+       |                        ^
+    121|     expect(res.body).toEqual({ error: { code, message } });
+    122|     await expectUnchanged(X.id, "2026-11-10T09:00:00");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-02 (AC-F12-02): the F-04 rules apply to the new start > accepts the first (08:00) and last (17:30) allowed starts
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/slots.edit.test.ts:128:26
+    126|     const a = await loginCookie(advisor.email);
+    127|     const first = await moveTo(a, X.id, "2026-11-10T08:00:00");
+    128|     expect(first.status).toBe(200);
+       |                          ^
+    129|     expect(first.body.startAt).toBe(iso("2026-11-10T08:00:00"));
+    130|     const last = await moveTo(a, X.id, "2026-11-10T17:30:00");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-03 (AC-F12-03): no overlap with another own live slot; the slot itself does not count > rejects an own overlap, accepts the unchanged start, another advisor's time and an own deleted slot's time
+AssertionError: expected 404 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 404
+
+ ❯ tests/slots.edit.test.ts:144:28
+    142| 
+    143|     const overlap = await moveTo(a, X.id, "2026-11-10T10:00:00");
+    144|     expect(overlap.status).toBe(409);
+       |                            ^
+    145|     expect(overlap.body).toEqual({ error: { code: "SLOT_OVERLAP", mess…
+    146|     await expectUnchanged(X.id, "2026-11-10T09:00:00");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-03 (AC-F12-03): no overlap with another own live slot; the slot itself does not count > accepts a start back-to-back with the old range (09:30)
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/slots.edit.test.ts:160:24
+    158|   it("accepts a start back-to-back with the old range (09:30)", async …
+    159|     const res = await moveTo(await loginCookie(advisor.email), X.id, "…
+    160|     expect(res.status).toBe(200);
+       |                        ^
+    161|     expect(res.body.endAt).toBe(iso("2026-11-10T10:00:00"));
+    162|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-04 (AC-F12-04): an ACTIVE booking blocks the edit, a CANCELLED one does not > returns 409 SLOT_HAS_ACTIVE_BOOKING for X and 200 for the slot with only a cancelled booking
+AssertionError: expected 404 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 404
+
+ ❯ tests/slots.edit.test.ts:173:28
+    171| 
+    172|     const blocked = await moveTo(a, X.id, "2026-11-10T14:00:00");
+    173|     expect(blocked.status).toBe(409);
+       |                            ^
+    174|     expect(blocked.body).toEqual({
+    175|       error: { code: "SLOT_HAS_ACTIVE_BOOKING", message: "This slot ha…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-05 (AC-F12-05): isLate is recomputed for the new start as if created now (D-28) > becomes late, goes back to normal, then follows the exactly-2-hours boundary
+AssertionError: expected 404 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 404
+
+ ❯ tests/slots.edit.test.ts:193:25
+    191| 
+    192|     const late = await moveTo(a, W.id, "2026-11-10T09:00:00");
+    193|     expect(late.status).toBe(200);
+       |                         ^
+    194|     expect(late.body.isLate).toBe(true);
+    195|     expect(late.body.bookingDeadline).toBe(iso("2026-11-10T07:00:00"));
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/13]⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-06 (AC-F12-06): a slot that has started cannot be edited (D-29) > rejects a slot in progress and one starting now
+AssertionError: expected 404 to be 422 // Object.is equality
+
+- Expected
++ Received
+
+- 422
++ 404
+
+ ❯ tests/slots.edit.test.ts:226:26
+    224|     for (const [slot, start] of [[inProgress, "2026-11-09T09:30:00"], …
+    225|       const res = await moveTo(a, slot.id, "2026-11-10T15:00:00");
+    226|       expect(res.status).toBe(422);
+       |                          ^
+    227|       expect(res.body).toEqual({ error: { code: "SLOT_ALREADY_STARTED"…
+    228|       await expectUnchanged(slot.id, start);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/13]⎯
+
+ FAIL  tests/slots.edit.test.ts > TEST-F12-07 (AC-F12-07): only the slot's advisor can edit it; input is validated > gives 403 to a student, 404 to another advisor and for deleted or unknown slots, 400 for bad input
+AssertionError: expected 404 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 404
+
+ ❯ tests/slots.edit.test.ts:241:30
+    239| 
+    240|     const asStudent = await edit(await loginCookie(student.email), X.i…
+    241|     expect(asStudent.status).toBe(403);
+       |                              ^
+    242|     expect(asStudent.body).toEqual({ error: { code: "FORBIDDEN_ROLE", …
+    243| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/13]⎯
+
+ Test Files  1 failed (1)
+      Tests  13 failed (13)
+   Start at  14:13:40
+   Duration  4.93s (transform 76ms, setup 0ms, collect 455ms, tests 3.14s, environment 0ms, prepare 59ms)
+
