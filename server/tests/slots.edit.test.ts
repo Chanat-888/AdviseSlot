@@ -38,7 +38,9 @@ async function insertSlot(advisorId: number, local: string, opts: { isLate?: boo
 }
 
 async function insertBooking(slotId: number, studentId: number, status: "ACTIVE" | "CANCELLED" = "ACTIVE") {
-  return prisma.booking.create({ data: { slotId, studentId, status, createdAt: bkk("2026-11-02T09:00:00") } });
+  // A CANCELLED row needs its cancel fields (F-10 migration CHECK); the student cancelled it.
+  const cancel = status === "CANCELLED" ? { cancelledAt: bkk("2026-11-03T09:00:00"), cancelledById: studentId } : {};
+  return prisma.booking.create({ data: { slotId, studentId, status, createdAt: bkk("2026-11-02T09:00:00"), ...cancel } });
 }
 
 const edit = (cookie: string, id: number | string, body: unknown) =>

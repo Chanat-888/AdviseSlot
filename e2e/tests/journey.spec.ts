@@ -125,6 +125,18 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await page.goto(detailUrl);
     await expect(page.getByRole("alert")).toHaveText("Booking not found.");
     await expect(page.getByRole("main").getByText(booker.name)).toHaveCount(0);
+    await logOut(page);
+
+    // F-10 section 8 (UI step): the student cancels the booking from the detail page, more than
+    // 12 hours ahead, and sees "Cancelled". The Cancel button is gone afterwards.
+    await logIn(page, booker.email, /\/slots$/);
+    await page.goto(detailUrl);
+    await page.getByRole("button", { name: "Cancel booking" }).click();
+    const confirm = page.getByRole("dialog", { name: "Cancel this booking?" });
+    await confirm.getByRole("button", { name: "Yes" }).click();
+    await expect(page.getByText("Booking cancelled.")).toBeVisible();
+    await expect(page.getByRole("main").getByText("Cancelled", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Cancel booking" })).toHaveCount(0);
   });
   // F-06 and F-07 in the browser: the student books a slot of Advisor One from /slots, then a
   // second slot of the same advisor is rejected by BR-07 (#67) and the UI shows the server's
