@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  advisorCanCancel,
   bookingDeadline,
   bookingStatus,
   checkSlotStart,
@@ -15,6 +16,7 @@ import {
 // - TEST-F07-04 and TEST-F07-05 (unit part), docs/sprints/sprint-1/F-07-book-slot.md section 8
 // - TEST-F08-01 (unit part), docs/sprints/sprint-1/F-08-view-own-bookings.md section 8
 // - TEST-F10-02 (unit part), docs/sprints/sprint-2/F-10-student-cancel.md section 8
+// - TEST-F11-02 (unit part), docs/sprints/sprint-2/F-11-advisor-cancel.md section 8
 // All times are Asia/Bangkok (UTC+7, NFR-05).
 
 const bkk = (local: string) => new Date(`${local}+07:00`);
@@ -134,5 +136,20 @@ describe("TEST-F10-02 (unit part): BR-11 student cancel window, at least 12 hour
   it("refuses one millisecond inside the window and allows days ahead", () => {
     expect(studentCanCancel(startAt, new Date(bkk("2026-11-10T22:00:00").getTime() + 1))).toBe(false);
     expect(studentCanCancel(startAt, bkk("2026-11-09T10:00:00"))).toBe(true);
+  });
+});
+
+describe("TEST-F11-02 (unit part): BR-12 advisor cancel window, until the slot starts", () => {
+  const startAt = bkk("2026-11-10T10:00:00"); // Tue 10 Nov 10:00
+
+  it("allows a cancel at Tue 09:59 and refuses it at Tue 10:00 (the start)", () => {
+    expect(advisorCanCancel(startAt, bkk("2026-11-10T09:59:00"))).toBe(true);
+    expect(advisorCanCancel(startAt, bkk("2026-11-10T10:00:00"))).toBe(false);
+  });
+
+  it("allows one millisecond before the start and 1 hour before (no 12 h limit), refuses after it", () => {
+    expect(advisorCanCancel(startAt, new Date(startAt.getTime() - 1))).toBe(true);
+    expect(advisorCanCancel(startAt, bkk("2026-11-10T09:00:00"))).toBe(true);
+    expect(advisorCanCancel(startAt, bkk("2026-11-10T10:15:00"))).toBe(false);
   });
 });

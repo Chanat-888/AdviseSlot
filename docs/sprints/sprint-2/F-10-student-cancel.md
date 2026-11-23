@@ -5,7 +5,7 @@
 | Feature | F-10 Student cancels booking |
 | Sprint | 2 |
 | Owner | Contract and implementation: Chanat Dachkhumhang (Issues #68, #69), reviewed by Jeerasak Phisawong. |
-| Status | Implemented on `feat/f10-student-cancel` (Issue #69). The F-11 advisor path is not implemented yet (Issue #70). |
+| Status | Implemented on `feat/f10-student-cancel` (Issue #69). The F-11 advisor path is implemented on `feat/f11-advisor-cancel` (Issue #70). |
 | Linked requirements | FR-10, BR-11, BR-13, BR-09, NFR-03, NFR-05 (see section 1) |
 | Depends on | F-07 (bookings exist), F-09 (the detail screen holds the Cancel button) |
 | Needed by | F-11 (shares the endpoint and the cancel fields), F-14 (reuses the BR-11 check), F-17, F-18 |

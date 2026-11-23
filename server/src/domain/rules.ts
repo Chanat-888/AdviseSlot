@@ -94,3 +94,8 @@ export function bookingStatus(
 export function studentCanCancel(startAt: Date, now: Date): boolean {
   return startAt.getTime() - now.getTime() >= 12 * HOUR;
 }
+
+/** BR-12 (F-11): the slot's advisor may cancel until the slot starts. */
+export function advisorCanCancel(startAt: Date, now: Date): boolean {
+  return now.getTime() < startAt.getTime();
+}
