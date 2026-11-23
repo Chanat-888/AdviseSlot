@@ -154,6 +154,33 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByRole("alert")).toHaveText("You already have an upcoming booking.");
     await expect(page).toHaveURL(/\/slots$/);
   });
+  // F-15 in the browser: the advisor creates a range of slots in one action and they are all in
+  // the list, also after a reload (TEST-F15-07, AC-F15-01). 15:00 to 16:00 because advisor1's demo
+  // slots are at 09:00, 09:30 and 14:00.
+  test("advisor creates several slots at once (F-15, TEST-F15-07)", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const day = weekdayAhead(5);
+
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByText("Several slots", { exact: true }).click(); // the Bootstrap toggle label
+    await expect(page.getByRole("radio", { name: "Several slots" })).toBeChecked();
+    await page.getByLabel("Date (Monday to Friday)").fill(day);
+    await page.getByLabel("From", { exact: true }).selectOption("15:00");
+    await page.getByLabel("To", { exact: true }).selectOption("16:00");
+    await expect(page.getByText("This creates 2 slots.")).toBeVisible();
+    await page.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("status")).toHaveText("2 slots created.");
+
+    const daySection = page.locator("section").filter({ has: page.getByRole("heading", { name: formatDate(`${day}T12:00:00+07:00`) }) });
+    await expect(daySection.getByRole("listitem").filter({ hasText: "15:00-15:30" })).toHaveCount(1);
+    await expect(daySection.getByRole("listitem").filter({ hasText: "15:30-16:00" })).toHaveCount(1);
+
+    // The slots are stored, not only shown: they are still listed after a reload
+    await page.reload();
+    await expect(page.getByRole("listitem").first()).toBeVisible();
+    await expect(daySection.getByRole("listitem").filter({ hasText: "15:00-15:30" })).toHaveCount(1);
+    await expect(daySection.getByRole("listitem").filter({ hasText: "15:30-16:00" })).toHaveCount(1);
+  });
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);
