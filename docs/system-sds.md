@@ -18,6 +18,7 @@
 | 0.6 | 2026-11-04 | Chanat (drafted with an AI agent) | Review fix (PR #18): section 3.1 and 3.3 add the `User.email` lowercase CHECK constraint (D-26), written as raw SQL in the F-01 migration. For the SDS owner to review. |
 | 0.7 | 2026-11-22 | Jeerasak (drafted with an AI agent) | Sprint 2 slot contracts (F-12, F-13, F-15). Closed O-03 (D-28). New 422 code `SLOT_ALREADY_STARTED` (D-29). Section 3.1: slot row lock so an edit or delete cannot race a booking (BR-14). Section 5.1: request shapes of the three slot endpoints. Section 5: 409 `BOOKING_NOT_ACTIVE` from the F-10/F-11/F-14 contracts (#76). Issue #68. |
 | 0.8 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67, approved by TA Supachok Deetaweesukh on 2026-11-22 (D-31): section 3.1 BR-07 row now allows two active bookings, at most one per advisor (student row lock unchanged); section 5 adds 409 `SAME_ADVISOR_BOOKING`. For the SDS owner to review. |
+| 0.9 | 2026-11-23 | Chanat (drafted with an AI agent) | F-18 contract v0.2: `GET /api/bookings/history` is advisor-only; students already see their cancelled bookings through `/mine` (F-10). |
 
 ## 1. Stack and rationale
 
@@ -227,7 +228,7 @@ Detailed request and response shapes belong in each feature contract.
 | `POST /api/slots/batch` | Advisor | Create consecutive slots (`{ startAt, endAt }`, all-or-nothing, F-15) | 2 |
 | `GET /api/advisors` | Student | Advisor list for filtering | 3 |
 | `GET /api/summary?from=&to=` | Advisor | Appointment summary | 3 |
-| `GET /api/bookings/history` | Student, Advisor | Cancelled and passed bookings with who cancelled and the reason (FR-18). Student: own bookings. Advisor: bookings on own slots. | 3 |
+| `GET /api/bookings/history` | Advisor | Cancelled and passed bookings on own slots, with who cancelled and the reason (FR-18). Students see their cancelled bookings through `GET /api/bookings/mine` (F-10). | 3 |
 | `GET /api/notifications` | Student | Own notifications, newest first, with unread count | 3 |
 | `POST /api/notifications/:id/read` | Student owner | Mark one notification as read | 3 |
 
@@ -245,7 +246,7 @@ Detailed request and response shapes belong in each feature contract.
 | Cancel booking (Sprint 2) | Own, BR-11 | Own slots, BR-12 | As above |
 | Reschedule (Sprint 2) | Own | No (403) | As above |
 | Appointment summary (Sprint 3) | No (403) | Yes | Only own slots |
-| Booking history (Sprint 3) | Own | Own slots | Student: `studentId` = current user. Advisor: bookings on own slots. |
+| Booking history (Sprint 3) | No (403; own cancelled bookings via `/mine`) | Own slots | Advisor: bookings on own slots. |
 | List and mark notifications (Sprint 3) | Yes | No (403) | Only notifications where `studentId` = current user, otherwise 404 |
 
 The backend checks every row in this table. Hiding a button in the UI does not count as authorization.

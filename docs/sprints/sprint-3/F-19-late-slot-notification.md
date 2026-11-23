@@ -9,15 +9,16 @@
 | Linked requirements | FR-19, BR-16 (notification), BR-09, NFR-03 (see section 1) |
 | Depends on | F-04 (single create, `isLate`), F-15 (batch create, D-30, PR #77), F-12 (edit does not notify, D-28, PR #77), F-13 (soft delete, D-29) |
 | Needed by | none |
-| Related documents | `docs/srs.md` (v0.4), `docs/system-sds.md` sections 3 (`Notification`, unique index), 4.1, 5.1, 6, `docs/decisions.md` (D-16, D-23, D-28, D-29, D-30, new D-31), `docs/sprints/sprint-1/F-04-create-slot.md`, `docs/sprints/sprint-2/F-15-batch-create-slots.md`, `docs/sprints/sprint-2/F-12-edit-slot.md` |
+| Related documents | `docs/srs.md` (v0.5), `docs/system-sds.md` sections 3 (`Notification`, unique index), 4.1, 5.1, 6, `docs/decisions.md` (D-16, D-23, D-28, D-29, D-30, new D-32), `docs/sprints/sprint-1/F-04-create-slot.md`, `docs/sprints/sprint-2/F-15-batch-create-slots.md`, `docs/sprints/sprint-2/F-12-edit-slot.md` |
 
 ## Version history
 
 | Version | Date | Author | Change |
 |---|---|---|---|
-| 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, on the Sprint 2 contracts in PR #76 and #77. Records D-31. Awaiting team review. |
+| 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, on the Sprint 2 contracts in PR #76 and #77. Records D-32. Awaiting team review. |
+| 0.2 | 2026-11-23 | Chanat (drafted with an AI agent) | Rebased on the released Sprint 2 (`v0.2.0-sprint-2`). The notification decision is D-32 (D-31 is now the Lab 7 BR-07 decision) and is recorded in `docs/decisions.md`. SRS reference v0.5. |
 
-## 0. Decision D-31: what a notification shows after the slot changes
+## 0. Decision D-32: what a notification shows after the slot changes
 
 A notification is created once, when a late slot is **created** (F-04 single, or each late slot of an F-15 batch). It is never created by an edit (D-28) and never removed by a delete (D-29).
 
@@ -25,7 +26,7 @@ A notification is created once, when a late slot is **created** (F-04 single, or
 - So if the advisor moves the slot (F-12), the notification shows the new time; if the advisor deletes it (F-13) or it is booked or its deadline passes, it shows "no longer available". No new notification is sent in these cases.
 - Known gap (from the review of PR #77): moving a normal slot to a late time through F-12 does not notify, while delete + create would. Accepted: FR-19 and D-28 say "created".
 
-Add D-31 to `docs/decisions.md` in the same PR.
+Recorded as D-32 in `docs/decisions.md` (D-31 is the Lab 7 BR-07 decision).
 
 ## 1. Linked requirements
 
@@ -48,7 +49,7 @@ Add D-31 to `docs/decisions.md` in the same PR.
 
 Students created after the slot get no notification for it (FR-19: "when an advisor creates").
 
-F-12 (edit) and F-13 (delete) do not create or remove notifications (D-28, D-29, D-31).
+F-12 (edit) and F-13 (delete) do not create or remove notifications (D-28, D-29, D-32).
 
 ### 2.2 Listing
 
@@ -152,7 +153,7 @@ No new codes.
 | Empty | "No notifications." |
 | Error | As SDS section 4.2. |
 
-The UI renders the advisor, date and time from `slot` and `advisor` (current data, D-31), not from `message`.
+The UI renders the advisor, date and time from `slot` and `advisor` (current data, D-32), not from `message`.
 
 ## 6. Data
 
@@ -190,7 +191,7 @@ model Notification {
 | AC-F19-01 | Creating a late slot notifies every student once; a normal slot notifies no one. | Late slot with 3 students: 3 rows, one per student, same `slotId`, `message` names advisor, date and time, `readAt` null. Normal slot: 0 rows. |
 | AC-F19-02 | A rejected late slot notifies no one (D-23). | 422 `SLOT_UNBOOKABLE`; 0 `Slot` rows and 0 `Notification` rows added. |
 | AC-F19-03 | A batch notifies once per late slot per student; a rejected batch notifies no one. | Batch with 2 late of 4: 2 × (number of students) rows. Rejected batch: 0 rows. |
-| AC-F19-04 | Editing never creates a notification; an edited slot's notification shows the new time (D-28, D-31). | Normal → late edit: 0 rows. Notified slot moved: still 1 row per student; `GET` shows the new `startAt`. |
+| AC-F19-04 | Editing never creates a notification; an edited slot's notification shows the new time (D-28, D-32). | Normal → late edit: 0 rows. Notified slot moved: still 1 row per student; `GET` shows the new `startAt`. |
 | AC-F19-05 | `slotAvailable` follows the slot's state. | True for an open late slot before its deadline; false after it is booked, deleted, or past its deadline. |
 | AC-F19-06 | A student lists own notifications newest first with an unread count, and marks one as read idempotently. | Order by `createdAt` desc; `unreadCount` correct; first mark sets `readAt` = now, second returns 200 with the same `readAt`; `unreadCount` drops by 1. |
 | AC-F19-07 | Ownership and role. | Another student's id and an unknown id: 404 with identical bodies, no change. Advisor: 403 on both endpoints. |
@@ -219,7 +220,7 @@ TEST-F19-01 to -07 first, red (no table and no routes: the asserted counts and s
 
 ## 9. Known limitations
 
-- Moving a slot to a late time with F-12 sends no notification (D-28, D-31; found in the review of PR #77).
+- Moving a slot to a late time with F-12 sends no notification (D-28, D-32; found in the review of PR #77).
 - Students created after a late slot get no notification for it.
 - No delete or "mark all as read"; not required by FR-19.
 
