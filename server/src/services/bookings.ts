@@ -1,8 +1,16 @@
 import { Prisma, type Booking, type Slot } from "@prisma/client";
 import { prisma } from "../db.js";
-import { bookingDeadline, bookingStatus, type BookingDisplayStatus } from "../domain/rules.js";
+import { bookingDeadline, bookingStatus, studentCanCancel, type BookingDisplayStatus } from "../domain/rules.js";
 
-// The booking as F-07 section 4.2 returns it; F-09 returns the same shape (section 4.2).
+// F-10 section 4.2: present only when the booking is cancelled.
+export type CancellationDto = {
+  cancelledAt: string;
+  cancelledBy: { id: number; name: string; role: "STUDENT" | "ADVISOR" };
+  reason: string | null;
+};
+
+// The booking as F-07 section 4.2 returns it; F-09 returns the same shape (section 4.2), with
+// `cancellation` for a cancelled booking (F-10 section 4.2).
 export type BookingDto = {
   id: number;
   status: BookingDisplayStatus;
@@ -10,16 +18,18 @@ export type BookingDto = {
   slot: { id: number; startAt: string; endAt: string };
   advisor: { id: number; name: string };
   student: { id: number; name: string };
+  cancellation?: CancellationDto;
 };
 
 type BookingWithParts = Booking & {
   slot: Slot & { advisor: { id: number; name: string } };
   student: { id: number; name: string };
+  cancelledBy: { id: number; name: string; role: "STUDENT" | "ADVISOR" } | null;
 };
 
 /** The detail shape. The display status is bookingStatus (F-08 section 3.2, D-24). */
 export function toBookingDto(b: BookingWithParts, now: Date): BookingDto {
-  return {
+  const dto: BookingDto = {
     id: b.id,
     status: bookingStatus(b, b.slot, now),
     createdAt: b.createdAt.toISOString(),
@@ -27,6 +37,16 @@ export function toBookingDto(b: BookingWithParts, now: Date): BookingDto {
     advisor: { id: b.slot.advisor.id, name: b.slot.advisor.name },
     student: { id: b.student.id, name: b.student.name },
   };
+  // The key is absent for Upcoming and Passed, so the Sprint 1 bodies are unchanged. The
+  // add_booking_cancel CHECK guarantees cancelledAt and cancelledBy on a CANCELLED row.
+  if (b.status === "CANCELLED" && b.cancelledAt && b.cancelledBy) {
+    dto.cancellation = {
+      cancelledAt: b.cancelledAt.toISOString(),
+      cancelledBy: { id: b.cancelledBy.id, name: b.cancelledBy.name, role: b.cancelledBy.role },
+      reason: b.cancelReason,
+    };
+  }
+  return dto;
 }
 
 export type BookingFailure =
@@ -43,6 +63,7 @@ export type CreateBookingResult =
 const INCLUDE = {
   slot: { include: { advisor: { select: { id: true, name: true } } } },
   student: { select: { id: true, name: true } },
+  cancelledBy: { select: { id: true, name: true, role: true } },
 } as const;
 
 // A race on the partial unique index arrives as P2002 (F-07 section 3.2, check 5).
@@ -113,4 +134,45 @@ export async function getBookingFor(userId: number, bookingId: number, now: Date
   const b = await prisma.booking.findUnique({ where: { id: bookingId }, include: INCLUDE });
   if (!b || (b.studentId !== userId && b.slot.advisorId !== userId)) return null;
   return toBookingDto(b, now);
+}
+
+export type CancelResult =
+  | { ok: true; booking: BookingDto }
+  | { ok: false; code: "NOT_FOUND" | "BOOKING_NOT_ACTIVE" }
+  | { ok: false; code: "CANCEL_WINDOW_PASSED"; limit: Date };
+
+/**
+ * F-10 section 2, steps 5 to 7, and section 3.2 checks 1 to 4: a student cancels their own booking.
+ * `now` is the server clock, passed in. The F-11 advisor path is a separate function.
+ */
+export async function cancelBookingAsStudent(studentId: number, bookingId: number, now: Date): Promise<CancelResult> {
+  return prisma.$transaction(async (tx): Promise<CancelResult> => {
+    // Check 1: a missing booking and another student's booking give the same 404 (BR-09).
+    const b = await tx.booking.findUnique({ where: { id: bookingId }, include: { slot: true } });
+    if (!b || b.studentId !== studentId) return { ok: false, code: "NOT_FOUND" };
+
+    // Locks in the SDS 3.1 order, student then slot, the same as F-07 and F-14, so no deadlock cycle
+    // with a booking, reschedule, edit or delete. The checks below use the booking as read above;
+    // the conditional update (check 4) catches a cancel that committed in between.
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${b.studentId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT id FROM "Slot" WHERE id = ${b.slotId} FOR UPDATE`;
+
+    // Check 2: still active. A cancelled booking or an ended slot ("Passed") is refused first.
+    if (b.status !== "ACTIVE" || b.slot.endAt.getTime() <= now.getTime()) return { ok: false, code: "BOOKING_NOT_ACTIVE" };
+
+    // Check 3: BR-11, at least 12 hours before the start.
+    if (!studentCanCancel(b.slot.startAt, now)) {
+      return { ok: false, code: "CANCEL_WINDOW_PASSED", limit: new Date(b.slot.startAt.getTime() - 12 * 60 * 60 * 1000) };
+    }
+
+    // Check 4: conditional update. 0 rows means a parallel cancel won.
+    const { count } = await tx.booking.updateMany({
+      where: { id: bookingId, status: "ACTIVE" },
+      data: { status: "CANCELLED", cancelledAt: now, cancelledById: studentId },
+    });
+    if (count === 0) return { ok: false, code: "BOOKING_NOT_ACTIVE" };
+
+    const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: INCLUDE });
+    return { ok: true, booking: toBookingDto(updated, now) };
+  });
 }
