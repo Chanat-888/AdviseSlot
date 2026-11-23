@@ -20,6 +20,7 @@
 | 0.8 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67, approved by TA Supachok Deetaweesukh on 2026-11-22 (D-31): section 3.1 BR-07 row now allows two active bookings, at most one per advisor (student row lock unchanged); section 5 adds 409 `SAME_ADVISOR_BOOKING`. For the SDS owner to review. |
 | 0.9 | 2026-11-23 | Chanat (drafted with an AI agent) | F-18 contract v0.2: `GET /api/bookings/history` is advisor-only; students already see their cancelled bookings through `/mine` (F-10). |
 | 0.10 | 2026-11-23 | Chanat (drafted with an AI agent) | Section 3.1 FR-19 row: lock note on the notification inserts (key-share lock on the student's `User` row, no cycle), from the review of PR #93. |
+| 0.11 | 2026-11-23 | Jeerasak (drafted with an AI agent) | F-16 contract v0.1: section 5.1 `GET /api/slots/bookable` takes the optional `advisorId` and `date` filters, and `GET /api/advisors` returns `{ id, name }` only; section 4.1 `/slots` filter bar; section 6 adds the "List advisors" row. |
 
 ## 1. Stack and rationale
 
@@ -155,7 +156,7 @@ zone) would make the exclusion constraint below fail, because casting it to
 | Route | Role | Screen | Sprint |
 |---|---|---|---|
 | `/login` | Anyone | Email and password form | 1 |
-| `/slots` | Student | Bookable slots grouped by date, with advisor, time, deadline and a Book button | 1 (filters in 3) |
+| `/slots` | Student | Bookable slots grouped by date, with advisor, time, deadline and a Book button. Sprint 3: Advisor and Date filters, kept in the page URL (`?advisor=&date=`, F-16) | 1 (filters in 3) |
 | `/bookings` | Student | My bookings: Upcoming, Passed, Cancelled (with who cancelled and the reason from Sprint 3) | 1 |
 | `/bookings/:id` | Student, Advisor | Booking detail | 1 |
 | `/schedule` | Advisor | My schedule: create-slot form (weekday date, start time from 08:00 to 17:30 in 30-minute steps) and list of own slots with status (Open, Booked, Closed, Passed) and student name | 1 |
@@ -218,7 +219,7 @@ Detailed request and response shapes belong in each feature contract.
 | `GET /api/auth/me` | Any logged-in | Current user | 1 |
 | `POST /api/slots` | Advisor | Create a slot (`{ startAt }`) | 1 |
 | `GET /api/slots/mine` | Advisor | Own slots with booking status | 1 |
-| `GET /api/slots/bookable` | Student | Bookable slots of all advisors | 1 |
+| `GET /api/slots/bookable` | Student | Bookable slots of all advisors. Sprint 3: optional `?advisorId=&date=` filters (`date` is a Bangkok `YYYY-MM-DD` day), which only narrow the list (F-16) | 1, 3 |
 | `POST /api/bookings` | Student | Book a slot (`{ slotId }`) | 1 |
 | `GET /api/bookings/mine` | Student | Own bookings | 1 |
 | `GET /api/bookings/:id` | Student owner, slot's advisor | Booking detail | 1 |
@@ -227,7 +228,7 @@ Detailed request and response shapes belong in each feature contract.
 | `PATCH /api/slots/:id` | Advisor owner | Change start time (`{ startAt }`, F-12) | 2 |
 | `DELETE /api/slots/:id` | Advisor owner | Soft-delete an unbooked future slot (F-13) | 2 |
 | `POST /api/slots/batch` | Advisor | Create consecutive slots (`{ startAt, endAt }`, all-or-nothing, F-15) | 2 |
-| `GET /api/advisors` | Student | Advisor list for filtering | 3 |
+| `GET /api/advisors` | Student | Advisor list for filtering: `{ id, name }` of every advisor, sorted by name (F-16) | 3 |
 | `GET /api/summary?from=&to=` | Advisor | Appointment summary | 3 |
 | `GET /api/bookings/history` | Advisor | Cancelled and passed bookings on own slots, with who cancelled and the reason (FR-18). Students see their cancelled bookings through `GET /api/bookings/mine` (F-10). | 3 |
 | `GET /api/notifications` | Student | Own notifications, newest first, with unread count | 3 |
@@ -239,6 +240,7 @@ Detailed request and response shapes belong in each feature contract.
 |---|---|---|---|
 | Log in, log out, view own identity | Yes | Yes | Own session only |
 | View bookable slots | Yes | No (403) | All advisors' open future slots, without booker identity |
+| List advisors (Sprint 3) | Yes | No (403) | Every advisor's `id` and `name` only, no email (F-16) |
 | Book a slot | Yes | No (403) | Self only. The student id comes from the session, never from the request. |
 | List own bookings | Yes | No (403) | Only bookings where `studentId` = current user |
 | View booking detail | Yes | Yes | Student: only bookings where `studentId` = current user. Advisor: only bookings on own slots. Otherwise 404. |
