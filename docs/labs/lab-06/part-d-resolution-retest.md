@@ -15,10 +15,10 @@ smoke check → UAT Team retest → acceptance decision.
 | PR | #59 into `sprint-1`, reviewer @ShitheadQuin, linked to #58 | Approved and merged by Snooker, 2026-11-19 |
 | CI | `test-and-docker` on PR #59 | Passed |
 | Merge into `sprint-1` | by Snooker (reviewer), merge commit `0eb6a52` | Done |
-| Release PR `sprint-1` → `main` | _TBD_ | _TBD_ |
-| Deploy and smoke check | _TBD_ | _TBD_ |
-| UAT Team retest | _TBD_ | _TBD_ |
-| Issue closed | closed by Snooker after the merge (2026-11-19); reopen if the UAT retest fails | Done |
+| Release PR `sprint-1` → `main` | #65 (after sync PR #64), approved and merged by Snooker, merge commit `c4dc3b4` | Done, 2026-11-20 |
+| Deploy and smoke check | Deploy run 44739029326, revision `adviseslot-00005-4tw`, workflow smoke test passed (`/api/health`, `/api/ready`, `/`, `/api/slots/bookable`, `/api/version` = `c4dc3b4`; login step skipped, no smoke credentials), manual smoke check PASS on 2026-11-22 (D-01 to D-04) | Deployed 2026-11-20 19:54 ICT; manual smoke check 2026-11-22 |
+| UAT Team retest | Team Top 2 on #63: PASS on `c4dc3b4` / `adviseslot-00005-4tw` (section 5) | Done, 2026-11-22 |
+| Issue closed | #58 closed by Snooker after the merge (2026-11-19); UAT Issue #63 closed by Chanat after the passing retest (2026-11-22) | Done |
 
 Deploy rule: we do not deploy the fix until UAT round 1 on `cbcb783` is finished, and we tell
 the UAT Team before any deploy (handout section 2).
@@ -98,12 +98,12 @@ Full output: `evidence/lab6-logout-green.txt` on `fix/logout-busy`.
 |---|---|
 | PR review text | See below |
 | Merge commit into `sprint-1` | `0eb6a52` (2026-11-19, by @ShitheadQuin) |
-| Release PR to `main` | _TBD_ |
-| Corrected `main` commit | _TBD_ |
-| Deploy workflow run | _TBD_ |
-| Cloud Run revision | _TBD_ |
-| `/api/version` after deploy | _TBD_ |
-| Smoke check (manual) | _TBD: log in, log out, log in as another user, log out; footer shows the new commit_ |
+| Release PR to `main` | #65 (sync PR #64 first, because `main` had merge commit `cbcb783`) |
+| Corrected `main` commit | `c4dc3b42b8e929fa8775537172d1b6d01da7caae` (merged 2026-11-20 by @ShitheadQuin) |
+| Deploy workflow run | https://github.com/Chanat-888/AdviseSlot/actions/runs/44739029326 (success) |
+| Cloud Run revision | `adviseslot-00005-4tw`, 100% of traffic (previous: `adviseslot-00004-ksp` on `cbcb783`) |
+| `/api/version` after deploy | `{"commit":"c4dc3b42b8e929fa8775537172d1b6d01da7caae"}` |
+| Smoke check | Workflow smoke test: PASS for `/api/health`, `/api/ready`, `/`, `/api/slots/bookable` and `/api/version` (expected commit `c4dc3b4`); its login step was skipped because no smoke credentials are configured, so login and logout were checked manually. Manual check by Chanat on 2026-11-22, one tab, no reload: logged in as Student Three (D-01), Logout opened the login page with footer `c4dc3b4` (D-02), logged in as Student One in the same tab with Logout enabled (D-03), Logout opened the login page again (D-04). PASS |
 
 PR #59 review by Jeerasak Phisawong (@ShitheadQuin), 2026-11-19, "Comment":
 
@@ -123,20 +123,21 @@ Give the UAT Team the corrected version and the original steps (#58 and UAT-01).
 
 | Issue / case | Corrected version | Tester (name, team) | Date | Actual result | PASS / FAIL | Evidence ID |
 |---|---|---|---|---|---|---|
-| #58 | | | | | | |
-| UAT-01 (re-run) | | | | | | |
-| _other affected cases_ | | | | | | |
+| #58 / UAT Issue #63 | `c4dc3b4`, `adviseslot-00005-4tw` | Team Top 2 (GitHub @Ryugc, Grittapob Chutitas) | 2026-11-22 | Signed in as Student Three on `/slots` and clicked Logout: signed out straight away, no hang and no reload needed. Their steps did not include the second login in the same tab (the exact #58 path), which we asked them to add; that path is covered by our E2E test (section 2) | PASS | Two screenshots in their comment on #63 (2026-11-22 10:54 ICT) |
+| UAT-01 (re-run) | `c4dc3b4` | Team Top 2 | 2026-11-22 | Logged in with a first account, logged out, logged in as Student Three in the same tab without a reload, clicked Logout: signed out at once, no refresh needed (this is the #58 path) | PASS | Their decision comment on #63 |
+| UAT-02 to UAT-05 | `cbcb783` (round 1) | Team Top 2 | 2026-11-20 | Not affected by the fix (only the Logout button changed); not re-run on `c4dc3b4` | PASS | Their decision comment on #63 |
 
-**Final Sprint 1 UAT decision:** _TBD: Accepted / Accepted with documented minor limitations /
-Not Accepted_
+Round 1 on `cbcb783` (2026-11-20): UAT-01 FAIL (#63), UAT-02 to UAT-05 PASS.
+
+**Final Sprint 1 UAT decision (recorded by the UAT Team): Accepted.**
 
 | Field | Value |
 |---|---|
-| Release tested | _TBD (commit and revision)_ |
-| UAT testers | _TBD_ |
-| Date | _TBD_ |
-| Conditions / accepted minor limitations | _TBD_ |
-| How it was recorded | _TBD (e.g. comment on the Issue or signed form)_ |
+| Release tested | `c4dc3b4`, revision `adviseslot-00005-4tw` (round 1 on `cbcb783` / `adviseslot-00004-ksp`) |
+| UAT testers | Team Top 2: Grittapob Chutitas (67070503402), Moe Thauk Ko (67070503483) |
+| Date | 2026-11-22 |
+| Conditions / accepted minor limitations | None. Their words: "With no Critical or Major defects remaining, Team Top 2 accepts AdviseSlot for Sprint 1." |
+| How it was recorded | Comment by @Ryugc on #63, 2026-11-22 11:06 ICT (edited 11:11): https://github.com/Chanat-888/AdviseSlot/issues/63#issuecomment-7073981583. Also sent on the teams' Discord at 11:01 (screenshot N-03) |
 
 Only the UAT Team may record acceptance. Do not claim it while any Critical/Major defect is open
 or a required case is BLOCKED.
