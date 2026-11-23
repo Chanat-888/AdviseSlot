@@ -154,6 +154,35 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByRole("alert")).toHaveText("You already have an upcoming booking.");
     await expect(page).toHaveURL(/\/slots$/);
   });
+  // F-13 (TEST-F13-08, AC-F13-01): the advisor deletes an Open slot from /schedule, confirms,
+  // and the row is gone, also after a reload (so the delete was stored, not just hidden).
+  test("advisor deletes an Open slot and it stays gone after a reload", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const day = weekdayAhead(4);
+    const startAt = new Date(`${day}T17:00:00+07:00`).toISOString(); // no demo slot at 17:00
+
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByLabel("Date (Monday to Friday)").fill(day);
+    await page.getByLabel("Start time").selectOption("17:00");
+    await page.getByRole("button", { name: "Create" }).click();
+    const sameRow = () => page.getByRole("listitem").filter({ hasText: "17:00-17:30" });
+    await expect(sameRow()).toHaveCount(1);
+
+    // Delete, then the inline confirm names the slot; Cancel keeps it, Delete removes it
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+    await expect(sameRow()).toContainText(`Delete the slot on ${formatDate(startAt)}, 17:00-17:30?`);
+    await sameRow().getByRole("button", { name: "Cancel" }).click();
+    await expect(sameRow()).toHaveCount(1);
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+    await sameRow().getByRole("button", { name: "Delete" }).click();
+
+    await expect(page.getByText("Slot deleted.")).toBeVisible();
+    await expect(sameRow()).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("listitem").first()).toBeVisible(); // the list (demo slots) has loaded
+    await expect(sameRow()).toHaveCount(0);
+  });
+
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);
