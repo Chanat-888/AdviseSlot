@@ -186,6 +186,34 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(sameRow()).toHaveCount(0);
   });
 
+  // F-12 UI check (F-12 section 5; the contract's STS has no E2E row, so no TEST id): the advisor
+  // edits an Open slot inline, and the new time is stored (still there after a reload).
+  test("advisor edits an Open slot inline and the new time is stored (F-12)", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const day = weekdayAhead(6);
+    const moved = new Date(`${day}T17:00:00+07:00`).toISOString();
+
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByLabel("Date (Monday to Friday)").fill(day);
+    await page.getByLabel("Start time").selectOption("16:30");
+    await page.getByRole("button", { name: "Create" }).click();
+    const rowAt = (t: string) => page.getByRole("listitem").filter({ hasText: t });
+    await expect(rowAt("16:30-17:00")).toHaveCount(1);
+
+    await rowAt("16:30-17:00").getByRole("button", { name: "Edit" }).click();
+    await expect(page.getByLabel("New date")).toHaveValue(day); // prefilled
+    await page.getByLabel("New start time").selectOption("17:00");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(`Slot updated: ${formatDate(moved)}, 17:00-17:30.`)).toBeVisible();
+    await expect(rowAt("16:30-17:00")).toHaveCount(0);
+    await expect(rowAt("17:00-17:30")).toHaveCount(1);
+
+    await page.reload();
+    await expect(page.getByRole("listitem").first()).toBeVisible(); // the list has loaded
+    await expect(rowAt("17:00-17:30")).toHaveCount(1);
+    await expect(rowAt("16:30-17:00")).toHaveCount(0);
+  });
+
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);

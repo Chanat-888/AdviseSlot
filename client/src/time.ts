@@ -27,6 +27,11 @@ export function bangkokToIso(date: string, time: string): string {
   return new Date(`${date}T${time}:00+07:00`).toISOString();
 }
 
+/** The Bangkok date of an instant as a date input value ("2026-11-10"). */
+export function bangkokDate(iso: string): string {
+  return new Date(new Date(iso).getTime() + 7 * 3600_000).toISOString().slice(0, 10);
+}
+
 /** True if a date input value ("2026-11-14") is a Saturday or Sunday. */
 export function isWeekend(date: string): boolean {
   const day = new Date(`${date}T12:00:00Z`).getUTCDay();
