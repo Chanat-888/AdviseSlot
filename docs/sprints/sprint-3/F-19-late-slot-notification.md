@@ -17,6 +17,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, on the Sprint 2 contracts in PR #76 and #77. Records D-32. Awaiting team review. |
 | 0.2 | 2026-11-23 | Chanat (drafted with an AI agent) | Rebased on the released Sprint 2 (`v0.2.0-sprint-2`). The notification decision is D-32 (D-31 is now the Lab 7 BR-07 decision) and is recorded in `docs/decisions.md`. SRS reference v0.5. |
+| 0.3 | 2026-11-23 | Chanat (drafted with an AI agent) | Review of PR #93: the E2E step no longer creates a late slot through the UI, because E2E runs on the real clock and a late slot exists only on a weekday morning between 18:00 the day before and start - 2 h (D-23), so the step would fail at other times. The E2E setup now inserts a late slot and its notification with Prisma; the step checks only the student's badge, `/notifications` and Mark as read. Creation, rejection (`SLOT_UNBOOKABLE`) and the transaction rule stay covered by the API tests with a fake clock. |
 
 ## 0. Decision D-32: what a notification shows after the slot changes
 
@@ -212,7 +213,7 @@ Test files: `server/tests/notifications.test.ts` (API), plus creation cases adde
 
 R-01: `r01.auth.test.ts` adds both endpoints to the 401 list.
 
-UI/E2E: one Playwright step: the advisor creates a late slot, the student sees the badge, opens `/notifications`, marks it read and the badge disappears. It also shows the `SLOT_UNBOOKABLE` message for the NFR-07 Sprint 3 check.
+UI/E2E: one Playwright step. Setup, with Prisma from the E2E test (as the seed does): insert a late slot for Advisor One that starts in the future with `isLate` true, and one unread `Notification` for the student. Step: the student logs in, sees the unread badge, opens `/notifications`, sees the advisor, date and time, clicks Mark as read, and the badge disappears. The step does not create the slot through the UI: E2E runs on the real clock, and a late slot can be created only on a weekday morning between 18:00 the day before and start - 2 h (D-23), so a UI-created slot would make the step depend on when CI runs. Creation, the `SLOT_UNBOOKABLE` rejection (NFR-07) and the transaction rule are covered by TEST-F19-01 to TEST-F19-03 with a fake clock.
 
 ### 8.1 TDD plan
 
