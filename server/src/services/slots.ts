@@ -1,4 +1,4 @@
-import type { Slot } from "@prisma/client";
+import type { Prisma, Slot } from "@prisma/client";
 import { prisma } from "../db.js";
 import { bookingDeadline, checkSlotStart, expandRange, isLateSlot, SLOT_MS, slotStatus, type SlotRuleCode } from "../domain/rules.js";
 
@@ -134,27 +134,67 @@ export async function listOwnSlots(advisorId: number, now: Date): Promise<SlotDt
   return slots.map((slot) => toSlotDto(slot, slot.bookings[0] ?? null, now));
 }
 
-export type DeleteSlotResult = { ok: true } | { ok: false; code: "NOT_FOUND" | "SLOT_ALREADY_STARTED" | "SLOT_HAS_ACTIVE_BOOKING" };
+type Tx = Prisma.TransactionClient;
+type MaintainCode = "NOT_FOUND" | "SLOT_ALREADY_STARTED" | "SLOT_HAS_ACTIVE_BOOKING";
+
+/**
+ * Checks 4 to 6 shared by F-12 edit and F-13 delete (F-12 section 3.2, F-13 section 3.2).
+ * Locks the slot row first, so a parallel booking (F-07 and F-14 lock it too) runs before or
+ * after this transaction, never in between (SDS 3.1, BR-14). Returns a failure code or null.
+ */
+async function lockOwnUnbookedFutureSlot(tx: Tx, advisorId: number, slotId: number, now: Date): Promise<MaintainCode | null> {
+  const rows = await tx.$queryRaw<{ advisorId: number; startAt: Date; deletedAt: Date | null }[]>`
+    SELECT "advisorId", "startAt", "deletedAt" FROM "Slot" WHERE id = ${slotId} FOR UPDATE`;
+  const slot = rows[0];
+  // Check 4: missing, deleted or another advisor's slot all look the same (SDS 6).
+  if (!slot || slot.deletedAt !== null || slot.advisorId !== advisorId) return "NOT_FOUND";
+  // Check 5 (D-29): only before the slot starts (its current start, for an edit).
+  if (slot.startAt.getTime() <= now.getTime()) return "SLOT_ALREADY_STARTED";
+  // Check 6 (BR-14): only an ACTIVE booking blocks; a cancelled one does not (BR-13).
+  const active = await tx.booking.findFirst({ where: { slotId, status: "ACTIVE" }, select: { id: true } });
+  return active ? "SLOT_HAS_ACTIVE_BOOKING" : null;
+}
+
+export type DeleteSlotResult = { ok: true } | { ok: false; code: MaintainCode };
 
 /** F-13 section 2, step 5: soft delete of the advisor's own unbooked future slot. */
 export async function deleteSlot(advisorId: number, slotId: number, now: Date): Promise<DeleteSlotResult> {
   return prisma.$transaction(async (tx): Promise<DeleteSlotResult> => {
-    // Lock the slot row so a parallel booking (F-07, which locks it too) runs before or after this,
-    // never in between (SDS 3.1, BR-14).
-    const rows = await tx.$queryRaw<{ advisorId: number; startAt: Date; deletedAt: Date | null }[]>`
-      SELECT "advisorId", "startAt", "deletedAt" FROM "Slot" WHERE id = ${slotId} FOR UPDATE`;
-    const slot = rows[0];
-    // Check 4: missing, deleted or another advisor's slot all look the same (SDS 6).
-    if (!slot || slot.deletedAt !== null || slot.advisorId !== advisorId) return { ok: false, code: "NOT_FOUND" };
-    // Check 5 (D-29): only before the slot starts.
-    if (slot.startAt.getTime() <= now.getTime()) return { ok: false, code: "SLOT_ALREADY_STARTED" };
-    // Check 6 (BR-14): only an ACTIVE booking blocks; a cancelled one does not (BR-13).
-    const active = await tx.booking.findFirst({ where: { slotId, status: "ACTIVE" }, select: { id: true } });
-    if (active) return { ok: false, code: "SLOT_HAS_ACTIVE_BOOKING" };
-
+    const code = await lockOwnUnbookedFutureSlot(tx, advisorId, slotId, now);
+    if (code) return { ok: false, code };
     await tx.slot.update({ where: { id: slotId }, data: { deletedAt: now } });
     return { ok: true };
   });
+}
+
+export type EditSlotResult = { ok: true; slot: SlotDto } | { ok: false; code: MaintainCode | SlotRuleCode | "SLOT_OVERLAP" };
+
+/** F-12 section 2, step 5: move an own unbooked future slot to a new start (D-28). */
+export async function editSlot(advisorId: number, slotId: number, newStart: Date, now: Date): Promise<EditSlotResult> {
+  const endAt = new Date(newStart.getTime() + SLOT_MS);
+  try {
+    return await prisma.$transaction(async (tx): Promise<EditSlotResult> => {
+      const code = await lockOwnUnbookedFutureSlot(tx, advisorId, slotId, now); // checks 4 to 6
+      if (code) return { ok: false, code };
+      const rule = checkSlotStart(newStart, now); // checks 7 to 11: F-04 rules 1 to 5 on the new start
+      if (rule) return { ok: false, code: rule };
+      // Check 12 (BR-04): another own live slot overlapping the new range; the slot itself does not count.
+      const overlap = await tx.slot.findFirst({
+        where: { advisorId, deletedAt: null, id: { not: slotId }, startAt: { lt: endAt }, endAt: { gt: newStart } },
+        select: { id: true },
+      });
+      if (overlap) return { ok: false, code: "SLOT_OVERLAP" };
+      // D-28: isLate is recomputed as if the slot were created now; createdAt stays.
+      const slot = await tx.slot.update({
+        where: { id: slotId },
+        data: { startAt: newStart, endAt, isLate: isLateSlot(newStart, now) },
+      });
+      return { ok: true, slot: toSlotDto(slot, null, now) }; // no ACTIVE booking (check 6)
+    });
+  } catch (err) {
+    if (isOverlapViolation(err)) return { ok: false, code: "SLOT_OVERLAP" }; // a parallel create won (23P01)
+    throw err;
+  }
 }
 
 // F-06 response item: no status, student or booking field (BR-09).

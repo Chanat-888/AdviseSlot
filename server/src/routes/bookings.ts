@@ -10,6 +10,7 @@ import {
   listOwnBookings,
   rescheduleBooking,
 } from "../services/bookings.js";
+import { parseId } from "./ids.js";
 
 export const bookingsRouter = Router();
 
@@ -64,21 +65,14 @@ bookingsRouter.get(
   },
 );
 
-// F-09 section 3.1: a positive whole number, written in plain digits.
-const POSITIVE_ID = /^[1-9]\d{0,9}$/;
-
-/** F-09 and F-10 section 3.1: the :id as a number, or null if it is not a positive whole number. */
-function parseBookingId(raw: string): number | null {
-  const id = POSITIVE_ID.test(raw) ? Number(raw) : NaN;
-  return Number.isSafeInteger(id) && id <= 2147483647 ? id : null;
-}
+// F-09 and F-10 section 3.1: the :id rule is the shared parseId (routes/ids.ts).
 const BAD_BOOKING_ID = "The booking id must be a positive whole number.";
 
 // F-09: booking detail for its student or its slot's advisor. Anyone else gets the same 404
 // as a missing booking (SDS sections 5 and 6), so the booking's existence is not revealed.
 bookingsRouter.get("/:id", requireAuth, async (req, res, next) => {
   try {
-    const id = parseBookingId(req.params.id);
+    const id = parseId(req.params.id);
     if (id === null) return sendError(res, 400, "VALIDATION_ERROR", BAD_BOOKING_ID);
     const booking = await getBookingFor(req.user!.id, id, new Date());
     if (!booking) return sendError(res, 404, "NOT_FOUND", "Booking not found.");
@@ -104,7 +98,7 @@ function parseReason(body: unknown): string | null {
 // F-10 (student) and F-11 (advisor) share this endpoint (F-10 section 2, step 4).
 bookingsRouter.post("/:id/cancel", requireAuth, async (req, res, next) => {
   try {
-    const id = parseBookingId(req.params.id);
+    const id = parseId(req.params.id);
     if (id === null) return sendError(res, 400, "VALIDATION_ERROR", BAD_BOOKING_ID);
 
     if (req.user!.role === "ADVISOR") {
@@ -148,7 +142,7 @@ bookingsRouter.post(
   async (req, res, next) => {
     try {
       // Section 3.1: both inputs are checked before any database read.
-      const id = parseBookingId(req.params.id);
+      const id = parseId(req.params.id);
       if (id === null) return sendError(res, 400, "VALIDATION_ERROR", BAD_BOOKING_ID);
       const newSlotId = parseSlotId(req.body, "newSlotId");
       if (newSlotId === null) return sendError(res, 400, "VALIDATION_ERROR", "A new slot is required.");
