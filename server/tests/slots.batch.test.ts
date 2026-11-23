@@ -238,6 +238,9 @@ describe("TEST-F15-05 (AC-F15-05, API part): an invalid range is rejected before
     ["09:00 to 09:45 (not a multiple of 30 minutes)", { startAt: iso("2026-11-10T09:00:00"), endAt: iso("2026-11-10T09:45:00") }],
     ["Tue 23:30 to Wed 00:00 (two dates)", { startAt: iso("2026-11-10T23:30:00"), endAt: iso("2026-11-11T00:00:00") }],
     ["a body without endAt", { startAt: iso("2026-11-10T09:00:00") }],
+    // Section 3.1 field rule, added after review: missing startAt, and a time without a zone.
+    ["a body without startAt", { endAt: iso("2026-11-10T10:00:00") }],
+    ["an endAt without a time zone", { startAt: iso("2026-11-10T09:00:00"), endAt: "2026-11-10T10:00:00" }],
   ])("%s gives 400 VALIDATION_ERROR and creates no rows", async (_name, body) => {
     const res = await batch(await loginCookie(advisor.email), body);
     expect(res.status).toBe(400);
