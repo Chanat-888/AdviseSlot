@@ -64,6 +64,16 @@ export function checkSlotStart(startAt: Date, now: Date): SlotRuleCode | null {
   return null;
 }
 
+/**
+ * F-15 section 3.1: the 30-minute starts of a batch range [startAt, endAt). Returns null when
+ * endAt <= startAt, the length is not a whole multiple of 30 minutes, or the two ends fall on
+ * different Asia/Bangkok dates. No size limit (BR-02 limits a valid batch to 20 slots).
+ * TDD stub, implemented after the red run.
+ */
+export function expandRange(_startAt: Date, _endAt: Date): Date[] | null {
+  return null;
+}
+
 export type SlotStatus = "Open" | "Booked" | "Closed" | "Passed";
 
 /** F-05 section 3.2 (D-24): Passed, then Booked, then Closed, then Open. */
