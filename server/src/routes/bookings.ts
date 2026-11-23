@@ -2,7 +2,7 @@ import { Router } from "express";
 import { sendError } from "../errors.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireRole } from "../middleware/requireRole.js";
-import { cancelBookingAsStudent, createBooking, getBookingFor, listOwnBookings } from "../services/bookings.js";
+import { cancelBookingAsAdvisor, cancelBookingAsStudent, createBooking, getBookingFor, listOwnBookings } from "../services/bookings.js";
 
 export const bookingsRouter = Router();
 
@@ -85,6 +85,15 @@ bookingsRouter.get("/:id", requireAuth, async (req, res, next) => {
 const cancelLimitMessage = (limit: Date) =>
   `You can cancel only until 12 hours before the start (${hourMinute.format(limit)} on ${dayMonth.format(limit)}).`;
 
+/** F-11 section 3.1: the trimmed reason, or null if it is not a string of 1 to 500 characters after trimming. */
+function parseReason(body: unknown): string | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  const { reason } = body as Record<string, unknown>;
+  if (typeof reason !== "string") return null;
+  const trimmed = reason.trim();
+  return trimmed.length >= 1 && trimmed.length <= 500 ? trimmed : null;
+}
+
 // F-10 (student) and F-11 (advisor) share this endpoint (F-10 section 2, step 4).
 bookingsRouter.post("/:id/cancel", requireAuth, async (req, res, next) => {
   try {
@@ -92,9 +101,20 @@ bookingsRouter.post("/:id/cancel", requireAuth, async (req, res, next) => {
     if (id === null) return sendError(res, 400, "VALIDATION_ERROR", BAD_BOOKING_ID);
 
     if (req.user!.role === "ADVISOR") {
-      // F-11 (Issue #70) goes here: validate { reason } (F-11 section 3.1), then the advisor checks.
-      // Until then an advisor sees no booking through this endpoint.
-      return sendError(res, 404, "NOT_FOUND", "Booking not found.");
+      // F-11 section 3.1: the reason is checked before any database read, so a 400 says nothing
+      // about whether the booking exists.
+      const reason = parseReason(req.body);
+      if (reason === null) return sendError(res, 400, "VALIDATION_ERROR", "A reason of 1 to 500 characters is required.");
+      const result = await cancelBookingAsAdvisor(req.user!.id, id, reason, new Date());
+      if (result.ok) return void res.json(result.booking);
+      switch (result.code) {
+        case "NOT_FOUND":
+          return sendError(res, 404, "NOT_FOUND", "Booking not found.");
+        case "BOOKING_NOT_ACTIVE":
+          return sendError(res, 409, "BOOKING_NOT_ACTIVE", "This booking is no longer upcoming.");
+        case "CANCEL_WINDOW_PASSED":
+          return sendError(res, 422, "CANCEL_WINDOW_PASSED", "This appointment has already started.");
+      }
     }
 
     // Student path. The body is ignored: a student's reason is not stored (F-10 section 3.1).

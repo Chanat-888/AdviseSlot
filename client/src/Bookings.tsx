@@ -10,7 +10,14 @@ export type OwnBooking = {
   createdAt: string;
   slot: { id: number; startAt: string; endAt: string };
   advisor: { id: number; name: string };
+  cancellation?: { cancelledAt: string; cancelledBy: { id: number; name: string; role: "STUDENT" | "ADVISOR" }; reason: string | null };
 };
+
+// F-11 section 5: the student sees who cancelled and why when the advisor cancelled.
+export function advisorCancelNote(b: OwnBooking): string | null {
+  const c = b.cancellation;
+  return c && c.cancelledBy.role === "ADVISOR" ? `Cancelled by ${c.cancelledBy.name}: ${c.reason ?? ""}` : null;
+}
 
 // D-24 status words, shared with the detail screen.
 export const BOOKING_BADGE: Record<OwnBooking["status"], string> = {
@@ -58,6 +65,7 @@ export function Bookings() {
                       <span className="font-monospace">{formatTime(b.slot.startAt)}-{formatTime(b.slot.endAt)}</span>
                       <span>{b.advisor.name}</span>
                       <span className={`badge ${BOOKING_BADGE[b.status]} ms-auto`}>{b.status}</span>
+                      {advisorCancelNote(b) && <span className="w-100 small text-muted">{advisorCancelNote(b)}</span>}
                     </Link>
                   </li>
                 ))}
