@@ -19,6 +19,7 @@
 | 0.7 | 2026-11-23 | Chanat (drafted with an AI agent) | Review of PR #80: red-test base and merge order in section 6.3; F-14 check 6 can fail only with `SAME_ADVISOR_BOOKING`. |
 | 0.8 | 2026-11-23 | Chanat (drafted with an AI agent) | Release of Sprint 2: FR-10 to FR-15 and BR-11 to BR-15 filled with the AC and test IDs of the Sprint 2 contracts and set to Verified (Sprint 2); the Sprint 2 parts of BR-01 to BR-08, BR-16, NFR-02 and NFR-03 added and verified. NFR-06 (GCP part) and NFR-09 wait for the post-deploy check. Tested on `sprint-2` at `209af9a`. |
 | 0.9 | 2026-11-23 | Chanat (drafted with an AI agent) | Sections 4 and 5 recounted against SRS v0.5 (same 45 requirements; BR-07 text changed by #67, D-31). The coverage check now counts requirements with AC/test IDs or evidence from Sprint 1 or 2 (40) and those allocated to Sprint 3 and not yet implemented (5). Review of PR #96: NFR-09 and the GCP part of NFR-06 set to Verified from the Sprint 2 deploy and post-deploy evidence (#91). |
+| 0.10 | 2026-11-23 | Chanat (drafted with an AI agent) | Release candidate `v0.3.0-rc`: FR-16 filled with the AC and test IDs of the F-16 contract and set to Verified (Sprint 3); section 4 recounted (41 with AC/test or evidence, 4 allocated). Tested on `sprint-2` at `90dae53` (`evidence/release-rc-tests.txt`). |
 
 ## 1. How to read this matrix
 
@@ -29,7 +30,7 @@
   in that sprint's contract.
 - A requirement that spans sprints lists the Sprint 1 part with IDs and the later part as
   "defined in Sprint N contract".
-- Status: **Verified (Sprint 1)** = implemented and its Sprint 1 tests pass (release evidence in `evidence/`). **Verified (Sprint 2)** = implemented and its Sprint 2 contract tests pass on the release commit (`evidence/release-sprint-2-tests.txt`). **Verified (Sprint 1 and 2 parts)** = both sprints' parts pass; any Sprint 3 part is still open. **Verified (Sprint 1 part)** = the same for the Sprint 1 part of a requirement that continues in Sprint 2 or 3. **Planned** = AC and test IDs assigned, not yet implemented. **Allocated** =
+- Status: **Verified (Sprint 1)** = implemented and its Sprint 1 tests pass (release evidence in `evidence/`). **Verified (Sprint 2)** = implemented and its Sprint 2 contract tests pass on the release commit (`evidence/release-sprint-2-tests.txt`). **Verified (Sprint 3)** = implemented and its Sprint 3 contract tests pass on the release-candidate commit (`evidence/release-rc-tests.txt`). **Verified (Sprint 1 and 2 parts)** = both sprints' parts pass; any Sprint 3 part is still open. **Verified (Sprint 1 part)** = the same for the Sprint 1 part of a requirement that continues in Sprint 2 or 3. **Planned** = AC and test IDs assigned, not yet implemented. **Allocated** =
   feature and sprint assigned, AC not yet written. Status is updated at each sprint review.
 
 ## 2. Matrix
@@ -53,7 +54,7 @@
 | FR-13 | F-13 Delete slot | 2 | AC-F13-01, AC-F13-02, AC-F13-03, AC-F13-04, AC-F13-05, AC-F13-06, AC-F13-07 | TEST-F13-01, TEST-F13-02, TEST-F13-03, TEST-F13-04, TEST-F13-05, TEST-F13-06, TEST-F13-07, TEST-F13-08 | Verified (Sprint 2) |
 | FR-14 | F-14 Reschedule booking | 2 | AC-F14-01, AC-F14-02, AC-F14-03, AC-F14-04, AC-F14-05, AC-F14-06, AC-F14-07 | TEST-F14-01, TEST-F14-02, TEST-F14-03, TEST-F14-04, TEST-F14-05, TEST-F14-06, TEST-F14-07, TEST-F14-08 | Verified (Sprint 2) |
 | FR-15 | F-15 Batch create slots | 2 | AC-F15-01, AC-F15-02, AC-F15-03, AC-F15-04, AC-F15-05, AC-F15-06 | TEST-F15-01, TEST-F15-02, TEST-F15-03, TEST-F15-04, TEST-F15-05, TEST-F15-06, TEST-F15-07 | Verified (Sprint 2) |
-| FR-16 | F-16 Filter bookable slots | 3 | AC/test defined in Sprint 3 contract | | Allocated |
+| FR-16 | F-16 Filter bookable slots | 3 | AC-F16-01, AC-F16-02, AC-F16-03, AC-F16-04, AC-F16-05, AC-F16-06 | TEST-F16-01, TEST-F16-02, TEST-F16-03, TEST-F16-04, TEST-F16-05, TEST-F16-06 | Verified (Sprint 3) |
 | FR-17 | F-17 Appointment summary | 3 | AC/test defined in Sprint 3 contract | | Allocated |
 | FR-18 | F-18 Cancellation history | 3 | AC/test defined in Sprint 3 contract | | Allocated |
 | FR-19 | F-19 Late-slot notification | 3 | AC/test defined in Sprint 3 contract | | Allocated |
@@ -143,12 +144,12 @@ expected results.
 
 ## 4. Coverage check
 
-| Type | In SRS v0.5 | Mapped to a feature or responsibility | With AC/test IDs or evidence (Sprint 1 or 2) | Allocated, not yet implemented (Sprint 3) | Uncovered |
+| Type | In SRS v0.5 | Mapped to a feature or responsibility | With AC/test IDs or evidence (Sprint 1, 2 or 3) | Allocated, not yet implemented (Sprint 3) | Uncovered |
 |---|---|---|---|---|---|
-| FR | 19 (FR-01 to FR-19) | 19 | 15 (FR-01 to FR-15) | 4 (FR-16 to FR-19; AC/test in the Sprint 3 contracts) | 0 |
+| FR | 19 (FR-01 to FR-19) | 19 | 16 (FR-01 to FR-16) | 3 (FR-17 to FR-19; AC/test in the Sprint 3 contracts) | 0 |
 | BR | 16 (BR-01 to BR-16) | 16 | 16 (BR-01 to BR-16) | 0 | 0 |
 | NFR | 10 (NFR-01 to NFR-10) | 10 | 9 (NFR-01 to NFR-09) | 1 (NFR-10; AC/test not yet written) | 0 |
-| **Total** | **45** | **45** | **40** | **5** | **0** |
+| **Total** | **45** | **45** | **41** | **4** | **0** |
 
 SRS v0.5 changes the text of BR-07 only (#67, D-31), so the counts are the same as in SRS v0.4.
 Some requirements with IDs still have a later part without AC: BR-08, BR-09, BR-16
