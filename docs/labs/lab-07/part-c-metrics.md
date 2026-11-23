@@ -13,7 +13,7 @@
 
 | ID | Metric | Definition | Value |
 |---|---|---|---|
-| C-01 | Completed Issues | Issues closed in the window, by close reason. Duplicates and not-planned closures listed separately. | **11** closed, all "completed"; 0 duplicate, 0 not planned (section 2) |
+| C-01 | Completed Issues | Issues closed in the window, by close reason. Duplicates and not-planned closures listed separately. | **11** closed (GitHub reason: completed, 0 not planned). 1 of them, #63, is a UAT report triaged as a duplicate of our #58, closed after the retest; so 10 distinct pieces of work (section 2) |
 | C-02 | Merged PRs | PRs merged in the window, by target branch, with who merged and whether the CI-tested head was up to date with the target branch at merge time. | **15** merged: 1 into `sprint-1`, 13 into `sprint-2`, 1 into `main`. 15 of 15 merged by the reviewer, not the author. **2 of 15** merged with a tested head behind the target (#84, #85) (section 3) |
 | C-03 | Automated test results | Pass/fail/skip counts of the CI job `test / test-and-docker` on the release commit `198a1ea` (run 45168953657). | Server (Vitest): **292 passed, 0 failed, 0 skipped** in 22 files. E2E (Playwright): **9 passed, 0 failed, 0 skipped**. Client unit tests: none exist (section 4) |
 | C-04 | UAT defect status | UAT Issues filed by the UAT Team (Team Top 2) against our app: opened and resolved in the window, and open at the snapshot. Resolved = fix merged and deployed, UAT Team retest PASS, Issue closed. | Opened in window **0**; resolved in window **1** (#63, Major, duplicate of #58); open at snapshot **0** (section 5) |
@@ -37,7 +37,7 @@
 | #71 | Mon 23 Nov 17:41 | completed | F-14 Reschedule booking: implementation |
 | #67 | Mon 23 Nov 18:51 | completed | Lab 7 change request: BR-07 allows 2 active bookings, at most 1 per advisor |
 
-11 Issues: 6 feature implementations (#69 to #74), 1 contracts and DoD (#68), 1 CI chore (#78), 1 Lab 6 documents (#60), 1 UAT defect (#63) and the Lab 7 change request (#67, closed by the release PR #90 into `main`). GitHub records #63 as "completed"; in the Lab 6 triage it is a duplicate of our own #58 (Part C of Lab 6), closed after the UAT Team's passing retest. No Issue was closed as a duplicate or not planned.
+11 Issues: 6 feature implementations (#69 to #74), 1 contracts and DoD (#68), 1 CI chore (#78), 1 Lab 6 documents (#60), 1 UAT defect (#63) and the Lab 7 change request (#67, closed by the release PR #90 into `main`). GitHub records all 11 as "completed", none as not planned. One of them is a duplicate: #63 is the UAT Team's report of the same Logout defect as our own #58 (Lab 6 Part C triage: Duplicate), closed after the UAT Team's passing retest. Counting it once, the window holds 10 distinct pieces of work.
 
 ## 3. C-02 Merged PRs (source list)
 
@@ -137,8 +137,8 @@ No other UAT Issue was filed. Opened in the window: 0. Resolved in the window: 1
 | 45167903874 | Mon 23 Nov 18:44 | CI & Docker Build | pull_request | sprint-2 | cac5beb | success |
 | 45168953657 | Mon 23 Nov 18:51 | Deploy demo | push | main | 198a1ea | success |
 
-30 runs: 28 success, 2 cancelled, 0 failed. Both cancelled runs are on `docs/lab6-results` (PR #66) on 22 Nov at 11:12 and 11:13, replaced by a newer push to the same PR (the workflow cancels an older run of the same branch); the next run, at 11:13, succeeded. Every `CI & Docker Build` run has the event `pull_request`: the workflow runs on pull requests into `sprint-1`, `sprint-2` and `main` only, not on a push to `sprint-2` (`ci-docker.yml`, `on: pull_request`).
+30 runs: 28 success, 2 cancelled, 0 failed. Both cancelled runs are on `docs/lab6-results` (PR #66) on 22 Nov at 11:12 and 11:13, replaced by a newer push to the same PR (the workflow cancels an older run of the same branch); the next run, at 11:13, succeeded. Every `CI & Docker Build` run has the event `pull_request`: the workflow runs on pull requests into `sprint-1`, `sprint-2` and `main` only, not on a push to `sprint-2` (`ci-docker.yml`, `on: pull_request`). The workflow's `concurrency` group (`cancel-in-progress: true`) cancels an older run of the same branch, so once the section 7 action adds a push trigger, two merges into `sprint-2` close together will show one cancelled push run; the newer run still tests the combined head.
 
 ## 7. Interpretation and action
 
-CI runs only on pull requests, never on a push to `sprint-2` (C-05: all 29 CI runs are `pull_request`), so a PR tested behind `sprint-2` merges an untested combination. C-02 shows 2 of 15 merges did; for #85, F-15 with F-11 had no CI result for 33 minutes. The 28 / 28 green runs overstate integration coverage. Action: Jeerasak adds `push: branches: [sprint-2]` to `ci-docker.yml`, and the team turns on "require branches to be up to date" for `sprint-2`, before the `v0.3.0-rc` release for Deliverable 2.
+CI runs only on pull requests, never on a push to `sprint-2` (C-05: all 29 CI runs are `pull_request`), so a PR tested behind `sprint-2` merges an untested combination. C-02 shows 2 of 15 merges did; for #85, F-15 with F-11 had no CI result for 33 minutes. The 28 / 28 green runs overstate integration coverage. Action: Jeerasak adds `push: branches: [sprint-2]` to `ci-docker.yml` before the `v0.3.0-rc` release for Deliverable 2, so every merged combination gets its own CI run.
