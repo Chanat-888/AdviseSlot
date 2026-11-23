@@ -29,7 +29,12 @@ export function toBookingDto(b: BookingWithParts, now: Date): BookingDto {
   };
 }
 
-export type BookingFailure = "NOT_FOUND" | "SLOT_TAKEN" | "BOOKING_DEADLINE_PASSED" | "ACTIVE_BOOKING_LIMIT";
+export type BookingFailure =
+  | "NOT_FOUND"
+  | "SLOT_TAKEN"
+  | "BOOKING_DEADLINE_PASSED"
+  | "SAME_ADVISOR_BOOKING"
+  | "ACTIVE_BOOKING_LIMIT";
 
 export type CreateBookingResult =
   | { ok: true; booking: BookingDto }
@@ -66,11 +71,14 @@ export async function createBooking(studentId: number, slotId: number, now: Date
       const deadline = bookingDeadline(slot);
       if (now.getTime() >= deadline.getTime()) return { ok: false, code: "BOOKING_DEADLINE_PASSED", deadline };
 
-      // Check 4: BR-07, counted under the student lock taken above.
-      const active = await tx.booking.count({
+      // Check 4: BR-07 (#67, D-31), checked under the student lock taken at the top.
+      const active = await tx.booking.findMany({
         where: { studentId, status: "ACTIVE", slot: { endAt: { gt: now } } },
+        select: { slot: { select: { advisorId: true } } },
       });
-      if (active > 0) return { ok: false, code: "ACTIVE_BOOKING_LIMIT" };
+      // 4a: at most one active booking with the same advisor; 4b: at most two in total.
+      if (active.some((b) => b.slot.advisorId === slot.advisorId)) return { ok: false, code: "SAME_ADVISOR_BOOKING" };
+      if (active.length >= 2) return { ok: false, code: "ACTIVE_BOOKING_LIMIT" };
 
       const booking = await tx.booking.create({
         data: { slotId, studentId, status: "ACTIVE", createdAt: now },
