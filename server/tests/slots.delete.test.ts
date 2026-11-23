@@ -195,10 +195,13 @@ describe("TEST-F13-07 (AC-F13-07): delete and book of the same slot in parallel"
         data: { advisorId: advisor.id, startAt: start, endAt: new Date(start.getTime() + HALF_HOUR), createdAt: bkk(NOW), isLate: false },
       });
 
-      const [d, b] = await Promise.all([
-        del(a, slot.id),
-        request(app).post("/api/bookings").set("Cookie", s).send({ slotId: slot.id }),
-      ]);
+      // Alternate which request starts first, so both orders (delete wins / booking wins) are exercised.
+      const deleteReq = () => del(a, slot.id);
+      const bookReq = () => request(app).post("/api/bookings").set("Cookie", s).send({ slotId: slot.id });
+      const [d, b] =
+        i % 2 === 0
+          ? await Promise.all([deleteReq(), bookReq()])
+          : await Promise.all([bookReq(), deleteReq()]).then(([bk, dl]) => [dl, bk] as const);
       const pair = `${d.status}/${b.status}`;
       outcomes.push(pair);
       expect(["204/404", "409/201"]).toContain(pair);
@@ -208,5 +211,51 @@ describe("TEST-F13-07 (AC-F13-07): delete and book of the same slot in parallel"
       expect(active).toBe(deleted ? 0 : 1); // never deleted AND booked
     }
     console.log("TEST-F13-07 outcomes (delete/book):", outcomes.join(" "));
+  });
+
+  // The random race above mostly lets the delete win, so these two fix the order: a test
+  // transaction holds the slot row lock like an in-flight booking or delete, the other request
+  // starts and must wait, then sees the committed result.
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  it("forced order 1: a delete that arrives during a booking waits, then refuses (409)", async () => {
+    const slot = await insertSlot(advisor.id, "2026-11-10T14:00:00");
+    const a = await loginCookie(advisor.email);
+    let pending: Promise<request.Response> | undefined;
+    let settledEarly = false;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Slot" WHERE id = ${slot.id} FOR UPDATE`; // like F-07
+      await tx.booking.create({ data: { slotId: slot.id, studentId: student.id, status: "ACTIVE", createdAt: bkk(NOW) } });
+      pending = del(a, slot.id).then((r) => r);
+      pending.then(() => (settledEarly = true));
+      await sleep(400);
+    });
+    expect(settledEarly).toBe(false); // the delete waited for the lock
+
+    const res = await pending!;
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("SLOT_HAS_ACTIVE_BOOKING");
+    expect(await deletedAt(slot.id)).toBeNull();
+  });
+
+  it("forced order 2: a booking that arrives during a delete waits, then gets 404 (needs the F-07 slot lock)", async () => {
+    const slot = await insertSlot(advisor.id, "2026-11-10T14:00:00");
+    const s = await loginCookie(student.email);
+    let pending: Promise<request.Response> | undefined;
+    let settledEarly = false;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Slot" WHERE id = ${slot.id} FOR UPDATE`; // like F-13
+      await tx.slot.update({ where: { id: slot.id }, data: { deletedAt: bkk(NOW) } });
+      pending = request(app).post("/api/bookings").set("Cookie", s).send({ slotId: slot.id }).then((r) => r);
+      pending.then(() => (settledEarly = true));
+      await sleep(400);
+    });
+    expect(settledEarly).toBe(false); // the booking waited for the lock
+
+    const res = await pending!;
+    expect(res.status).toBe(404);
+    expect(await prisma.booking.count({ where: { slotId: slot.id, status: "ACTIVE" } })).toBe(0);
   });
 });
