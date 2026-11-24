@@ -1,0 +1,34 @@
+# Release candidate post-deploy check (DoD R7, R8, #102)
+# Date: 2026-11-24T14:01:00+07:00   Release: PR #105 merged as 87be717, tag v0.3.0-rc   URL: https://adviseslot-nfnam6jppq-as.a.run.app
+
+## R5 fresh clone (before the merge, reviewer Jeerasak, on PR #105)
+Fresh clone of sprint-2 at 52b88cc, README steps on an empty database: migrations and seed OK,
+server 330 passed, client build OK, dev servers up, E2E 10 passed (including F-16). Node 25.8 (README says 24).
+
+## R7 GCP deploy: run https://github.com/Chanat-888/AdviseSlot/actions/runs/45343279800 (success)
+image tag: 87be71748619cd1c558c538a3032cda57bf77e8b
+image digest: sha256:085944fc50fcd4be6329ba97121e982046a8e1ea90944a257421cfd0529b41cf
+migrate job: execution adviseslot-migrate-n24cd completed (no new migration since v0.2.0-sprint-2)
+Cloud Run revision: adviseslot-00007-6l4, 100% of traffic
+smoke test: PASS /api/health, /api/ready, /, /api/slots/bookable, /api/version (login SKIP: smoke credentials not configured)
+
+## R8 post-deploy
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/version
+{"commit":"87be71748619cd1c558c538a3032cda57bf77e8b"}
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/ready
+{"status":"ready","db":"up"}
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/slots/bookable   (logged out, expect 401)
+{"error":{"code":"UNAUTHENTICATED","message":"You are not logged in."}}  HTTP 401
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/advisors         (logged out, expect 401; new in F-16)
+{"error":{"code":"UNAUTHENTICATED","message":"You are not logged in."}}  HTTP 401
+Footer: shows the first 7 characters of /api/version: 87be717
+
+## Manual F-16 path on the live site (Jeerasak)
+Done on 2026-11-24 in a browser on the live site, as seed user Student Three. Screenshots in evidence/post-deploy-rc/:
+1-bookable-all-footer.webp        /slots with no filter: Advisor and Date filters shown, both advisors' slots for
+                                  Wed 25 to Mon 30 Nov; footer "AdviseSlot version 87be717" = /api/version above.
+2-filter-advisor-one-26-nov.webp  Advisor One and 26/11/2026 selected: only Thu 26 Nov 09:00-09:30, 09:30-10:00 and
+                                  14:00-14:30, all Advisor One, the same rows as in screenshot 1 for that day and
+                                  advisor; "Clear filters" link shown; footer 87be717 (FR-16).
+
+# Result: PASS (R7 deploy, R8 version/footer, live F-16 filter by advisor and date)
