@@ -1,0 +1,28 @@
+# TEST-R04-01 / AC-R04-01 / NFR-06, release-candidate check R4
+# Date: 2026-11-23T22:27:10+07:00   Commit: 90dae53 (sprint-2 head, release candidate)   DB: container adviseslot-lab7impl-db-1, port 5433, database adviseslot_rc, seeded
+# build: ok
+# 1. start server
+health: {"status":"ok","db":"up"}
+# 2. log in as student3, make sure two upcoming bookings (two advisors, more than 12 hours ahead) exist, cancel the newer one
+login -> {"id":5,"name":"Student Three","email":"student3@example.test","role":"STUDENT"}
+upcoming at start: 3/advisor 1, 2/advisor 2   (booking 2 from the seed; booking 3 from a first run of this check that failed on a script error in the check itself, not in the app)
+booking to cancel: 3 (advisor 1)
+cancel 3 -> {"id":3,"status":"Cancelled","createdAt":"2026-11-23T15:23:38.639Z","slot":{"id":2,"startAt":"2026-11-25T02:30:00.000Z","endAt":"2026-11-25T03:00:00.000Z"},"advisor":{"id":1,"name":"Advisor One"},"student":{"id":5,"name":"Student Three"},"cancellation":{"cancelledAt":"2026-11-23T15:27:13.140Z","cancelledBy":{"id":5,"name":"Student Three","role":"STUDENT"},"reason":null}}
+mine-before: [{"id":2,"status":"Upcoming","createdAt":"2026-11-23T15:20:57.905Z","slot":{"id":10,"startAt":"2026-11-25T03:00:00.000Z","endAt":"2026-11-25T03:30:00.000Z"},"advisor":{"id":2,"name":"Advisor Two"}},{"id":3,"status":"Cancelled","createdAt":"2026-11-23T15:23:38.639Z","slot":{"id":2,"startAt":"2026-11-25T02:30:00.000Z","endAt":"2026-11-25T03:00:00.000Z"},"advisor":{"id":1,"name":"Advisor One"},"cancellation":{"cancelledAt":"2026-11-23T15:27:13.140Z","cancelledBy":{"id":5,"name":"Student Three","role":"STUDENT"},"reason":null}}]
+filter-before (F-16, advisorId=1): [{"id":2,"startAt":"2026-11-25T02:30:00.000Z","endAt":"2026-11-25T03:00:00.000Z","isLate":false,"bookingDeadline":"2026-11-24T11:00:00.000Z","advisor":{"id":1,"name":"Advisor One"}},{"id":3,"startAt":"2026-11-25T07:00:00.000Z","endAt":"2026-11-25T07:30:00.000Z","isLate":false,"bookingDeadline":"2026-11-25T05:00:00.000Z","advisor":{"id":1,"name":"Advisor One"}},{"id":4,"startAt":"2026-11-26T02:00:0
+# 3. stop server, restart db container
+server stopped (no answer)
+adviseslot-lab7impl-db-1
+db health: healthy
+# 4. start server again
+health: {"status":"ok","db":"up"}
+# 5. log in again, repeat requests
+login -> {"id":5,"name":"Student Three","email":"student3@example.test","role":"STUDENT"}
+# 6. diff
+mine: identical
+cancelled: identical
+filter: identical
+cancellation object present after restart
+server stopped (no answer)
+
+# Result: PASS

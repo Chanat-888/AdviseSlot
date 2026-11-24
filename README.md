@@ -50,8 +50,9 @@ docker-compose.yml   Local PostgreSQL 17 for development
    | `student3@example.test` | Student |
 
    It also adds demo slots for the next three weekdays and books one of them each for
-   `student2` and `student3` (a student holds one upcoming booking, BR-07). `student1` has
-   none, so you can book as `student1` at http://localhost:5173/slots.
+   `student2` and `student3` (BR-07 allows at most two upcoming bookings, at most one with
+   the same advisor). `student1` has none, so you can book as `student1` at
+   http://localhost:5173/slots.
 
 3. Set up the client.
 
@@ -101,11 +102,16 @@ not need `npm run dev`. It uses the test database `adviseslot_test` from `server
 (never your development data), refuses to run if the name does not end in `_test`, applies
 the migrations and seeds the demo accounts first. The journey logs in as `student1`, checks
 the identity in the top bar, logs out and checks that a protected page and `/api/auth/me`
-are refused, and tries a wrong password. It also books the first slot on `/slots` as
-`student1` and checks that a second booking shows the server's message (F-06, F-07). In the
-full journey `advisor1` creates a slot, `student2` books it and opens it from "My bookings",
-`advisor1` opens it from the schedule and sees the student's name, and `advisor2` gets
-"Booking not found." (F-04 to F-09). A student opening `/schedule` gets the 403 message.
+are refused, and tries a wrong password. It also books the first slot of `advisor1` on
+`/slots` as `student1` and checks that a second slot of the same advisor is refused with the
+server's message (F-06, F-07, BR-07: at most two upcoming bookings, at most one with the same
+advisor). In the full journey `advisor1` creates a slot, `student2` books it and opens it
+from "My bookings", `advisor1` opens it from the schedule and sees the student's name,
+`advisor2` gets "Booking not found." (F-04 to F-09), and `student2` cancels the booking
+(F-10). `advisor1` also creates several slots at once (F-15), deletes an Open slot (F-13)
+and edits one (F-12). `student1` filters `/slots` by advisor and by date, clears the filters,
+and sees the server's message for a bad date in the URL (F-16). A student opening
+`/schedule` gets the 403 message.
 Before each run it empties the `Slot` and `Booking` tables of the test database and re-seeds
 the slots, so it can run again. The HTML report is written to
 `e2e/playwright-report/` (gitignored).

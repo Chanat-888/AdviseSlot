@@ -113,3 +113,19 @@ export function studentCanCancel(startAt: Date, now: Date): boolean {
 export function advisorCanCancel(startAt: Date, now: Date): boolean {
   return now.getTime() < startAt.getTime();
 }
+
+/**
+ * F-16 section 3.2 (NFR-05): the Bangkok calendar day "2026-11-10" as [start, end) instants,
+ * or null if it is not a real date written as YYYY-MM-DD.
+ */
+export function bangkokDay(date: string): { start: Date; end: Date } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!m) return null;
+  const [year, month, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const utcMidnight = Date.UTC(year, month - 1, day);
+  const check = new Date(utcMidnight);
+  // Date.UTC rolls 2026-02-30 over to 2 March, so a real date reads back unchanged.
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day) return null;
+  const start = utcMidnight - BANGKOK_OFFSET; // local 00:00 of that day, as UTC
+  return { start: new Date(start), end: new Date(start + DAY) };
+}

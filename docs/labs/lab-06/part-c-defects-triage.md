@@ -13,9 +13,25 @@ an enhancement, not a defect; a failing Sprint 1 requirement is never relabelled
 
 ## 1. Outgoing reports (we, as UAT Team, report on the partner's product)
 
-_None yet; Part B not started._ Each report records: Issue ID, product team, reporter, tested
-version, linked case/requirement, preconditions/data, steps, expected, actual, severity with
-reason, evidence ID, how the partner was notified and the outcome.
+Product: Team Top 2, Inventory and Borrowing System, tested on commit `13a8d94`, revision
+`inventory-00006-hxv` (Part B). All five agreed cases passed; the two reports below are defects
+we saw while running them. Both were filed on the partner's repository on 2026-11-20 with
+steps, expected, actual, severity and screenshots (screenshots as a comment on each Issue).
+
+| Field | Report 1 | Report 2 |
+|---|---|---|
+| Issue | https://github.com/Ryugc/Inventory-and-Borrowing-System/issues/36 | https://github.com/Ryugc/Inventory-and-Borrowing-System/issues/37 |
+| Title | My requests and Active loans show the asset UUID instead of the asset name | Checkout form labels look swapped (Borrow request ID / Due date) |
+| Reporter | Chanat Dachkhumhang, Jeerasak Phisawong (UAT Team) | Chanat Dachkhumhang (UAT Team) |
+| Tested version | `13a8d94`, `inventory-00006-hxv` | same |
+| Linked case | UAT-01 steps 3 and 5, UAT-04 steps 1 and 4 | UAT-01 step 5, UAT-04 step 4 |
+| Preconditions / data | Operator reset done; borrower and custodian seed accounts; TAG-RPI-001 | custodian seed account |
+| Steps | Borrower requests TAG-RPI-001 (toast gives request `7f712a92-...`), opens My requests; custodian checks it out and opens Active Loans | Custodian opens Active loans and reads the checkout form |
+| Expected | Each row names the asset; My requests shows the request ID | "Borrow request ID" labels the text box, "Due date" labels the date picker |
+| Actual | Both lists show `9a94358f-...`, the asset `id` of TAG-RPI-001 (`public/app.js` lines 85 and 101 render `assetId`) | "Borrow request ID" sits above the date picker, "Due date" next to the text box (which starts as `request-1`) |
+| Severity | Minor: the journey works, but users cannot tell which asset a row is about | Minor: cosmetic; Approve / Checkout fills the form |
+| Evidence | B-04, B-05, B-23 (posted on the Issue) | B-21b (posted on the Issue) |
+| Partner response | None by 2026-11-22 | None by 2026-11-22 |
 
 ## 2. Findings about our product found before the handoff
 
@@ -60,12 +76,11 @@ still `true` at the next login.
 
 ## 3. Triage of findings received from the UAT Team
 
-All findings from the UAT Team are listed here, including "none" if there are none. If the UAT
-Team reports the Logout defect, it is a duplicate of #58.
+All findings from the UAT Team are listed here, including "none" if there are none.
 
 | # | UAT Issue | Case | Summary | Classification | Reason (Sprint 1 contract + evidence) | Duplicate of | Severity | Owner | Fix status | Disposition |
 |---|---|---|---|---|---|---|---|---|---|---|
-| _none received yet_ | | | | | | | | | | |
+| 1 | #63 (Ryugc, 2026-11-20) | UAT-01 (their round 1 summary on #63); Student Three on `/slots`, `cbcb783`, ~18:49 ICT | Logout greys out and hangs until a manual reload | Duplicate | Same symptom as #58 (Logout disabled after a second login in the same tab; F-02 section 2). Their screenshots show the greyed button on `cbcb783`. Asked them to confirm the case and that another account logged out earlier in that tab | #58 | Major (as #58) | Chanat | Fixed in `c4dc3b4`, deployed `adviseslot-00005-4tw` | UAT retest PASS on 2026-11-22; #63 closed |
 
 Classification is one of: accepted defect, duplicate, not-defect, enhancement. Reproduce and
 clarify a report before calling it not-defect.

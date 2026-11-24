@@ -18,28 +18,65 @@ type Booking = { id: number };
 // F-09 detail, only the part the reschedule banner needs.
 type MovingBooking = { id: number; slot: { startAt: string } };
 
+// F-16 section 4.2: one entry of GET /api/advisors.
+type Advisor = { id: number; name: string };
+
 const message = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong.");
 
 // F-06 section 5 and F-07 section 5: bookable slots grouped by date, one Book button per row.
 // F-14 section 5: with ?reschedule=<booking id>, a banner names the booking being moved and each
 // row has Move here instead of Book.
+// F-16 section 5: Advisor and Date filters, kept in the page URL as ?advisor=&date= (next to
+// reschedule) and sent to the API as advisorId and date. The server validates them.
 export function Slots() {
   const navigate = useNavigate();
-  const rescheduleId = useSearchParams()[0].get("reschedule");
+  const [params, setParams] = useSearchParams();
+  const rescheduleId = params.get("reschedule");
+  const advisorFilter = params.get("advisor") ?? "";
+  const dateFilter = params.get("date") ?? "";
+  const filtered = advisorFilter !== "" || dateFilter !== "";
+  const [advisors, setAdvisors] = useState<Advisor[]>([]);
   const [moving, setMoving] = useState<MovingBooking | null>(null);
   const [slots, setSlots] = useState<BookableSlot[] | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<number | null>(null); // the slot whose request is running
 
   const load = useCallback(() => {
-    return api<BookableSlot[]>("/api/slots/bookable")
+    const query = new URLSearchParams();
+    if (advisorFilter !== "") query.set("advisorId", advisorFilter);
+    if (dateFilter !== "") query.set("date", dateFilter);
+    const qs = query.toString();
+    setLoading(true);
+    return api<BookableSlot[]>(`/api/slots/bookable${qs ? `?${qs}` : ""}`)
       .then(setSlots) // keep an error shown by a failed booking while the list reloads
-      .catch((err) => setError(message(err)));
-  }, []);
+      .catch((err) => {
+        setSlots(null); // a 400 for a bad filter: show the message and no list (F-16 section 5)
+        setError(message(err));
+      })
+      .finally(() => setLoading(false));
+  }, [advisorFilter, dateFilter]);
 
   useEffect(() => {
+    setError(null);
     void load();
   }, [load]);
+
+  useEffect(() => {
+    api<Advisor[]>("/api/advisors")
+      .then(setAdvisors)
+      .catch((err) => setError(message(err))); // the select keeps only "All advisors"
+  }, []);
+
+  /** Sets one filter in the page URL (empty removes it), keeping the other filter and reschedule. */
+  function setFilter(key: "advisor" | "date", value: string) {
+    const next = new URLSearchParams(params);
+    if (value === "") next.delete(key);
+    else next.set(key, value);
+    setParams(next);
+  }
+
+  const clearTo = rescheduleId !== null ? `/slots?reschedule=${encodeURIComponent(rescheduleId)}` : "/slots";
 
   useEffect(() => {
     setMoving(null);
@@ -89,9 +126,44 @@ export function Slots() {
           <Link to={`/bookings/${rescheduleId}`} className="ms-auto">Cancel move</Link>
         </div>
       )}
+      <form className="row g-2 align-items-end mb-3" onSubmit={(e) => e.preventDefault()} aria-label="Filter slots">
+        <div className="col-sm-auto">
+          <label htmlFor="filter-advisor" className="form-label small mb-1">Advisor</label>
+          <select
+            id="filter-advisor"
+            className="form-select form-select-sm"
+            value={advisorFilter}
+            onChange={(e) => setFilter("advisor", e.target.value)}
+          >
+            <option value="">All advisors</option>
+            {advisors.map((a) => (
+              <option key={a.id} value={String(a.id)}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-sm-auto">
+          <label htmlFor="filter-date" className="form-label small mb-1">Date</label>
+          <input
+            id="filter-date"
+            type="date"
+            className="form-control form-control-sm"
+            value={dateFilter}
+            onChange={(e) => setFilter("date", e.target.value)}
+          />
+        </div>
+        <div className="col-sm-auto d-flex align-items-center gap-2 pb-1">
+          {filtered && <Link to={clearTo}>Clear filters</Link>}
+          {loading && slots !== null && <span className="spinner-border spinner-border-sm" role="status" aria-label="Loading" />}
+        </div>
+      </form>
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {slots === null && !error && <div className="spinner-border" role="status" />}
-      {slots && slots.length === 0 && <p className="text-muted">No bookable slots right now.</p>}
+      {slots && slots.length === 0 && !filtered && <p className="text-muted">No bookable slots right now.</p>}
+      {slots && slots.length === 0 && filtered && (
+        <p className="text-muted">
+          No bookable slots match these filters. <Link to={clearTo}>Clear filters</Link>
+        </p>
+      )}
       {[...groups].map(([day, items]) => (
         <section key={day} className="mb-3">
           <h2 className="h6 text-muted">{day}</h2>

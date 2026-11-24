@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   advisorCanCancel,
+  bangkokDay,
   bookingDeadline,
   bookingStatus,
   checkSlotStart,
@@ -19,6 +20,7 @@ import {
 // - TEST-F15-05 (unit part), docs/sprints/sprint-2/F-15-batch-create-slots.md section 8
 // - TEST-F10-02 (unit part), docs/sprints/sprint-2/F-10-student-cancel.md section 8
 // - TEST-F11-02 (unit part), docs/sprints/sprint-2/F-11-advisor-cancel.md section 8
+// - TEST-F16-02 and TEST-F16-04 (unit part, bangkokDay), docs/sprints/sprint-3/F-16-filter-bookable-slots.md section 8
 // All times are Asia/Bangkok (UTC+7, NFR-05).
 
 const bkk = (local: string) => new Date(`${local}+07:00`);
@@ -180,5 +182,39 @@ describe("TEST-F11-02 (unit part): BR-12 advisor cancel window, until the slot s
     expect(advisorCanCancel(startAt, new Date(startAt.getTime() - 1))).toBe(true);
     expect(advisorCanCancel(startAt, bkk("2026-11-10T09:00:00"))).toBe(true);
     expect(advisorCanCancel(startAt, bkk("2026-11-10T10:15:00"))).toBe(false);
+  });
+});
+
+describe("TEST-F16-02 (AC-F16-02, unit part): bangkokDay gives the UTC+7 calendar day as [start, end)", () => {
+  it.each([
+    ["2026-11-10", "2026-11-09T17:00:00.000Z", "2026-11-10T17:00:00.000Z"],
+    ["2026-12-31", "2026-12-30T17:00:00.000Z", "2026-12-31T17:00:00.000Z"],
+  ])("%s is %s to %s", (date, start, end) => {
+    expect(bangkokDay(date)).toEqual({ start: new Date(start), end: new Date(end) });
+  });
+
+  it("the day ends exactly where the next one starts", () => {
+    expect(bangkokDay("2026-11-10")?.end).toEqual(bangkokDay("2026-11-11")?.start);
+  });
+});
+
+describe("TEST-F16-04 (AC-F16-04, unit part): bangkokDay is null for anything but a real YYYY-MM-DD date", () => {
+  it.each([
+    ["2026-02-29 (2026 is not a leap year)", "2026-02-29"],
+    ["2026-02-30", "2026-02-30"],
+    ["2026-13-01", "2026-13-01"],
+    ["2026-11-1 (one-digit day)", "2026-11-1"],
+    ["10/11/2026", "10/11/2026"],
+    ["2026-11-10T00:00 (has a time)", "2026-11-10T00:00"],
+    ["empty", ""],
+  ])("%s", (_name, date) => {
+    expect(bangkokDay(date)).toBeNull();
+  });
+
+  it("accepts 29 February in a leap year", () => {
+    expect(bangkokDay("2028-02-29")).toEqual({
+      start: new Date("2028-02-28T17:00:00.000Z"),
+      end: new Date("2028-02-29T17:00:00.000Z"),
+    });
   });
 });
