@@ -1,6 +1,8 @@
 # CI: "CI & Docker Build" (Lab 5, Issue #4).
-# Runs on every pull request into sprint-1, sprint-2 (our staging branches) and main, and can be
-# reused by deploy.yml (workflow_call) so a deploy only starts after these checks pass.
+# Runs on every pull request into sprint-1, sprint-2 (our staging branches) and main, on every
+# push to sprint-2 (so each merged combination is tested, not only each PR head: Lab 7 Part C
+# action), and can be reused by deploy.yml (workflow_call) so a deploy only starts after these
+# checks pass.
 # It does not deploy anything.
 #
 # Do not rename the job id `test-and-docker`: it is the required status check in the
@@ -14,6 +16,11 @@ on:
   workflow_call:
   pull_request:
     branches: [sprint-1, sprint-2, main]
+  # Lab 7 Part C (docs/labs/lab-07/part-c-metrics.md section 7): a PR tested behind sprint-2 used
+  # to merge an untested combination. With cancel-in-progress below, two merges close together
+  # leave one cancelled push run; the newer run tests the combined head.
+  push:
+    branches: [sprint-2]
   workflow_dispatch:
 
 permissions:
