@@ -109,7 +109,9 @@ advisor). In the full journey `advisor1` creates a slot, `student2` books it and
 from "My bookings", `advisor1` opens it from the schedule and sees the student's name,
 `advisor2` gets "Booking not found." (F-04 to F-09), and `student2` cancels the booking
 (F-10). `advisor1` also creates several slots at once (F-15), deletes an Open slot (F-13)
-and edits one (F-12). A student opening `/schedule` gets the 403 message.
+and edits one (F-12). `student1` filters `/slots` by advisor and by date, clears the filters,
+and sees the server's message for a bad date in the URL (F-16). A student opening
+`/schedule` gets the 403 message.
 Before each run it empties the `Slot` and `Booking` tables of the test database and re-seeds
 the slots, so it can run again. The HTML report is written to
 `e2e/playwright-report/` (gitignored).
