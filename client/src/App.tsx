@@ -4,6 +4,7 @@ import { AuthProvider, homeFor, RequireLogin, useAuth } from "./auth";
 import { api, ApiError } from "./api";
 import { BookingDetail } from "./BookingDetail";
 import { Bookings } from "./Bookings";
+import { History } from "./History";
 import { Login } from "./Login";
 import { Schedule } from "./Schedule";
 import { Slots } from "./Slots";
@@ -35,7 +36,10 @@ function TopBar() {
             <NavLink to="/bookings" className="nav-link">My bookings</NavLink>
           </>
         ) : (
-          <NavLink to="/schedule" className="nav-link">Schedule</NavLink>
+          <>
+            <NavLink to="/schedule" className="nav-link">Schedule</NavLink>
+            <NavLink to="/history" className="nav-link">History</NavLink>
+          </>
         )}
       </span>
       <span className="d-flex align-items-center gap-3">
@@ -80,6 +84,7 @@ export function App() {
           <Route path="/bookings" element={<RequireLogin><Bookings /></RequireLogin>} />
           <Route path="/bookings/:id" element={<RequireLogin><BookingDetail /></RequireLogin>} />
           <Route path="/schedule" element={<RequireLogin><Schedule /></RequireLogin>} />
+          <Route path="/history" element={<RequireLogin><History /></RequireLogin>} />
           <Route path="*" element={<RequireLogin><Home /></RequireLogin>} />
         </Routes>
         <Footer />
