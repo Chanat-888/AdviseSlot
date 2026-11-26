@@ -344,6 +344,27 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByRole("row").filter({ hasText: `Cancelled by ${booker.name}` })).toHaveCount(1);
   });
 
+  // F-17 section 8: the advisor opens a fixed range from the URL and sees the four counts, then a
+  // hand-typed range with `to` before `from` shows the server's message (NFR-07). The step never
+  // computes today and checks no exact counts, so it is the same at any time and after any step.
+  test("advisor views the appointment summary for a range (F-17)", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByRole("navigation").getByRole("link", { name: "Summary" }).click();
+    await expect(page).toHaveURL(/\/summary\?from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}$/);
+
+    await page.goto("/summary?from=2026-11-09&to=2026-11-15");
+    await expect(page.getByLabel("From")).toHaveValue("2026-11-09");
+    await expect(page.getByLabel("To", { exact: true })).toHaveValue("2026-11-15");
+    for (const label of ["Slots", "Booked", "Cancelled", "Open"]) {
+      await expect(page.getByLabel(label, { exact: true })).toHaveText(/^\d+$/);
+    }
+
+    await page.goto("/summary?from=2026-11-20&to=2026-11-10");
+    await expect(page.getByRole("alert")).toHaveText("to must be on or after from.");
+    await expect(page.getByLabel("Slots", { exact: true })).toHaveCount(0);
+  });
+
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);
