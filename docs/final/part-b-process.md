@@ -89,7 +89,7 @@ merged first, then the failing tests, then the code, then the teammate's review 
 | Implementation Issue | #112 | Opened by and assigned to Chanat | 2026-11-26 15:19, closed 16:00 | "F-18 Cancellation history (Sprint 3): implementation". It was opened after the work started, right before the PR. The work itself was planned in #109 |
 | PR | #113 | Author Chanat, reviewer Jeerasak | Opened 2026-11-26 15:19 | CI `test-and-docker` passed (run 45785927847) |
 | Review | #113 | Jeerasak | 2026-11-26 15:34 | Read the diff against the contract and #112. Two inline points. (1) No test covered the "Cancelled by <student name>" text. (2) The query reads every booking and drops the Upcoming ones in code, so please record that. Chanat replied to both. Fixed in `aa72d73`: the E2E step now checks Advisor Two's History, and contract section 9 has the note |
-| Approval | #113 | Jeerasak | 2026-11-26 16:00 | Ran it locally: Vitest 340/340, server build, Playwright 11/11 on `aa72d73` |
+| Approval | #113 | Jeerasak | 2026-11-26 16:00 | Ran it locally: Vitest 340/340 and the server build on `4757b9b` (no server change after it), Playwright 11/11 on `aa72d73` |
 | Merge into `sprint-3` | `7cd8487` | Merged by Jeerasak (reviewer) | 2026-11-26 16:00 | Push CI on `7cd8487` passed (run 45788003105) |
 | Integration | `sprint-3` `d12ecfd` | | 2026-11-26 | Tested together with F-17 and F-19 for `v1.0.0-rc`: server 377 passed, E2E 13 passed. CI run 45802912186, `evidence/release-v1-rc-tests.txt`, notes PR #119 |
 | Release | **TODO** `v1.0.0-rc`, then `v1.0.0` | Jeerasak (plan S6, S3) | **TODO** | **TODO:** release PR, `main` commit, tag, deploy run, revision, post-deploy check |
@@ -184,4 +184,4 @@ How we checked AI output:
 - New behavior starts with a failing test that is saved in `evidence/` before the code, so a test
   written by an agent is shown to fail before it is trusted.
 - CI (`test-and-docker`) runs on every PR and push. The deploy smoke test checks the running commit.
-- The Lab 6 UAT and the `v1.0.0-rc` re-test are done by people from another team (Team Top 2), not by an agent.
+- The Lab 6 UAT was done by people from another team (Team Top 2), not by an agent. The `v1.0.0-rc` re-test is done by testers from another team (Team Top 2 in Lab 6); their names are added after the re-test.
