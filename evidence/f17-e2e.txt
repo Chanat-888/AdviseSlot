@@ -1,0 +1,50 @@
+# F-17 E2E green run: the /summary page, the "Summary" link, and the F-17 step (test 11 of 12)
+# On feat/f17-appointment-summary (working tree on top of 335f7aa, the E2E red commit; committed right after this run)
+# Command: cd e2e && npx playwright test; cd ../client && npm run build   (2026-11-26 16:09 +0700)
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5433"
+
+5 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+Script executed successfully.
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+
+The seed command has been executed.
+Script executed successfully.
+
+Running 12 tests using 1 worker
+
+  ok  1 [chromium] › tests\journey.spec.ts:13:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (998ms)
+  ok  2 [chromium] › tests\journey.spec.ts:42:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (629ms)
+  ok  3 [chromium] › tests\journey.spec.ts:57:7 › E2E journey (Sprint 1, issue #13) › a second user who logs in in the same tab can log out (F-02) (1.3s)
+  ok  4 [chromium] › tests\journey.spec.ts:77:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking (4.4s)
+  ok  5 [chromium] › tests\journey.spec.ts:144:7 › E2E journey (Sprint 1, issue #13) › student books a slot, then a second booking shows the server's message (1.0s)
+  ok  6 [chromium] › tests\journey.spec.ts:175:7 › E2E journey (Sprint 1, issue #13) › advisor creates several slots at once (F-15, TEST-F15-07) (1.0s)
+  ok  7 [chromium] › tests\journey.spec.ts:201:7 › E2E journey (Sprint 1, issue #13) › advisor deletes an Open slot and it stays gone after a reload (1.2s)
+  ok  8 [chromium] › tests\journey.spec.ts:230:7 › E2E journey (Sprint 1, issue #13) › advisor edits an Open slot inline and the new time is stored (F-12) (1.2s)
+  ok  9 [chromium] › tests\journey.spec.ts:259:7 › E2E journey (Sprint 1, issue #13) › student filters bookable slots by advisor and date (F-16) (954ms)
+  ok 10 [chromium] › tests\journey.spec.ts:295:7 › E2E journey (Sprint 1, issue #13) › student and advisor see who cancelled a booking (F-18, TEST-F18-06) (4.5s)
+  ok 11 [chromium] › tests\journey.spec.ts:350:7 › E2E journey (Sprint 1, issue #13) › advisor views the appointment summary for a range (F-17) (865ms)
+  ok 12 [chromium] › tests\journey.spec.ts:369:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (729ms)
+
+  12 passed (28.6s)
+
+
+> adviseslot-client@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v5.4.11 building for production...
+transforming...
+✓ 44 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.27 kB
+dist/assets/index-DnVUw_vK.css  231.93 kB │ gzip: 30.70 kB
+dist/assets/index-DOg55FL-.js   196.71 kB │ gzip: 61.38 kB
+✓ built in 624ms

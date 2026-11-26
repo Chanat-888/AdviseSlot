@@ -8,6 +8,7 @@ import { History } from "./History";
 import { Login } from "./Login";
 import { Schedule } from "./Schedule";
 import { Slots } from "./Slots";
+import { Summary } from "./Summary";
 
 // SDS 4.1: name, role and Logout in the top bar, only when logged in.
 function TopBar() {
@@ -39,6 +40,7 @@ function TopBar() {
           <>
             <NavLink to="/schedule" className="nav-link">Schedule</NavLink>
             <NavLink to="/history" className="nav-link">History</NavLink>
+            <NavLink to="/summary" className="nav-link">Summary</NavLink>
           </>
         )}
       </span>
@@ -85,6 +87,7 @@ export function App() {
           <Route path="/bookings/:id" element={<RequireLogin><BookingDetail /></RequireLogin>} />
           <Route path="/schedule" element={<RequireLogin><Schedule /></RequireLogin>} />
           <Route path="/history" element={<RequireLogin><History /></RequireLogin>} />
+          <Route path="/summary" element={<RequireLogin><Summary /></RequireLogin>} />
           <Route path="*" element={<RequireLogin><Home /></RequireLogin>} />
         </Routes>
         <Footer />
