@@ -288,6 +288,62 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByRole("alert")).toHaveText("The date filter must be a real date written as YYYY-MM-DD.");
   });
 
+  // F-18 section 8 (TEST-F18-06, AC-F18-06, plus the advisor's /history): Student Three books one
+  // slot of each advisor (BR-07 allows one per advisor), Advisor One cancels one with a reason,
+  // the student cancels the other, and /bookings says who cancelled each. Seeded slots are two or
+  // more days ahead, so both cancels are inside BR-11 and BR-12 at any time of day.
+  test("student and advisor see who cancelled a booking (F-18, TEST-F18-06)", async ({ page }) => {
+    const one = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const two = SEED_USERS.find((u) => u.email === "advisor2@example.test")!;
+    const booker = SEED_USERS.find((u) => u.email === "student3@example.test")!;
+    const reason = "Faculty meeting moved";
+
+    await logIn(page, booker.email, /\/slots$/);
+    await page.getByRole("button", { name: new RegExp(`^Book ${one.name} `) }).first().click();
+    await expect(page).toHaveURL(/\/bookings\/\d+$/);
+    const byAdvisorUrl = page.url();
+    await page.goto("/slots");
+    await page.getByRole("button", { name: new RegExp(`^Book ${two.name} `) }).first().click();
+    await expect(page).toHaveURL(/\/bookings\/\d+$/);
+    const bySelfUrl = page.url();
+    await logOut(page);
+
+    // F-11: Advisor One cancels the first booking with a reason
+    await logIn(page, one.email, /\/schedule$/);
+    await page.goto(byAdvisorUrl);
+    await page.getByRole("button", { name: "Cancel booking" }).click();
+    await page.getByLabel("Reason (shown to the student)").fill(reason);
+    await page.getByRole("button", { name: "Confirm" }).click();
+    await expect(page.getByText("Booking cancelled.")).toBeVisible();
+    await logOut(page);
+
+    // F-10: the student cancels the other, then /bookings shows who cancelled each
+    await logIn(page, booker.email, /\/slots$/);
+    await page.goto(bySelfUrl);
+    await page.getByRole("button", { name: "Cancel booking" }).click();
+    await page.getByRole("dialog", { name: "Cancel this booking?" }).getByRole("button", { name: "Yes" }).click();
+    await expect(page.getByText("Booking cancelled.")).toBeVisible();
+    await page.getByRole("navigation").getByRole("link", { name: "My bookings" }).click();
+    await expect(page.getByRole("link", { name: new RegExp(`${two.name}.*Cancelled.*Cancelled by you`) })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: new RegExp(`${one.name}.*Cancelled by ${one.name}: ${reason}`) })).toHaveCount(1);
+    await logOut(page);
+
+    // F-18 advisor side: History lists the cancelled row with the student's name and the reason
+    await logIn(page, one.email, /\/schedule$/);
+    await page.getByRole("navigation").getByRole("link", { name: "History" }).click();
+    await expect(page).toHaveURL(/\/history$/);
+    const row = page.getByRole("row").filter({ hasText: booker.name }).filter({ hasText: `Cancelled by you: ${reason}` });
+    await expect(row).toHaveCount(1);
+    await row.getByRole("link").click();
+    await expect(page).toHaveURL(byAdvisorUrl);
+    await logOut(page);
+
+    // Advisor Two's History shows the row the student cancelled as "Cancelled by <student name>"
+    await logIn(page, two.email, /\/schedule$/);
+    await page.getByRole("navigation").getByRole("link", { name: "History" }).click();
+    await expect(page.getByRole("row").filter({ hasText: `Cancelled by ${booker.name}` })).toHaveCount(1);
+  });
+
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);

@@ -25,6 +25,7 @@ const PROTECTED: Endpoint[] = [
   { method: "patch", path: "/api/slots/1", route: "/api/slots/:id", body: { startAt: "2026-11-10T07:00:00.000Z" } }, // F-12
   { method: "post", path: "/api/bookings", body: { slotId: 1 } },
   { method: "get", path: "/api/bookings/mine" },
+  { method: "get", path: "/api/bookings/history" }, // F-18 (Sprint 3)
   { method: "get", path: "/api/bookings/1", route: "/api/bookings/:id" },
   { method: "post", path: "/api/bookings/1/cancel", route: "/api/bookings/:id/cancel", body: {} }, // F-10, F-11 (Sprint 2)
   { method: "post", path: "/api/bookings/1/reschedule", route: "/api/bookings/:id/reschedule", body: { newSlotId: 1 } }, // F-14 (Sprint 2)

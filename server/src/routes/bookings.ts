@@ -7,6 +7,7 @@ import {
   cancelBookingAsStudent,
   createBooking,
   getBookingFor,
+  listAdvisorHistory,
   listOwnBookings,
   rescheduleBooking,
 } from "../services/bookings.js";
@@ -59,6 +60,20 @@ bookingsRouter.get(
   async (req, res, next) => {
     try {
       res.json(await listOwnBookings(req.user!.id, new Date()));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// F-18: the advisor's cancelled and passed bookings. Also before "/:id". Query parameters are ignored.
+bookingsRouter.get(
+  "/history",
+  requireAuth,
+  requireRole("ADVISOR", "Only advisors have a booking history."),
+  async (req, res, next) => {
+    try {
+      res.json(await listAdvisorHistory(req.user!.id, new Date()));
     } catch (err) {
       next(err);
     }

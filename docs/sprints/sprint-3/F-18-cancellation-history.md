@@ -5,7 +5,7 @@
 | Feature | F-18 Cancellation history |
 | Sprint | 3 |
 | Owner | Contract and implementation: Chanat Dachkhumhang (Issue: Sprint 3 contracts F-18, F-19), reviewed by Jeerasak Phisawong. |
-| Status | Contract draft. Implementation not started. |
+| Status | Implemented (TEST-F18-01 to -06 pass). Awaiting review. |
 | Linked requirements | FR-18, BR-09, NFR-03 (see section 1) |
 | Scope | Student side: already delivered by F-08 + F-10/F-11 (`GET /api/bookings/mine` lists Cancelled bookings with the `cancellation` object); F-18 only adds the "Cancelled by you" label. Advisor side: new `GET /api/bookings/history` and `/history` page. |
 | Depends on | F-08, F-10, F-11 (cancel columns and the `cancellation` object, PR #76), F-13 (soft delete keeps history, D-29, PR #77), F-14 (a reschedule appears as a student cancel) |
@@ -18,6 +18,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, on the Sprint 2 contracts in PR #76 and #77. Awaiting team review. |
 | 0.2 | 2026-11-23 | Chanat (drafted with an AI agent) | Rebased on the released Sprint 2 (`v0.2.0-sprint-2`). F-10 already lists the student's Cancelled bookings on `/bookings` from `GET /api/bookings/mine`, so the endpoint is now advisor-only (a student gets 403) and the student side only adds the "Cancelled by you" label (AC-F18-06). AC-F18-01 now checks the existing student path. SRS reference v0.5. |
+| 0.3 | 2026-11-26 | Chanat (drafted with an AI agent) | Status line after implementation. Section 8.1: the red run of TEST-F18-02 to -05 fails on a 400, not a 404, because `GET /api/bookings/history` without the route is caught by `GET /api/bookings/:id` and `parseId("history")` refuses it. Section 9: the history query filters Upcoming in code (review of #113). |
 
 ## 1. Linked requirements
 
@@ -166,11 +167,12 @@ UI/E2E: TEST-F18-06 in `e2e/tests/journey.spec.ts`, plus the advisor opening `/h
 
 ### 8.1 TDD plan
 
-TEST-F18-02 to -05 first, red (route missing: the asserted 200/403 fails on a 404, not a compile error), then the endpoint. TEST-F18-06 red on the missing "Cancelled by you" text, then the label. TEST-F18-01 checks the existing Sprint 2 path and is expected green from the start; it is not TDD evidence.
+TEST-F18-02 to -05 first, red (route missing: the asserted 200/403 fails on the 400 of `GET /api/bookings/:id`, not a compile error), then the endpoint. TEST-F18-06 red on the missing "Cancelled by you" text, then the label. TEST-F18-01 checks the existing Sprint 2 path and is expected green from the start; it is not TDD evidence.
 
 ## 9. Known limitations
 
 - No paging. With the course data size (a few hundred bookings) one list is fine; paging is debt if the data grows.
+- The history query reads every booking on the advisor's slots, Upcoming included, and drops the Upcoming ones in code, so `bookingStatus` (D-24) stays the only place that decides "Passed". Fine at the course data size; if it grows, filter in the query (`status` CANCELLED or `slot.endAt` <= now) together with paging.
 - No link between a rescheduled booking and its new booking (F-14 section 6); the old one reads "Cancelled by you".
 
 ## 10. Completion evidence
