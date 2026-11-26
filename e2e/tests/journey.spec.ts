@@ -336,6 +336,12 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(row).toHaveCount(1);
     await row.getByRole("link").click();
     await expect(page).toHaveURL(byAdvisorUrl);
+    await logOut(page);
+
+    // Advisor Two's History shows the row the student cancelled as "Cancelled by <student name>"
+    await logIn(page, two.email, /\/schedule$/);
+    await page.getByRole("navigation").getByRole("link", { name: "History" }).click();
+    await expect(page.getByRole("row").filter({ hasText: `Cancelled by ${booker.name}` })).toHaveCount(1);
   });
 
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.

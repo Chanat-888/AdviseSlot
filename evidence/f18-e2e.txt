@@ -43,3 +43,47 @@ Running 11 tests using 1 worker
   ok 11 [chromium] › tests\journey.spec.ts:342:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (742ms)
 
   11 passed (27.9s)
+
+
+# Re-run after the review of #113: TEST-F18-06 also checks Advisor Two's History ("Cancelled by Student Three")
+# Command: cd e2e && npx playwright test --reporter=list   (2026-11-26 15:35 +0700)
+
+[WebServer] (node:26484) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:13228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot_test", schema "public" at "localhost:5434"
+
+5 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+Script executed successfully.
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+
+The seed command has been executed.
+Script executed successfully.
+
+Running 11 tests using 1 worker
+
+(node:45396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 [chromium] › tests\journey.spec.ts:13:7 › E2E journey (Sprint 1, issue #13) › student logs in, sees identity, reloads, logs out and is locked out (1.0s)
+  ok  2 [chromium] › tests\journey.spec.ts:42:7 › E2E journey (Sprint 1, issue #13) › wrong password shows the server message and stays logged out (AC-F01-02) (670ms)
+  ok  3 [chromium] › tests\journey.spec.ts:57:7 › E2E journey (Sprint 1, issue #13) › a second user who logs in in the same tab can log out (F-02) (1.4s)
+  ok  4 [chromium] › tests\journey.spec.ts:77:7 › E2E journey (Sprint 1, issue #13) › advisor creates a slot, student books it, both open the booking (4.2s)
+  ok  5 [chromium] › tests\journey.spec.ts:144:7 › E2E journey (Sprint 1, issue #13) › student books a slot, then a second booking shows the server's message (1.0s)
+  ok  6 [chromium] › tests\journey.spec.ts:175:7 › E2E journey (Sprint 1, issue #13) › advisor creates several slots at once (F-15, TEST-F15-07) (1.0s)
+  ok  7 [chromium] › tests\journey.spec.ts:201:7 › E2E journey (Sprint 1, issue #13) › advisor deletes an Open slot and it stays gone after a reload (1.2s)
+  ok  8 [chromium] › tests\journey.spec.ts:230:7 › E2E journey (Sprint 1, issue #13) › advisor edits an Open slot inline and the new time is stored (F-12) (1.2s)
+  ok  9 [chromium] › tests\journey.spec.ts:259:7 › E2E journey (Sprint 1, issue #13) › student filters bookable slots by advisor and date (F-16) (857ms)
+  ok 10 [chromium] › tests\journey.spec.ts:295:7 › E2E journey (Sprint 1, issue #13) › student and advisor see who cancelled a booking (F-18, TEST-F18-06) (4.6s)
+  ok 11 [chromium] › tests\journey.spec.ts:348:7 › E2E journey (Sprint 1, issue #13) › a forbidden operation is refused (R-01) (728ms)
+
+  11 passed (29.2s)
