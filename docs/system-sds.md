@@ -22,6 +22,7 @@
 | 0.10 | 2026-11-23 | Chanat (drafted with an AI agent) | Section 3.1 FR-19 row: lock note on the notification inserts (key-share lock on the student's `User` row, no cycle), from the review of PR #93. |
 | 0.11 | 2026-11-23 | Jeerasak (drafted with an AI agent) | F-16 contract v0.1: section 5.1 `GET /api/slots/bookable` takes the optional `advisorId` and `date` filters, and `GET /api/advisors` returns `{ id, name }` only; section 4.1 `/slots` filter bar; section 6 adds the "List advisors" row. |
 | 0.12 | 2026-11-23 | Jeerasak (drafted with an AI agent) | F-17 contract v0.1: section 5.1 `GET /api/summary` takes the Bangkok days `from` and `to` (at most 90 days) and returns `counts { slots, booked, cancelled, open }` and the upcoming appointments of the caller's slots. |
+| 1.0 | 2026-11-26 | Chanat (drafted with an AI agent) | Final version for the `v1.0.0` release, checked against the code on `sprint-3` `d12ecfd` (F-17 #115, F-18 #113, F-19 #117 merged). Section 2: the services as built. Section 3.3: migrations as built, including `add_notification` (F-19); the demo password comes from `SEED_DEMO_PASSWORD`. Section 4.1: the Sprint 3 screens and top-bar links as built. Section 5: 503 `DB_UNAVAILABLE`. Section 5.1: the health (project skeleton), readiness and version (Lab 5) endpoints, and the F-19 response details. Section 8: `SEED_DEMO_PASSWORD`, `CLIENT_DIST`, `APP_COMMIT`. Section 9: the deploy runs on every push to `main` with no manual approval step. Section 10: `sprint-N` branches. For the SDS owner to review. |
 
 ## 1. Stack and rationale
 
@@ -45,7 +46,7 @@ flowchart LR
   A --> M[Auth middleware<br/>requireAuth / requireRole]
   M --> R[Route handlers<br/>validation]
   R --> D[Domain module<br/>rules.ts: pure rule functions]
-  R --> S[Services<br/>bookingService, slotService,<br/>notificationService]
+  R --> S[Services<br/>bookings, slots,<br/>notifications, summary]
   S --> P[(PostgreSQL<br/>via Prisma)]
 ```
 
@@ -147,8 +148,9 @@ zone) would make the exclusion constraint below fail, because casting it to
 
 - Local development (D-25): `docker compose up -d db` starts PostgreSQL 17 from `docker-compose.yml` at the repo root, on host port 5433 (so it does not clash with a locally installed PostgreSQL on 5432), with a named volume for data. The server and client run on the host with `npm run dev`.
 - `npx prisma migrate dev` applies all migrations locally. `npx prisma migrate deploy` applies them in Docker and on GCP.
+- Migrations in order: `init`, `add_session` (F-01), `add_slot` (F-04), `add_booking` (F-07), `add_booking_cancel` (F-10, F-11: the cancel columns and their CHECK constraints), `add_notification` (F-19: the `Notification` table, its unique index and foreign keys; new table only, no backfill). F-16, F-17 and F-18 need no migration.
 - Raw SQL migrations add the `btree_gist` extension, the CHECK constraints (`Slot` duration, `User.email` lowercase), the exclusion constraint and the partial unique index.
-- `npx prisma db seed` runs `server/prisma/seed.ts`. It is idempotent and creates synthetic data: 2 advisors, 3 students and a set of future slots, some already booked. The demo password is defined in the seed for local use only and is listed in the README, not in the PDF.
+- `npx prisma db seed` runs `server/prisma/seed.ts`. It is idempotent and creates synthetic data: 2 advisors, 3 students and a set of future slots, some already booked. The demo password is read from `SEED_DEMO_PASSWORD` (the seed refuses to run without it); locally it is set in `server/.env`, on GCP it is a Secret Manager secret. It is not in Git or in the PDF.
 
 ## 4. UI structure and conventions
 
@@ -158,15 +160,16 @@ zone) would make the exclusion constraint below fail, because casting it to
 |---|---|---|---|
 | `/login` | Anyone | Email and password form | 1 |
 | `/slots` | Student | Bookable slots grouped by date, with advisor, time, deadline and a Book button. Sprint 3: Advisor and Date filters, kept in the page URL (`?advisor=&date=`, F-16) | 1 (filters in 3) |
-| `/bookings` | Student | My bookings: Upcoming, Passed, Cancelled (with who cancelled and the reason from Sprint 3) | 1 |
+| `/bookings` | Student | My bookings: Upcoming, Passed, Cancelled. A Cancelled row shows "Cancelled by you" (F-18) or "Cancelled by <advisor>: <reason>" (F-11) | 1 (labels in 2 and 3) |
 | `/bookings/:id` | Student, Advisor | Booking detail | 1 |
 | `/schedule` | Advisor | My schedule: create-slot form (weekday date, start time from 08:00 to 17:30 in 30-minute steps) and list of own slots with status (Open, Booked, Closed, Passed) and student name | 1 |
-| `/history` | Advisor | Cancelled and passed bookings on own slots, with who cancelled and the reason | 3 |
-| `/summary` | Advisor | Appointment summary for a date range | 3 |
-| `/notifications` | Student | Late-slot notifications, newest first, with a Mark as read button | 3 |
+| `/history` | Advisor | Cancelled and passed bookings on own slots (deleted slots included), newest first, with the student, status, who cancelled and the reason, and a link to the booking detail (F-18) | 3 |
+| `/summary` | Advisor | Appointment summary for a range of Bangkok days kept in the page URL (`?from=&to=`, default today to today + 6): Slots, Booked, Cancelled, Open and the upcoming appointments (F-17) | 3 |
+| `/notifications` | Student | Late-slot notifications, newest first, with the slot's current advisor, date and time, a Book link while the slot can still be booked (otherwise "This slot is no longer available."), and a Mark as read button on unread rows (F-19) | 3 |
 
-The top bar shows the user's name and role and a Logout button. From Sprint 3 it
-also shows students the number of unread notifications. After login the
+The top bar shows the user's name and role, the links of the user's role and a Logout
+button. Students get Slots, My bookings and Notifications (with a badge for the number of
+unread notifications, Sprint 3). Advisors get Schedule, History and Summary (Sprint 3). After login the
 client calls `GET /api/auth/me` and sends students to `/slots` and advisors to
 `/schedule`. A route guard redirects unauthenticated users to `/login`.
 
@@ -208,6 +211,7 @@ client calls `GET /api/auth/me` and sends students to `/slots` and advisors to
 | 409 | Conflict with existing data | `SLOT_TAKEN`, `SLOT_OVERLAP`, `ACTIVE_BOOKING_LIMIT`, `SAME_ADVISOR_BOOKING` (Lab 7, #67, D-31), `SLOT_HAS_ACTIVE_BOOKING` (Sprint 2), `BOOKING_NOT_ACTIVE` (Sprint 2, F-10, F-11, F-14) |
 | 422 | Valid input that breaks a business rule | `SLOT_OUTSIDE_HOURS`, `SLOT_NOT_WEEKDAY`, `SLOT_INVALID_START_MINUTE`, `SLOT_IN_PAST`, `SLOT_UNBOOKABLE`, `BOOKING_DEADLINE_PASSED`, `CANCEL_WINDOW_PASSED` (Sprint 2), `SLOT_ALREADY_STARTED` (Sprint 2, D-29) |
 | 500 | Unexpected error. Generic message only; details go to the server log. | `INTERNAL_ERROR` |
+| 503 | The database does not answer (`GET /api/health` only) | `DB_UNAVAILABLE` |
 
 ### 5.1 Endpoint overview
 
@@ -215,6 +219,9 @@ Detailed request and response shapes belong in each feature contract.
 
 | Method and path | Role | Purpose | Sprint |
 |---|---|---|---|
+| `GET /api/health` | Anyone | Smoke check: 200 `{ status, db }`, or 503 `DB_UNAVAILABLE` (project skeleton) | 1 |
+| `GET /api/ready` | Anyone | Readiness for Cloud Run and CI: 200 only when the database answers, else 503 (Lab 5) | 2 |
+| `GET /api/version` | Anyone | The commit the server runs, `{ commit }` from `APP_COMMIT` (Lab 5) | 2 |
 | `POST /api/auth/login` | Anyone | Log in | 1 |
 | `POST /api/auth/logout` | Any logged-in | Log out | 1 |
 | `GET /api/auth/me` | Any logged-in | Current user | 1 |
@@ -232,8 +239,8 @@ Detailed request and response shapes belong in each feature contract.
 | `GET /api/advisors` | Student | Advisor list for filtering: `{ id, name }` of every advisor, sorted by name (F-16) | 3 |
 | `GET /api/summary?from=&to=` | Advisor | Appointment summary of own slots starting in the Bangkok days `from` to `to` (both included, at most 90 days): `counts { slots, booked, cancelled, open }` and the upcoming appointments (F-17) | 3 |
 | `GET /api/bookings/history` | Advisor | Cancelled and passed bookings on own slots, with who cancelled and the reason (FR-18). Students see their cancelled bookings through `GET /api/bookings/mine` (F-10). | 3 |
-| `GET /api/notifications` | Student | Own notifications, newest first, with unread count | 3 |
-| `POST /api/notifications/:id/read` | Student owner | Mark one notification as read | 3 |
+| `GET /api/notifications` | Student | Own notifications, newest first: `{ unreadCount, items }`, each item with the slot's current data and `slotAvailable` (F-19, D-32) | 3 |
+| `POST /api/notifications/:id/read` | Student owner | Mark one notification as read. Idempotent: a second call keeps the first `readAt` (F-19) | 3 |
 
 ## 6. Roles and permissions
 
@@ -276,11 +283,14 @@ This design is the same as the TokTickIT Lab 3 authentication, adapted to two ro
 | `CLIENT_ORIGIN` | Server (CORS in development) | `http://localhost:5173` |
 | `NODE_ENV` | Server | `development` or `production` |
 | `APP_TIMEZONE` | Server rule calculations | `Asia/Bangkok` |
-| `VITE_API_URL` | Client build | `http://localhost:3000` |
+| `SEED_DEMO_PASSWORD` | Seed script | A local value of 12 or more characters (GCP: Secret Manager) |
+| `CLIENT_DIST` | Server, production only (optional) | Path of the built client; default `../../client/dist` relative to `server/dist` (`client/dist` at the repo root) |
+| `APP_COMMIT` | Server, `GET /api/version` | Set by `deploy/release.sh` on Cloud Run; `dev` when unset |
+| `VITE_API_URL` | Client build, development only | `http://localhost:3000`. The Docker image is built without it and calls the API on the same origin. |
 
 - `server/.env.example` and `client/.env.example` are committed with placeholder values. Real `.env` files are gitignored.
 - The client never receives a secret. `VITE_*` variables are public by design and hold only the API URL.
-- On GCP, `DATABASE_URL` is stored in Secret Manager and injected into the service at runtime.
+- On GCP, `DATABASE_URL` and `SEED_DEMO_PASSWORD` are stored in Secret Manager. The service gets only `DATABASE_URL`; the migrate job gets both (`docs/labs/lab-05/deployment.md`).
 
 ## 9. Deployment design (implemented in Lab 5)
 
@@ -294,7 +304,7 @@ image below is built in Lab 5, which also covers NFR-09.
 | Database | Cloud SQL for PostgreSQL 17. Durable storage outside the container. |
 | Secrets | Secret Manager for `DATABASE_URL`. |
 | Images | Artifact Registry. |
-| CI/CD | GitHub Actions: on each PR, install, build and run all tests; a failing required check blocks the merge. On merge to `main`, build the image, run `prisma migrate deploy`, and deploy to Cloud Run after a manual approval step. |
+| CI/CD | GitHub Actions. `ci-docker.yml`: on each PR and push to the sprint branch, install, build, run the server tests and the E2E journey, and build the Docker image. On `main` a ruleset requires one approval and a green `test-and-docker`; on `sprint-N` the same is our team rule (`docs/workflow.md`). `deploy.yml`: on every push to `main`, run that CI first, then build and push the image tagged with the commit SHA, run the migrate job (`prisma migrate deploy`), update the Cloud Run service and smoke-test the public URL. There is no manual approval step; the GitHub environment `demo` only allows `main`. A manual run with an existing image tag rolls back. |
 
 The exact GCP resources follow the course's Lab 5 instructions. This plan only fixes
 the shape: stateless container, external managed database, secrets outside Git.
@@ -311,9 +321,11 @@ AdviseSlot/
   docs/            SRS, SDS, decisions, features, traceability, sprints/
 ```
 
-Branches: `main` (accepted releases), `sprint-1` (staging), and one feature branch
-per Issue created from `sprint-1`. Both `main` and `sprint-1` need one approving
-teammate review before a merge.
+Branches: `main` (accepted releases), `sprint-N` (integration branch of the current
+sprint, `sprint-3` for the final release), and one work branch per Issue created from
+`sprint-N` (`docs/workflow.md`). Each work branch is merged by the teammate after one
+approving review. On `main` a ruleset requires one approval and a green `test-and-docker`;
+on `sprint-N` the same is our team rule.
 
 ## 11. Open items
 

@@ -4,7 +4,7 @@
 |---|---|
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Owner of this document | Chanat Dachkhumhang (reviewer: Jeerasak Phisawong) |
-| Related documents | `docs/srs.md` (v0.5), `docs/system-sds.md`, `docs/traceability.md`, `docs/decisions.md` |
+| Related documents | `docs/srs.md` (v1.0), `docs/system-sds.md`, `docs/traceability.md`, `docs/decisions.md` |
 
 ## Version history
 
@@ -14,6 +14,7 @@
 | 0.2 | 2026-10-28 | Chanat (drafted with an AI agent) | Aligned with SRS v0.3: F-04 rejects a late slot starting 2 h or less from now (D-23), F-05 uses D-24 statuses, F-17 includes the open count. |
 | 0.3 | 2026-11-04 | Chanat (drafted with an AI agent) | Related documents point to SRS v0.4 (decision list D-01 to D-27). No feature changes. |
 | 0.4 | 2026-11-23 | Chanat (drafted with an AI agent) | Aligned with SRS v0.5: F-07 uses the new BR-07 of Lab 7 change request #67 (D-31), at most two active bookings and at most one with the same advisor. Sprint 2 (F-10 to F-15) marked done, released as `v0.2.0-sprint-2`. |
+| 1.0 | 2026-11-26 | Chanat (drafted with an AI agent) | Final version for the `v1.0.0` release, checked against the code on `sprint-3` `d12ecfd`. Section 4: Sprint 3 status (F-16 to F-19 merged), and the F-16 to F-19 rows match their final contracts (linked requirements, dependencies, what each screen shows). Related documents point to SRS v1.0. |
 
 ## 1. Conventions
 
@@ -59,12 +60,16 @@ Status: done. F-10 to F-15 were released on 2026-11-23 as `v0.2.0-sprint-2`.
 
 ## 4. Sprint 3: views, history and notification
 
+Status: done. F-16 was released in `v0.3.0-rc` (Issue #75, PR #98). F-17 (Issue #114, PR #115),
+F-18 (Issue #112, PR #113) and F-19 (Issue #116, PR #117) were merged into `sprint-3` on
+2026-11-26 and ship in `v1.0.0`.
+
 | ID | Feature | Description | Related requirements | Depends on | Primary role |
 |---|---|---|---|---|---|
-| F-16 | Filter bookable slots | Student filters the bookable-slot list by advisor and by date. | FR-16 | F-06 | Student |
-| F-17 | Appointment summary | Advisor views, for a chosen date range on their own slots, the number of slots, booked, cancelled and open, and the list of upcoming appointments. | FR-17, BR-08 | F-05, F-10, F-11 | Advisor |
-| F-18 | Cancellation history | Student and advisor see cancelled bookings in their history with who cancelled and the reason. | FR-18, BR-09 | F-08, F-10, F-11 | Student, Advisor |
-| F-19 | Late-slot notification | Creating a late slot sends every student an in-app notification with advisor, date and time. A student lists notifications and marks them as read. No external messaging. | FR-19, BR-16 (notification) | F-04, F-15 | Student |
+| F-16 | Filter bookable slots | Student filters the bookable-slot list by advisor and by one Bangkok calendar day. Filters only narrow the F-06 list; a bad value gives 400. The advisor select comes from `GET /api/advisors` (`id` and `name` only). | FR-16, FR-06, BR-06, BR-09, BR-16 (rule), NFR-03, NFR-05, NFR-07 | F-06 | Student |
+| F-17 | Appointment summary | Advisor views, for a chosen range of Bangkok days (at most 90) on their own slots, the number of slots, booked, cancelled and open (counted as in D-33), and the list of upcoming appointments. | FR-17, BR-08, BR-09, NFR-03, NFR-05, NFR-07 | F-05, F-10, F-11, F-13, F-16 | Advisor |
+| F-18 | Cancellation history | Student: Cancelled bookings on `/bookings` (from `GET /api/bookings/mine`) show "Cancelled by you" or the advisor's name and reason. Advisor: `/history` lists cancelled and passed bookings on own slots, deleted slots included, with the student, who cancelled and the reason. | FR-18, BR-09, NFR-03 | F-08, F-10, F-11, F-13, F-14 | Student, Advisor |
+| F-19 | Late-slot notification | Creating a late slot (F-04, or each late slot of an F-15 batch) writes one in-app notification per student in the same transaction. A student sees an unread badge, lists notifications newest first with the slot's current advisor, date and time and whether it can still be booked (D-32), and marks one as read. No external messaging. | FR-19, BR-16 (notification), BR-09, NFR-03 | F-04, F-15 | Student |
 
 ## 5. Cross-cutting responsibilities
 
