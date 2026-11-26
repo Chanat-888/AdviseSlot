@@ -17,7 +17,7 @@ Each of us reviews and merges the other's PRs.
 
 ```
 main              releases only
- └─ sprint-N      integration branch for sprint N (now sprint-1)
+ └─ sprint-N      integration branch for sprint N (now sprint-3)
      ├─ docs/<topic>
      ├─ feat/<topic>
      ├─ fix/<topic>

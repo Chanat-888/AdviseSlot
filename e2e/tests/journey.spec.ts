@@ -1,6 +1,8 @@
+import { execSync } from "node:child_process";
+import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { SEED_USERS } from "../../server/prisma/seed-data";
-import { demoPassword } from "../test-env";
+import { demoPassword, loadTestEnv } from "../test-env";
 // The client's own Bangkok formatting, so the test matches what the screens show.
 import { formatDate } from "../../client/src/time";
 
@@ -288,6 +290,112 @@ test.describe("E2E journey (Sprint 1, issue #13)", () => {
     await expect(page.getByRole("alert")).toHaveText("The date filter must be a real date written as YYYY-MM-DD.");
   });
 
+  // F-18 section 8 (TEST-F18-06, AC-F18-06, plus the advisor's /history): Student Three books one
+  // slot of each advisor (BR-07 allows one per advisor), Advisor One cancels one with a reason,
+  // the student cancels the other, and /bookings says who cancelled each. Seeded slots are two or
+  // more days ahead, so both cancels are inside BR-11 and BR-12 at any time of day.
+  test("student and advisor see who cancelled a booking (F-18, TEST-F18-06)", async ({ page }) => {
+    const one = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const two = SEED_USERS.find((u) => u.email === "advisor2@example.test")!;
+    const booker = SEED_USERS.find((u) => u.email === "student3@example.test")!;
+    const reason = "Faculty meeting moved";
+
+    await logIn(page, booker.email, /\/slots$/);
+    await page.getByRole("button", { name: new RegExp(`^Book ${one.name} `) }).first().click();
+    await expect(page).toHaveURL(/\/bookings\/\d+$/);
+    const byAdvisorUrl = page.url();
+    await page.goto("/slots");
+    await page.getByRole("button", { name: new RegExp(`^Book ${two.name} `) }).first().click();
+    await expect(page).toHaveURL(/\/bookings\/\d+$/);
+    const bySelfUrl = page.url();
+    await logOut(page);
+
+    // F-11: Advisor One cancels the first booking with a reason
+    await logIn(page, one.email, /\/schedule$/);
+    await page.goto(byAdvisorUrl);
+    await page.getByRole("button", { name: "Cancel booking" }).click();
+    await page.getByLabel("Reason (shown to the student)").fill(reason);
+    await page.getByRole("button", { name: "Confirm" }).click();
+    await expect(page.getByText("Booking cancelled.")).toBeVisible();
+    await logOut(page);
+
+    // F-10: the student cancels the other, then /bookings shows who cancelled each
+    await logIn(page, booker.email, /\/slots$/);
+    await page.goto(bySelfUrl);
+    await page.getByRole("button", { name: "Cancel booking" }).click();
+    await page.getByRole("dialog", { name: "Cancel this booking?" }).getByRole("button", { name: "Yes" }).click();
+    await expect(page.getByText("Booking cancelled.")).toBeVisible();
+    await page.getByRole("navigation").getByRole("link", { name: "My bookings" }).click();
+    await expect(page.getByRole("link", { name: new RegExp(`${two.name}.*Cancelled.*Cancelled by you`) })).toHaveCount(1);
+    await expect(page.getByRole("link", { name: new RegExp(`${one.name}.*Cancelled by ${one.name}: ${reason}`) })).toHaveCount(1);
+    await logOut(page);
+
+    // F-18 advisor side: History lists the cancelled row with the student's name and the reason
+    await logIn(page, one.email, /\/schedule$/);
+    await page.getByRole("navigation").getByRole("link", { name: "History" }).click();
+    await expect(page).toHaveURL(/\/history$/);
+    const row = page.getByRole("row").filter({ hasText: booker.name }).filter({ hasText: `Cancelled by you: ${reason}` });
+    await expect(row).toHaveCount(1);
+    await row.getByRole("link").click();
+    await expect(page).toHaveURL(byAdvisorUrl);
+    await logOut(page);
+
+    // Advisor Two's History shows the row the student cancelled as "Cancelled by <student name>"
+    await logIn(page, two.email, /\/schedule$/);
+    await page.getByRole("navigation").getByRole("link", { name: "History" }).click();
+    await expect(page.getByRole("row").filter({ hasText: `Cancelled by ${booker.name}` })).toHaveCount(1);
+  });
+
+  // F-17 section 8: the advisor opens a fixed range from the URL and sees the four counts, then a
+  // hand-typed range with `to` before `from` shows the server's message (NFR-07). The step never
+  // computes today and checks no exact counts, so it is the same at any time and after any step.
+  test("advisor views the appointment summary for a range (F-17)", async ({ page }) => {
+    const advisor = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    await logIn(page, advisor.email, /\/schedule$/);
+    await page.getByRole("navigation").getByRole("link", { name: "Summary" }).click();
+    await expect(page).toHaveURL(/\/summary\?from=\d{4}-\d{2}-\d{2}&to=\d{4}-\d{2}-\d{2}$/);
+
+    await page.goto("/summary?from=2026-11-09&to=2026-11-15");
+    await expect(page.getByLabel("From")).toHaveValue("2026-11-09");
+    await expect(page.getByLabel("To", { exact: true })).toHaveValue("2026-11-15");
+    for (const label of ["Slots", "Booked", "Cancelled", "Open"]) {
+      await expect(page.getByLabel(label, { exact: true })).toHaveText(/^\d+$/);
+    }
+
+    await page.goto("/summary?from=2026-11-20&to=2026-11-10");
+    await expect(page.getByRole("alert")).toHaveText("to must be on or after from.");
+    await expect(page.getByLabel("Slots", { exact: true })).toHaveCount(0);
+  });
+
+  // F-19 section 8 (UI/E2E step): E2E runs on the real clock, and a late slot can be created only
+  // on a weekday morning between 18:00 the day before and start - 2 h (D-23), so the setup inserts
+  // a late slot for Advisor One and one unread notification for Student One with SQL, as the seed
+  // does. Creation and the SLOT_UNBOOKABLE rejection are covered by TEST-F19-01 to -03 (fake clock).
+  test("student sees a late-slot notification and marks it as read (F-19)", async ({ page }) => {
+    const one = SEED_USERS.find((u) => u.email === "advisor1@example.test")!;
+    const day = weekdayAhead(20); // no other step uses this day; 08:00 is not a seeded time
+    const startAt = new Date(`${day}T08:00:00+07:00`).toISOString();
+    const message = `${one.name} added a late slot on ${formatDate(startAt).replace(/ \d{4}$/, "")} at 08:00.`;
+    sql(`
+      INSERT INTO "Slot" ("advisorId", "startAt", "endAt", "createdAt", "isLate")
+      SELECT id, '${startAt}', '${startAt}'::timestamptz + interval '30 minutes', now(), true
+      FROM "User" WHERE email = '${one.email}';
+      INSERT INTO "Notification" ("studentId", "slotId", "message", "createdAt")
+      SELECT u.id, s.id, '${message}', now() FROM "User" u, "Slot" s
+      WHERE u.email = '${student.email}' AND s."startAt" = '${startAt}';`);
+
+    await logIn(page, student.email, /\/slots$/);
+    const nav = page.getByRole("navigation");
+    await expect(nav.getByRole("link", { name: "Notifications 1 unread" })).toBeVisible();
+    await nav.getByRole("link", { name: /^Notifications/ }).click();
+    await expect(page).toHaveURL(/\/notifications$/);
+    const row = page.getByRole("listitem").filter({ hasText: one.name }).filter({ hasText: `${formatDate(startAt)}, 08:00-08:30` });
+    await expect(row).toHaveCount(1);
+    await row.getByRole("button", { name: "Mark as read" }).click();
+    await expect(row.getByRole("button", { name: "Mark as read" })).toHaveCount(0);
+    await expect(nav.getByRole("link", { name: "Notifications", exact: true })).toBeVisible();
+  });
+
   // R-01 / NFR-03: a student who opens the advisor screen gets the server's 403 message.
   test("a forbidden operation is refused (R-01)", async ({ page }) => {
     await logIn(page, student.email, /\/slots$/);
@@ -323,4 +431,10 @@ function inputDate(heading: string): string {
   const [, day, month, year] = heading.trim().split(/\s+/);
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return `${year}-${String(months.indexOf(month!) + 1).padStart(2, "0")}-${day!.padStart(2, "0")}`;
+}
+
+/** Runs SQL on the test database (the name is checked by loadTestEnv), as global-setup.ts does. */
+function sql(input: string) {
+  const env = { ...process.env, ...loadTestEnv() };
+  execSync("npx prisma db execute --stdin", { cwd: join(__dirname, "..", "..", "server"), env, input, stdio: ["pipe", "inherit", "inherit"] });
 }

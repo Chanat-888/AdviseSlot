@@ -26,6 +26,7 @@ model User {
   slots        Slot[]    @relation("AdvisorSlots")
   bookings     Booking[] @relation("StudentBookings")
   cancelledBookings Booking[] @relation("CancelledBookings") // F-10, F-11: bookings this user cancelled
+  notifications Notification[] @relation("StudentNotifications") // F-19
 }
 
 // F-01: server-side login session. Only the SHA-256 hash of the cookie token is stored.
@@ -49,6 +50,7 @@ model Slot {
   isLate    Boolean
   deletedAt DateTime? @db.Timestamptz(3) // null unless deleted (Sprint 2, F-13)
   bookings  Booking[]
+  notifications Notification[] // F-19
 
   @@index([advisorId, startAt])
   @@index([startAt]) // F-06 section 6: keeps the bookable list fast
@@ -76,4 +78,21 @@ model Booking {
   cancelReason  String? // written by F-11 only (BR-12)
 
   @@index([studentId])
+}
+
+// F-19: one in-app notification per student per late slot, written in the slot's create
+// transaction (F-19 section 2.1). `message` is the text at creation; the list shows the slot's
+// current data (D-32).
+model Notification {
+  id        Int       @id @default(autoincrement())
+  studentId Int
+  student   User      @relation("StudentNotifications", fields: [studentId], references: [id], onDelete: Restrict)
+  slotId    Int
+  slot      Slot      @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  message   String
+  createdAt DateTime  @db.Timestamptz(3) // set from the server clock, no database default
+  readAt    DateTime? @db.Timestamptz(3)
+
+  @@unique([studentId, slotId])
+  @@index([studentId, createdAt])
 }

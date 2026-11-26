@@ -19,6 +19,11 @@ export function advisorCancelNote(b: OwnBooking): string | null {
   return c && c.cancelledBy.role === "ADVISOR" ? `Cancelled by ${c.cancelledBy.name}: ${c.reason ?? ""}` : null;
 }
 
+// F-18 section 5: on /bookings, a row the student cancelled says so; an advisor's cancel keeps F-11's text.
+function cancelNote(b: OwnBooking): string | null {
+  return b.cancellation?.cancelledBy.role === "STUDENT" ? "Cancelled by you" : advisorCancelNote(b);
+}
+
 // D-24 status words, shared with the detail screen.
 export const BOOKING_BADGE: Record<OwnBooking["status"], string> = {
   Upcoming: "bg-primary",
@@ -65,7 +70,7 @@ export function Bookings() {
                       <span className="font-monospace">{formatTime(b.slot.startAt)}-{formatTime(b.slot.endAt)}</span>
                       <span>{b.advisor.name}</span>
                       <span className={`badge ${BOOKING_BADGE[b.status]} ms-auto`}>{b.status}</span>
-                      {advisorCancelNote(b) && <span className="w-100 small text-muted">{advisorCancelNote(b)}</span>}
+                      {cancelNote(b) && <span className="w-100 small text-muted">{cancelNote(b)}</span>}
                     </Link>
                   </li>
                 ))}

@@ -18,6 +18,7 @@
 | 0.3 | 2026-10-28 | Chanat (drafted with an AI agent) | Answered review on PR #1. FR-17 adds the open count (D-20). BR-15 checks BR-07 as if the old booking were released. BR-13 uses the BR-06 or BR-16 deadline. NFR-07 defines the Sprint 3 check. One status vocabulary in FR-05, BR-07 and A-04 (D-24). BR-16 rejects a late slot starting 2 hours or less from now with `SLOT_UNBOOKABLE`, and FR-19 notifies only for created late slots (D-23). A-06 moved after A-05. |
 | 0.4 | 2026-11-04 | Chanat (drafted with an AI agent) | Section 8 lists decisions D-01 to D-27 (added D-23 to D-27). No change to FR, BR or NFR text. |
 | 0.5 | 2026-11-23 | Chanat (drafted with an AI agent) | Lab 7 change request #67, approved by TA Supachok Deetaweesukh on 2026-11-22: BR-07 changes from one active booking in total to at most two, and at most one with the same advisor (D-31). Ended and cancelled bookings still do not count. No other FR, BR or NFR text changes. |
+| 1.0 | 2026-11-26 | Chanat (drafted with an AI agent) | Final version for the `v1.0.0` release (F-01 to F-19 merged into `sprint-3`). Checked against the code and tests on `sprint-3` `d12ecfd`. Section 2 lists the Sprint 3 responsibilities (filter, summary, history, notifications). Section 8 lists D-01 to D-33: D-10 is marked as replaced by D-31, D-28 to D-33 are added. No FR, BR or NFR text changes. |
 
 ## 1. Stakeholder problem and context
 
@@ -33,8 +34,8 @@ enforces booking deadlines, and keeps each student's bookings private.
 
 | Actor | System role | Responsibilities |
 |---|---|---|
-| Student | `STUDENT` (Customer role in the theme brief) | Browse free slots of any advisor, book a slot, view and (Sprint 2) cancel or reschedule their own booking. |
-| Advisor | `ADVISOR` (Staff role in the theme brief) | Publish and maintain their own office-hour slots, view bookings on their own slots, (Sprint 2) cancel a booking with a reason. |
+| Student | `STUDENT` (Customer role in the theme brief) | Browse free slots of any advisor, book a slot, view and (Sprint 2) cancel or reschedule their own booking, (Sprint 3) filter the free slots and read and mark their late-slot notifications. |
+| Advisor | `ADVISOR` (Staff role in the theme brief) | Publish and maintain their own office-hour slots, view bookings on their own slots, (Sprint 2) cancel a booking with a reason, (Sprint 3) view an appointment summary and the history of cancelled and past bookings on their own slots. |
 | System | n/a | Authenticates users, enforces business rules and access rules on the server, stores data in PostgreSQL. |
 
 There is no administrator role. User accounts are created by the seed script (D-12).
@@ -135,7 +136,7 @@ All times are evaluated in the Asia/Bangkok time zone (UTC+7) and stored in UTC.
 
 ## 8. Decisions
 
-Decisions D-01 to D-27 are recorded in `docs/decisions.md`. Summary:
+Decisions D-01 to D-33 are recorded in `docs/decisions.md`. Summary:
 
 | ID | Decision |
 |---|---|
@@ -148,7 +149,7 @@ Decisions D-01 to D-27 are recorded in `docs/decisions.md`. Summary:
 | D-07 | Morning slots close at 18:00 the previous day. Afternoon slots close 2 hours before start. |
 | D-08 | Student cancels at least 12 h before. Advisor cancels with a reason. Cancel frees the slot. |
 | D-09 | A booked slot cannot be deleted. |
-| D-10 | One active booking per student in total. |
+| D-10 | Replaced by D-31. (Was: one active booking per student in total.) |
 | D-11 | Visibility rules as in BR-09. |
 | D-12 | No admin role. Seeded accounts. |
 | D-13 | Stack reused from Labs 1-4 (see SDS). |
@@ -166,6 +167,12 @@ Decisions D-01 to D-27 are recorded in `docs/decisions.md`. Summary:
 | D-25 | Local PostgreSQL 17 in Docker on port 5433. |
 | D-26 | The login email is trimmed and lowercased before the lookup. Seed emails are stored in lowercase. |
 | D-27 | Sprint 1 cut line: if the release is at risk, the UI screens of F-08 and F-09 are cut before the API, rules or tests, and the cut is disclosed. |
+| D-28 | Editing a slot's start time (F-12) applies the creation rules as if the slot were created now and recomputes `isLate`. Editing sends no notification. |
+| D-29 | A slot can be edited or deleted only before it starts (422 `SLOT_ALREADY_STARTED`). Delete is a soft delete, so history keeps the slot. |
+| D-30 | Batch create (F-15) is all-or-nothing. |
+| D-31 | BR-07: at most two active bookings per student, at most one with the same advisor (Lab 7 change request #67). Replaces D-10. |
+| D-32 | A late-slot notification is created once, when the late slot is created. The list shows the slot's current data and whether it can still be booked. |
+| D-33 | Appointment summary counts (`slots`, `booked`, `open`, `cancelled`) and the upcoming list over own slots starting in the chosen Bangkok days; a range is at most 90 days. |
 
 ## 9. Questions and resolution
 

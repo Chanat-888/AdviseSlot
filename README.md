@@ -110,9 +110,18 @@ from "My bookings", `advisor1` opens it from the schedule and sees the student's
 `advisor2` gets "Booking not found." (F-04 to F-09), and `student2` cancels the booking
 (F-10). `advisor1` also creates several slots at once (F-15), deletes an Open slot (F-13)
 and edits one (F-12). `student1` filters `/slots` by advisor and by date, clears the filters,
-and sees the server's message for a bad date in the URL (F-16). A student opening
+and sees the server's message for a bad date in the URL (F-16). `student3` books one slot of
+each advisor, `advisor1` cancels one with a reason, `student3` cancels the other, and
+"My bookings" shows "Cancelled by you" and "Cancelled by Advisor One: <reason>"; `advisor1`
+then finds the cancelled row with the student's name on "History", and `advisor2`'s History shows
+"Cancelled by Student Three" (F-18). `advisor1` opens "Summary", which puts a default range in
+the URL, then a fixed range with the four counts, and a range with `to` before `from` that shows
+the server's message (F-17). For F-19 the step inserts a late slot of `advisor1` and
+one unread notification for `student1` with SQL (a late slot can only be created at certain
+times of day, D-23); `student1` sees the unread badge on "Notifications", finds the advisor,
+date and time on `/notifications`, clicks Mark as read, and the badge disappears. A student opening
 `/schedule` gets the 403 message.
-Before each run it empties the `Slot` and `Booking` tables of the test database and re-seeds
+Before each run it empties the `Slot`, `Booking` and `Notification` tables of the test database and re-seeds
 the slots, so it can run again. The HTML report is written to
 `e2e/playwright-report/` (gitignored).
 

@@ -127,6 +127,20 @@ export async function listOwnBookings(studentId: number, now: Date): Promise<Own
 }
 
 /**
+ * F-18 section 2, steps 4 to 6: the bookings on the advisor's own slots that are no longer Upcoming
+ * (Cancelled, or Passed by bookingStatus, D-24), soft-deleted slots included (D-29). Newest slot
+ * start first, ties by booking id descending. `now` is the server clock, passed in.
+ */
+export async function listAdvisorHistory(advisorId: number, now: Date): Promise<BookingDto[]> {
+  const bookings = await prisma.booking.findMany({
+    where: { slot: { advisorId } },
+    include: INCLUDE,
+    orderBy: [{ slot: { startAt: "desc" } }, { id: "desc" }],
+  });
+  return bookings.map((b) => toBookingDto(b, now)).filter((b) => b.status !== "Upcoming");
+}
+
+/**
  * F-09 section 2, steps 4 to 6. Returns null when there is no such booking or the caller is
  * neither its student nor its slot's advisor, so both cases give the same 404 (section 3.3).
  */

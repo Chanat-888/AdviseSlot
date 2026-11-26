@@ -1,5 +1,6 @@
 import type { Prisma, Slot } from "@prisma/client";
 import { prisma } from "../db.js";
+import { notifyLateSlots } from "./notifications.js";
 import { bookingDeadline, checkSlotStart, expandRange, isLateSlot, SLOT_MS, slotStatus, type SlotRuleCode } from "../domain/rules.js";
 
 // One slot as F-04 section 4.2 and F-05 section 4.2 return it.
@@ -53,9 +54,11 @@ export async function createSlot(advisorId: number, startAt: Date, now: Date): P
         select: { id: true },
       });
       if (overlap) return null;
-      return tx.slot.create({
+      const created = await tx.slot.create({
         data: { advisorId, startAt, endAt, createdAt: now, isLate: isLateSlot(startAt, now) },
       });
+      await notifyLateSlots(tx, [created], now); // F-19, same transaction
+      return created;
     });
     if (!slot) return { ok: false, code: "SLOT_OVERLAP" };
     return { ok: true, slot: toSlotDto(slot, null, now) };
@@ -113,6 +116,7 @@ export async function createSlotBatch(
         })),
       });
       rows.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+      await notifyLateSlots(tx, rows, now); // F-19, same transaction (D-30)
       return { ok: true, slots: rows.map((slot) => toSlotDto(slot, null, now)) };
     });
   } catch (err) {
