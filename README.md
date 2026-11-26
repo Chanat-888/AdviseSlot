@@ -114,7 +114,9 @@ and sees the server's message for a bad date in the URL (F-16). `student3` books
 each advisor, `advisor1` cancels one with a reason, `student3` cancels the other, and
 "My bookings" shows "Cancelled by you" and "Cancelled by Advisor One: <reason>"; `advisor1`
 then finds the cancelled row with the student's name on "History", and `advisor2`'s History shows
-"Cancelled by Student Three" (F-18). A student opening
+"Cancelled by Student Three" (F-18). `advisor1` opens "Summary", which puts a default range in
+the URL, then a fixed range with the four counts, and a range with `to` before `from` that shows
+the server's message (F-17). A student opening
 `/schedule` gets the 403 message.
 Before each run it empties the `Slot` and `Booking` tables of the test database and re-seeds
 the slots, so it can run again. The HTML report is written to

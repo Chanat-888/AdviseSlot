@@ -4,8 +4,8 @@
 |---|---|
 | Feature | F-17 Appointment summary |
 | Sprint | 3 |
-| Owner | Contract: Jeerasak Phisawong, reviewed by Chanat Dachkhumhang. Implementation: not planned for Deliverable 2 (contract only). |
-| Status | Contract draft. Implementation not started. |
+| Owner | Contract: Jeerasak Phisawong, reviewed by Chanat Dachkhumhang. Implementation: Jeerasak Phisawong (Final Delivery plan task S2), reviewed by Chanat Dachkhumhang. |
+| Status | Implemented (TEST-F17-01 to -06, the R-01 row and the E2E step pass). Awaiting review. |
 | Linked requirements | FR-17, BR-08, BR-09, NFR-03, NFR-05, NFR-07 (see section 1) |
 | Depends on | F-05 (`slotStatus`, D-24 statuses), F-10 and F-11 (cancelled bookings), F-13 (soft delete keeps history, D-29), F-16 (`bangkokDay`, PR #98) |
 | Needed by | none |
@@ -17,6 +17,7 @@
 |---|---|---|---|
 | 0.1 | 2026-11-23 | Jeerasak (drafted with an AI agent) | First contract, written before implementation, on the released Sprint 2 (`v0.2.0-sprint-2`). Awaiting team review. |
 | 0.2 | 2026-11-23 | Jeerasak (drafted with an AI agent) | Review of PR #100: the count definitions, `upcoming` limited to the range and the 90-day cap are recorded as D-33 (cited in the header, section 0 and section 3.1). The E2E step opens a fixed range from its URL instead of checking today's default range, so it no longer depends on the clock (a plain date on the UTC CI runner is yesterday between 00:00 and 07:00 Bangkok). TEST-F17-05 adds the object form `from[a]=`. |
+| 0.3 | 2026-11-26 | Jeerasak (drafted with an AI agent) | Status and owner after implementation. Section 8: the E2E step also clicks the "Summary" link and checks that the URL gets a `from` and `to` (the default range, without checking which dates). Section 9: the Deliverable 2 note is now history. |
 
 ## 0. What each count means
 
@@ -225,7 +226,7 @@ Setup "A's week" (all A's slots unless stated):
 
 R-01: `server/tests/r01.auth.test.ts` adds `GET /api/summary` to `PROTECTED` (with a valid `from` and `to`, so a 401 cannot be a 400).
 
-UI/E2E (`e2e/tests/journey.spec.ts`): advisor1 opens `/summary?from=2026-11-09&to=2026-11-15` (a fixed range given in the URL); the From and To inputs hold those two dates, and the page shows the four labels Slots, Booked, Cancelled, Open, each with a whole number. Then it opens `/summary?from=2026-11-20&to=2026-11-10` and sees "to must be on or after from." (NFR-07). The step never computes today and checks no exact counts, so it gives the same result at any time of day, on any runner time zone, and after any earlier journey step. The default range (today to today + 6) is covered by a manual check on `/summary` with no parameters, not by E2E.
+UI/E2E (`e2e/tests/journey.spec.ts`): advisor1 clicks "Summary" in the top bar and the URL gets a `from` and `to` (dates not checked); then advisor1 opens `/summary?from=2026-11-09&to=2026-11-15` (a fixed range given in the URL); the From and To inputs hold those two dates, and the page shows the four labels Slots, Booked, Cancelled, Open, each with a whole number. Then it opens `/summary?from=2026-11-20&to=2026-11-10` and sees "to must be on or after from." (NFR-07). The step never computes today and checks no exact counts, so it gives the same result at any time of day, on any runner time zone, and after any earlier journey step. The default range (today to today + 6) is covered by a manual check on `/summary` with no parameters, not by E2E.
 
 ### 8.1 TDD plan (when F-17 is built)
 
@@ -238,7 +239,7 @@ UI/E2E (`e2e/tests/journey.spec.ts`): advisor1 opens `/summary?from=2026-11-09&t
 - No paging and no export; the range is at most 90 days.
 - No count of Closed or ended-unbooked slots on its own (`slots` minus `booked` minus `open` gives it).
 - The upcoming list shows only the student's name; the reason of a cancelled booking is in F-18 (`/history`), not here.
-- Implementation is not part of Deliverable 2 (D2 needs one built Sprint 3 feature: F-16, #75).
+- Implementation was not part of Deliverable 2 (D2 needed one built Sprint 3 feature: F-16, #75); it was built for the Final Delivery (plan task S2).
 
 ## 10. Completion evidence
 
