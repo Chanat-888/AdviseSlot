@@ -5,11 +5,11 @@
 | Feature | F-17 Appointment summary |
 | Sprint | 3 |
 | Owner | Contract: Jeerasak Phisawong, reviewed by Chanat Dachkhumhang. Implementation: Jeerasak Phisawong (Final Delivery plan task S2), reviewed by Chanat Dachkhumhang. |
-| Status | Implemented (TEST-F17-01 to -06, the R-01 row and the E2E step pass). Awaiting review. |
+| Status | Done. Implemented (Issue #114): TEST-F17-01 to -06, the R-01 row and the E2E step pass. PR #115 merged into `sprint-3` by Chanat after review on 2026-11-26; ships in `v1.0.0`. |
 | Linked requirements | FR-17, BR-08, BR-09, NFR-03, NFR-05, NFR-07 (see section 1) |
 | Depends on | F-05 (`slotStatus`, D-24 statuses), F-10 and F-11 (cancelled bookings), F-13 (soft delete keeps history, D-29), F-16 (`bangkokDay`, PR #98) |
 | Needed by | none |
-| Related documents | `docs/srs.md` (v0.5), `docs/features.md`, `docs/system-sds.md` sections 4.1, 5, 5.1, 6, `docs/decisions.md` (D-17, D-20, D-24, D-29, D-33), `docs/sprints/sprint-1/F-05-view-own-slots.md`, `docs/sprints/sprint-3/F-16-filter-bookable-slots.md` section 3.2 |
+| Related documents | `docs/srs.md` (v1.0), `docs/features.md`, `docs/system-sds.md` sections 4.1, 5, 5.1, 6, `docs/decisions.md` (D-17, D-20, D-24, D-29, D-33), `docs/sprints/sprint-1/F-05-view-own-slots.md`, `docs/sprints/sprint-3/F-16-filter-bookable-slots.md` section 3.2 |
 
 ## Version history
 
@@ -18,6 +18,7 @@
 | 0.1 | 2026-11-23 | Jeerasak (drafted with an AI agent) | First contract, written before implementation, on the released Sprint 2 (`v0.2.0-sprint-2`). Awaiting team review. |
 | 0.2 | 2026-11-23 | Jeerasak (drafted with an AI agent) | Review of PR #100: the count definitions, `upcoming` limited to the range and the 90-day cap are recorded as D-33 (cited in the header, section 0 and section 3.1). The E2E step opens a fixed range from its URL instead of checking today's default range, so it no longer depends on the clock (a plain date on the UTC CI runner is yesterday between 00:00 and 07:00 Bangkok). TEST-F17-05 adds the object form `from[a]=`. |
 | 0.3 | 2026-11-26 | Jeerasak (drafted with an AI agent) | Status and owner after implementation. Section 8: the E2E step also clicks the "Summary" link and checks that the URL gets a `from` and `to` (the default range, without checking which dates). Section 9: the Deliverable 2 note is now history. |
+| 0.4 | 2026-11-26 | Chanat (drafted with an AI agent) | Final check for `v1.0.0` against the code on `sprint-3` `d12ecfd`: counts, validation order, messages and tests match. Status (Issue #114, PR #115 merged), SRS reference v1.0, section 8.1 title and section 10 evidence. No change to the contract. |
 
 ## 0. What each count means
 
@@ -228,7 +229,7 @@ R-01: `server/tests/r01.auth.test.ts` adds `GET /api/summary` to `PROTECTED` (wi
 
 UI/E2E (`e2e/tests/journey.spec.ts`): advisor1 clicks "Summary" in the top bar and the URL gets a `from` and `to` (dates not checked); then advisor1 opens `/summary?from=2026-11-09&to=2026-11-15` (a fixed range given in the URL); the From and To inputs hold those two dates, and the page shows the four labels Slots, Booked, Cancelled, Open, each with a whole number. Then it opens `/summary?from=2026-11-20&to=2026-11-10` and sees "to must be on or after from." (NFR-07). The step never computes today and checks no exact counts, so it gives the same result at any time of day, on any runner time zone, and after any earlier journey step. The default range (today to today + 6) is covered by a manual check on `/summary` with no parameters, not by E2E.
 
-### 8.1 TDD plan (when F-17 is built)
+### 8.1 TDD plan
 
 1. Red: TEST-F17-01 to -06 and the R-01 row. The route does not exist, so every request gets the 404 of the `/api` catch-all; the tests fail on their asserted 200/400/403, not on a compile error.
 2. Green: `summaryRouter` and the summary service.
@@ -243,4 +244,6 @@ UI/E2E (`e2e/tests/journey.spec.ts`): advisor1 clicks "Summary" in the top bar a
 
 ## 10. Completion evidence
 
-When built: failing-then-passing runs saved as `evidence/f17-red.txt` and `evidence/f17-green.txt`, `npm test` counts, the E2E run, PR link and reviewer, the F-17 Issue.
+- Red and green: `evidence/f17-red.txt`, `evidence/f17-green.txt` (server 26 files, 360 passed); E2E red and green: `evidence/f17-e2e-red.txt`, `evidence/f17-e2e.txt` (12 passed).
+- PR #115 (author Jeerasak, reviewed and merged by Chanat), Issue #114.
+- On the final `sprint-3` commit `d12ecfd` (merge of PR #117), CI run 45802912186: server 27 files, 377 passed, 0 failed, 0 skipped; E2E 13 passed.

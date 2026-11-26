@@ -4,13 +4,13 @@
 |---|---|
 | Feature | F-18 Cancellation history |
 | Sprint | 3 |
-| Owner | Contract and implementation: Chanat Dachkhumhang (Issue: Sprint 3 contracts F-18, F-19), reviewed by Jeerasak Phisawong. |
-| Status | Implemented (TEST-F18-01 to -06 pass). Awaiting review. |
+| Owner | Contract and implementation: Chanat Dachkhumhang (contract Issue #92, implementation Issue #112), reviewed by Jeerasak Phisawong. |
+| Status | Done. TEST-F18-01 to -06 pass. PR #113 merged into `sprint-3` by Jeerasak after review on 2026-11-26; ships in `v1.0.0`. |
 | Linked requirements | FR-18, BR-09, NFR-03 (see section 1) |
 | Scope | Student side: already delivered by F-08 + F-10/F-11 (`GET /api/bookings/mine` lists Cancelled bookings with the `cancellation` object); F-18 only adds the "Cancelled by you" label. Advisor side: new `GET /api/bookings/history` and `/history` page. |
 | Depends on | F-08, F-10, F-11 (cancel columns and the `cancellation` object, PR #76), F-13 (soft delete keeps history, D-29, PR #77), F-14 (a reschedule appears as a student cancel) |
 | Needed by | none |
-| Related documents | `docs/srs.md` (v0.5), `docs/system-sds.md` sections 4.1, 5.1, 6, `docs/decisions.md` (D-24, D-29), `docs/sprints/sprint-2/F-10-student-cancel.md` section 4.2, `docs/sprints/sprint-2/F-11-advisor-cancel.md`, `docs/sprints/sprint-2/F-14-reschedule.md` section 6 |
+| Related documents | `docs/srs.md` (v1.0), `docs/system-sds.md` sections 4.1, 5.1, 6, `docs/decisions.md` (D-24, D-29), `docs/sprints/sprint-2/F-10-student-cancel.md` section 4.2, `docs/sprints/sprint-2/F-11-advisor-cancel.md`, `docs/sprints/sprint-2/F-14-reschedule.md` section 6 |
 
 ## Version history
 
@@ -19,6 +19,7 @@
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, on the Sprint 2 contracts in PR #76 and #77. Awaiting team review. |
 | 0.2 | 2026-11-23 | Chanat (drafted with an AI agent) | Rebased on the released Sprint 2 (`v0.2.0-sprint-2`). F-10 already lists the student's Cancelled bookings on `/bookings` from `GET /api/bookings/mine`, so the endpoint is now advisor-only (a student gets 403) and the student side only adds the "Cancelled by you" label (AC-F18-06). AC-F18-01 now checks the existing student path. SRS reference v0.5. |
 | 0.3 | 2026-11-26 | Chanat (drafted with an AI agent) | Status line after implementation. Section 8.1: the red run of TEST-F18-02 to -05 fails on a 400, not a 404, because `GET /api/bookings/history` without the route is caught by `GET /api/bookings/:id` and `parseId("history")` refuses it. Section 9: the history query filters Upcoming in code (review of #113). |
+| 0.4 | 2026-11-26 | Chanat (drafted with an AI agent) | Final check for `v1.0.0` against the code on `sprint-3` `d12ecfd`: endpoint, order, messages, labels and tests match. Owner and status (Issues #92 and #112, PR #113 merged), SRS reference v1.0, section 10 evidence. No change to the contract. |
 
 ## 1. Linked requirements
 
@@ -177,4 +178,6 @@ TEST-F18-02 to -05 first, red (route missing: the asserted 200/403 fails on the 
 
 ## 10. Completion evidence
 
-Failing-then-passing runs, `npm test` output with counts, PR link and reviewer, Issue link.
+- Red and green: `evidence/f18-red.txt`, `evidence/f18-green.txt` (server 25 files, 340 passed); E2E red and green: `evidence/f18-e2e-red.txt`, `evidence/f18-e2e.txt` (11 passed).
+- Contract PR #93 (Issue #92), code PR #113 (author Chanat, reviewed and merged by Jeerasak), Issue #112.
+- On the final `sprint-3` commit `d12ecfd` (merge of PR #117), CI run 45802912186: server 27 files, 377 passed, 0 failed, 0 skipped; E2E 13 passed.
