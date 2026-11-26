@@ -6,6 +6,7 @@ import { BookingDetail } from "./BookingDetail";
 import { Bookings } from "./Bookings";
 import { History } from "./History";
 import { Login } from "./Login";
+import { Notifications, useUnreadCount } from "./Notifications";
 import { Schedule } from "./Schedule";
 import { Slots } from "./Slots";
 import { Summary } from "./Summary";
@@ -14,6 +15,7 @@ import { Summary } from "./Summary";
 function TopBar() {
   const { user, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
+  const unread = useUnreadCount(user?.role === "STUDENT"); // F-19 section 5
   if (!user) return null;
   async function onLogout() {
     setBusy(true);
@@ -35,6 +37,15 @@ function TopBar() {
           <>
             <NavLink to="/slots" className="nav-link">Slots</NavLink>
             <NavLink to="/bookings" className="nav-link">My bookings</NavLink>
+            <NavLink to="/notifications" className="nav-link">
+              Notifications
+              {unread > 0 && (
+                <span className="badge rounded-pill bg-danger ms-1">
+                  {unread}
+                  <span className="visually-hidden"> unread</span>
+                </span>
+              )}
+            </NavLink>
           </>
         ) : (
           <>
@@ -88,6 +99,7 @@ export function App() {
           <Route path="/schedule" element={<RequireLogin><Schedule /></RequireLogin>} />
           <Route path="/history" element={<RequireLogin><History /></RequireLogin>} />
           <Route path="/summary" element={<RequireLogin><Summary /></RequireLogin>} />
+          <Route path="/notifications" element={<RequireLogin><Notifications /></RequireLogin>} />
           <Route path="*" element={<RequireLogin><Home /></RequireLogin>} />
         </Routes>
         <Footer />

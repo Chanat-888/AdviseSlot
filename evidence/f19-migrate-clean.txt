@@ -1,0 +1,72 @@
+# F-19 migration check on a clean database: drop and recreate the development database, then migrate deploy and seed (twice, idempotent)
+# On feat/f19-late-slot-notification (1d46164); local Postgres on port 5435 (this worktree's own container). (2026-11-26 16:20 +0700)
+
+$ npx prisma migrate deploy
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "adviseslot", schema "public" at "localhost:5435"
+
+6 migrations found in prisma/migrations
+
+Applying migration `20261028165100_init`
+Applying migration `20261105000256_add_session`
+Applying migration `20261105064136_add_slot`
+Applying migration `20261105071741_add_booking`
+Applying migration `20261123070837_add_booking_cancel`
+Applying migration `20261126091653_add_notification`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261028165100_init/
+    └─ migration.sql
+  └─ 20261105000256_add_session/
+    └─ migration.sql
+  └─ 20261105064136_add_slot/
+    └─ migration.sql
+  └─ 20261105071741_add_booking/
+    └─ migration.sql
+  └─ 20261123070837_add_booking_cancel/
+    └─ migration.sql
+  └─ 20261126091653_add_notification/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+
+$ npx prisma db seed
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+
+The seed command has been executed.
+
+$ npx prisma db seed   (second run)
+Environment variables loaded from .env
+Running seed command `tsx prisma/seed.ts` ...
+Seeded 5 users; 15 slots in the database.
+
+The seed command has been executed.
+
+$ counts
+ users | slots | bookings | notifications 
+-------+-------+----------+---------------
+     5 |    15 |        2 |             0
+(1 row)
+
+                                         Table "public.Notification"
+  Column   |            Type             | Collation | Nullable |                  Default                   
+-----------+-----------------------------+-----------+----------+--------------------------------------------
+ id        | integer                     |           | not null | nextval('"Notification_id_seq"'::regclass)
+ studentId | integer                     |           | not null | 
+ slotId    | integer                     |           | not null | 
+ message   | text                        |           | not null | 
+ createdAt | timestamp(3) with time zone |           | not null | 
+ readAt    | timestamp(3) with time zone |           |          | 
+Indexes:
+    "Notification_pkey" PRIMARY KEY, btree (id)
+    "Notification_studentId_createdAt_idx" btree ("studentId", "createdAt")
+    "Notification_studentId_slotId_key" UNIQUE, btree ("studentId", "slotId")
+Foreign-key constraints:
+    "Notification_slotId_fkey" FOREIGN KEY ("slotId") REFERENCES "Slot"(id) ON UPDATE CASCADE ON DELETE RESTRICT
+    "Notification_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "User"(id) ON UPDATE CASCADE ON DELETE RESTRICT
+
