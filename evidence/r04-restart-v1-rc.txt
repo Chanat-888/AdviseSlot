@@ -1,0 +1,46 @@
+# TEST-R04-01 / AC-R04-01 / NFR-06, release-candidate check R4 (v1.0.0-rc)
+# Date: 2026-11-26T20:57:43+07:00   Commit: d12ecfd (sprint-3 head)   DB: container adviseslot-db-1, port 5433, database adviseslot_rc1 (new, migrated, seeded)
+6 migrations found in prisma/migrations
+The following migration(s) have been applied:
+All migrations have been successfully applied.
+Seeded 5 users; 15 slots in the database.
+# 1. start server
+health: {"status":"ok","db":"up"}
+# 2. log in, cancel Student Three's seeded booking, add one notification, mark it read
+login student3 -> {"id":5,"name":"Student Three","email":"student3@example.test","role":"STUDENT"}
+login advisor1 -> {"id":1,"name":"Advisor One","email":"advisor1@example.test","role":"ADVISOR"}
+login advisor2 -> {"id":2,"name":"Advisor Two","email":"advisor2@example.test","role":"ADVISOR"}
+booking to cancel: 2
+cancel 2 -> {"id":2,"status":"Cancelled","createdAt":"2026-11-26T13:57:47.185Z","slot":{"id":10,"startAt":"2026-11-30T03:00:00.000Z","endAt":"2026-11-30T03:30:00.000Z"},"advisor":{"id":2,"name":"Advisor Two"},"student":{"id":5,"name":"Student Three"},"cancellation":{"cancelledAt":"2026-11-26T13:57:49.865Z","cancelledBy":{"id":5,"name":"Student Three","role":"STUDENT"},"reason":null}}
+notification 1 for slot 2; mark read -> {"id":1,"message":"R4 restart check: a late slot was added","createdAt":"2026-11-26T13:57:50.393Z","readAt":"2026-11-26T13:57:50.843Z","slot":{"id":2,"startAt":"2026-11-30T02:30:00.000Z","endAt":"2026-11-30T03:00:00.000Z"},"advisor":{"id":1,"name":"Advisor One"},"slotAvailable":true}
+mine-before: [{"id":2,"status":"Cancelled","createdAt":"2026-11-26T13:57:47.185Z","slot":{"id":10,"startAt":"2026-11-30T03:00:00.000Z","endAt":"2026-11-30T03:30:00.000Z"},"advisor":{"id":2,"name":"Advisor Two"},"cancellation":{"cancelledAt":"2026-11-26T13:57:49.865Z","cancelledBy":{"id":5,"name":"Student Three","role":"STUDENT"},"reason":null}}]
+
+history-before: [{"id":2,"status":"Cancelled","createdAt":"2026-11-26T13:57:47.185Z","slot":{"id":10,"startAt":"2026-11-30T03:00:00.000Z","endAt":"2026-11-30T03:30:00.000Z"},"advisor":{"id":2,"name":"Advisor Two"},"student":{"id":5,"name":"Student Three"},"cancellation":{"cancelledAt":"2026-11-26T13:57:49.865Z","cancelledBy":{"id":5,"name":"Student Three","role":"STUDENT"},"reason":null}}]
+
+summary-before: {"from":"2026-11-26","to":"2026-12-09","counts":{"slots":9,"booked":1,"cancelled":0,"open":8},"upcoming":[{"id":1,"slot":{"id":1,"startAt":"2026-11-30T02:00:00.000Z","endAt":"2026-11-30T02:30:00.000Z"},"student":{"id":4,"name":"Student Two"}}]}
+
+notif-before: {"unreadCount":0,"items":[{"id":1,"message":"R4 restart check: a late slot was added","createdAt":"2026-11-26T13:57:50.393Z","readAt":"2026-11-26T13:57:50.843Z","slot":{"id":2,"startAt":"2026-11-30T02:30:00.000Z","endAt":"2026-11-30T03:00:00.000Z"},"advisor":{"id":1,"name":"Advisor One"},"slotAvailable":true}]}
+
+filter-before: [{"id":2,"startAt":"2026-11-30T02:30:00.000Z","endAt":"2026-11-30T03:00:00.000Z","isLate":false,"bookingDeadline":"2026-11-29T11:00:00.000Z","advisor":{"id":1,"name":"Advisor One"}},{"id":3,"startAt":"2026-11-30T07:00:00.000Z","endAt":"2026-11-30T07:30:00.000Z","isLate":false,"bookingDeadline":"2026-11-30T05:00:00.000Z","advisor":{"id":1,"name":"Advisor One"}},{"id":4,"startAt":"2026-12-01T02:00:00.000Z","endAt":"2026-12-01T02:30:00.000Z","isLate":false,"bookingDeadline":"2026-11-30T11:00:00.000Z","advisor":{"id":1,"name":"Advisor One"}},{"id":5,"startAt":"2026-12-01T02:30:00.000Z","endAt":"20
+
+# 3. stop server, restart db container
+server stopped (no answer)
+adviseslot-db-1
+db health: healthy
+# 4. start server again
+health: {"status":"ok","db":"up"}
+# 5. log in again, repeat requests
+login student3 -> {"id":5,"name":"Student Three","email":"student3@example.test","role":"STUDENT"}
+login advisor1 -> {"id":1,"name":"Advisor One","email":"advisor1@example.test","role":"ADVISOR"}
+login advisor2 -> {"id":2,"name":"Advisor Two","email":"advisor2@example.test","role":"ADVISOR"}
+# 6. diff
+mine: identical
+history: identical
+summary: identical
+notif: identical
+filter: identical
+cancellation object present after restart
+notification readAt present after restart
+server stopped (no answer)
+
+# Result: PASS
