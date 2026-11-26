@@ -5,7 +5,7 @@
 | Course | CPE 334, Semester 1/2026, Group Project |
 | Release | `v1.0.0-rc` (tag on `main`, see section 6). The release candidate for the Final Delivery, re-tested by Team Top 2 before `v1.0.0` (Final Delivery plan S6). |
 | Tested commit | `sprint-3` at `d12ecfd` (merge of PR #117). This release prep PR adds only docs and evidence, no code. |
-| Issues | this release (Issue to be created), #110 (CI on `sprint-3`), #112 (F-18), #114 (F-17), #116 (F-19) |
+| Issues | #118 (this release), #110 (CI on `sprint-3`), #112 (F-18), #114 (F-17), #116 (F-19) |
 | Related documents | `docs/sprints/sprint-3/release-notes-rc.md` (previous release `v0.3.0-rc`), `docs/sprints/sprint-3/final-delivery-plan.md` (S6, S3), `docs/sprints/sprint-2/definition-of-done.md` (release checks), `docs/labs/lab-05/deployment.md` |
 
 ## Version history
