@@ -57,7 +57,7 @@ Script executed successfully.
       369 |     await nav.getByRole("link", { name: /^Notifications/ }).click();
       370 |     await expect(page).toHaveURL(/\/notifications$/);
       371 |     const row = page.getByRole("listitem").filter({ hasText: one.name }).filter({ hasText: `${formatDate(startAt)}, 08:00-08:30` });
-        at C:\Users\Pan\Desktop\Software project\AdviseSlot-f19\e2e\tests\journey.spec.ts:368:77
+        at <repo>\e2e\tests\journey.spec.ts:368:77
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\journey-E2E-journey-Sprint-eff61--and-marks-it-as-read-F-19--chromium\test-failed-1.png
