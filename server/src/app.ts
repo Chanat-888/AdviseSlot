@@ -7,6 +7,7 @@ import { advisorsRouter } from "./routes/advisors.js";
 import { authRouter } from "./routes/auth.js";
 import { bookingsRouter } from "./routes/bookings.js";
 import { slotsRouter } from "./routes/slots.js";
+import { summaryRouter } from "./routes/summary.js";
 import { serveClient } from "./static.js";
 
 export const app = express();
@@ -45,6 +46,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/slots", slotsRouter);
 app.use("/api/bookings", bookingsRouter);
 app.use("/api/advisors", advisorsRouter);
+app.use("/api/summary", summaryRouter); // F-17 (Sprint 3)
 
 // R-02: an unknown /api path (or wrong method) gets the SDS error shape, not Express's HTML page.
 app.use("/api", (_req, res) => {
