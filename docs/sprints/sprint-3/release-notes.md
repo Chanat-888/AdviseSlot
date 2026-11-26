@@ -162,8 +162,9 @@ Carried over from earlier releases:
 ## 6. AI use
 
 Code, tests and docs were drafted with AI agents (Claude Code) and reviewed, run and committed by
-us. Each version-history row that was AI-drafted says so. Agents did not merge PRs or post to
-GitHub without the author reading the text first (`docs/workflow.md`).
+us. Each version-history row that was AI-drafted says so. Every PR was merged by the teammate who
+reviewed it (section 1), and nothing was posted to GitHub without the author reading the text
+first (`docs/workflow.md`).
 
 ## 7. Release record
 

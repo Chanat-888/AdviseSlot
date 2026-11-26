@@ -284,7 +284,7 @@ This design is the same as the TokTickIT Lab 3 authentication, adapted to two ro
 | `NODE_ENV` | Server | `development` or `production` |
 | `APP_TIMEZONE` | Server rule calculations | `Asia/Bangkok` |
 | `SEED_DEMO_PASSWORD` | Seed script | A local value of 12 or more characters (GCP: Secret Manager) |
-| `CLIENT_DIST` | Server, production only (optional) | Path of the built client; default `../client/dist` relative to `server/dist` |
+| `CLIENT_DIST` | Server, production only (optional) | Path of the built client; default `../../client/dist` relative to `server/dist` (`client/dist` at the repo root) |
 | `APP_COMMIT` | Server, `GET /api/version` | Set by `deploy/release.sh` on Cloud Run; `dev` when unset |
 | `VITE_API_URL` | Client build, development only | `http://localhost:3000`. The Docker image is built without it and calls the API on the same origin. |
 
@@ -304,7 +304,7 @@ image below is built in Lab 5, which also covers NFR-09.
 | Database | Cloud SQL for PostgreSQL 17. Durable storage outside the container. |
 | Secrets | Secret Manager for `DATABASE_URL`. |
 | Images | Artifact Registry. |
-| CI/CD | GitHub Actions. `ci-docker.yml`: on each PR and push to the sprint branch, install, build, run the server tests and the E2E journey, and build the Docker image; a failing required check blocks the merge. `deploy.yml`: on every push to `main`, run that CI first, then build and push the image tagged with the commit SHA, run the migrate job (`prisma migrate deploy`), update the Cloud Run service and smoke-test the public URL. There is no manual approval step; the GitHub environment `demo` only allows `main`. A manual run with an existing image tag rolls back. |
+| CI/CD | GitHub Actions. `ci-docker.yml`: on each PR and push to the sprint branch, install, build, run the server tests and the E2E journey, and build the Docker image. On `main` a ruleset requires one approval and a green `test-and-docker`; on `sprint-N` the same is our team rule (`docs/workflow.md`). `deploy.yml`: on every push to `main`, run that CI first, then build and push the image tagged with the commit SHA, run the migrate job (`prisma migrate deploy`), update the Cloud Run service and smoke-test the public URL. There is no manual approval step; the GitHub environment `demo` only allows `main`. A manual run with an existing image tag rolls back. |
 
 The exact GCP resources follow the course's Lab 5 instructions. This plan only fixes
 the shape: stateless container, external managed database, secrets outside Git.
@@ -324,7 +324,8 @@ AdviseSlot/
 Branches: `main` (accepted releases), `sprint-N` (integration branch of the current
 sprint, `sprint-3` for the final release), and one work branch per Issue created from
 `sprint-N` (`docs/workflow.md`). Each work branch is merged by the teammate after one
-approving review.
+approving review. On `main` a ruleset requires one approval and a green `test-and-docker`;
+on `sprint-N` the same is our team rule.
 
 ## 11. Open items
 
