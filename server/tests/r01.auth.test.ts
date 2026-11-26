@@ -29,6 +29,7 @@ const PROTECTED: Endpoint[] = [
   { method: "get", path: "/api/bookings/1", route: "/api/bookings/:id" },
   { method: "post", path: "/api/bookings/1/cancel", route: "/api/bookings/:id/cancel", body: {} }, // F-10, F-11 (Sprint 2)
   { method: "post", path: "/api/bookings/1/reschedule", route: "/api/bookings/:id/reschedule", body: { newSlotId: 1 } }, // F-14 (Sprint 2)
+  { method: "get", path: "/api/summary?from=2026-11-09&to=2026-11-13", route: "/api/summary" }, // F-17 (Sprint 3)
 ];
 
 // Routes that are deliberately open (SDS section 5.1).
