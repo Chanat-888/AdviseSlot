@@ -5,7 +5,7 @@
 | Feature | F-19 Late-slot notification |
 | Sprint | 3 |
 | Owner | Contract and implementation: Chanat Dachkhumhang (Issue: Sprint 3 contracts F-18, F-19), reviewed by Jeerasak Phisawong. |
-| Status | Contract draft. Implementation not started. |
+| Status | Implemented (TEST-F19-01 to -07 and the E2E step pass). Awaiting review. |
 | Linked requirements | FR-19, BR-16 (notification), BR-09, NFR-03 (see section 1) |
 | Depends on | F-04 (single create, `isLate`), F-15 (batch create, D-30, PR #77), F-12 (edit does not notify, D-28, PR #77), F-13 (soft delete, D-29) |
 | Needed by | none |
@@ -18,6 +18,7 @@
 | 0.1 | 2026-11-22 | Chanat (drafted with an AI agent) | First contract, written before implementation, on the Sprint 2 contracts in PR #76 and #77. Records D-32. Awaiting team review. |
 | 0.2 | 2026-11-23 | Chanat (drafted with an AI agent) | Rebased on the released Sprint 2 (`v0.2.0-sprint-2`). The notification decision is D-32 (D-31 is now the Lab 7 BR-07 decision) and is recorded in `docs/decisions.md`. SRS reference v0.5. |
 | 0.3 | 2026-11-23 | Chanat (drafted with an AI agent) | Review of PR #93: the E2E step no longer creates a late slot through the UI, because E2E runs on the real clock and a late slot exists only on a weekday morning between 18:00 the day before and start - 2 h (D-23), so the step would fail at other times. The E2E setup now inserts a late slot and its notification with Prisma; the step checks only the student's badge, `/notifications` and Mark as read. Creation, rejection (`SLOT_UNBOOKABLE`) and the transaction rule stay covered by the API tests with a fake clock. |
+| 0.4 | 2026-11-26 | Chanat (drafted with an AI agent) | Status line after implementation. Section 8: all API tests are in `server/tests/notifications.test.ts` (not split into the F-04 / F-15 test files), so the three-student fixture and the per-student checks are in one place; the tests read notifications only through `GET /api/notifications`, so the red run fails on 404, not on a missing Prisma model. TEST-F19-03 adds a batch of late slots rejected inside the transaction (`SLOT_OVERLAP`), the real rollback case; the Thu 17:00 batch is rejected before the transaction. A section 3.1 case checks the 400 for a bad id. |
 
 ## 0. Decision D-32: what a notification shows after the slot changes
 
@@ -199,13 +200,13 @@ model Notification {
 
 ## 8. Software Test Specification (STS)
 
-Test files: `server/tests/notifications.test.ts` (API), plus creation cases added to `server/tests/slots.create.test.ts` and `server/tests/slots.batch.test.ts`. Fake clock, Asia/Bangkok, now = Mon 9 Nov 19:00 unless stated (so morning slots on Tue are late). Each test creates its own students and counts them, so the expected row count does not depend on the seed.
+Test file: `server/tests/notifications.test.ts` (API, creation cases included; v0.4). Fake clock, Asia/Bangkok, now = Mon 9 Nov 19:00 unless stated (so morning slots on Tue are late). Each test creates its own students and counts them, so the expected row count does not depend on the seed.
 
 | TEST | AC | Level | Precondition / input | Action | Expected |
 |---|---|---|---|---|---|
 | TEST-F19-01 | AC-F19-01 | API | Advisor A; students S1, S2, S3 (and the count N of all students). | A creates Tue 10 Nov 09:00 (late); A creates Thu 12 Nov 10:00 (normal). | First: N rows for the slot, one per student, message "… on Tue 10 Nov at 09:00.". Second: 0 rows. |
 | TEST-F19-02 | AC-F19-02 | API | Now Tue 07:00. | A creates Tue 09:00 (late, exactly 2 h). | 422 `SLOT_UNBOOKABLE`; slot and notification counts unchanged. |
-| TEST-F19-03 | AC-F19-03 | API | A logged in. | Batch Tue 11:00–13:00; then a batch Thu 17:00–18:30 (rejected, F-15). | 2 × N new rows (for the 11:00 and 11:30 slots); then 0 new rows. |
+| TEST-F19-03 | AC-F19-03 | API | A logged in. | Batch Tue 11:00–13:00; then a batch Thu 17:00–18:30 (rejected, F-15). Separately: A's late Tue 10:00, then a batch Tue 08:30–10:30 (three late slots, rejected `SLOT_OVERLAP` inside the transaction). | 2 × N new rows (for the 11:00 and 11:30 slots); then 0 new rows. Overlap case: 409, only the Tue 10:00 slot and its N rows. |
 | TEST-F19-04 | AC-F19-04 | API | A's normal Wed 11 Nov 09:00 and a notified late Tue 10 Nov 09:00. | `PATCH` Wed → Tue 10:00 (now late); `PATCH` Tue 09:00 → Tue 11:00; S1 `GET`. | 0 new rows; S1's notification shows `startAt` Tue 11:00. |
 | TEST-F19-05 | AC-F19-05 | API | Three notified late slots X, Y, Z. S1 books X; A deletes Y; Z is open. | S1 `GET` at Mon 19:30; then at Tue 07:00 (Z's deadline). | X false, Y false, Z true; then Z false. |
 | TEST-F19-06 | AC-F19-06 | API | S1 has notifications n1 (older) and n2 (newer), both unread. | `GET`; `POST /read` n1 twice (second at a later time); `GET`. | n2 first, `unreadCount` 2; both POSTs 200 with the same `readAt`; `unreadCount` 1. |
