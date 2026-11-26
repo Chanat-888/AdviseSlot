@@ -1,0 +1,56 @@
+# Release candidate v1.0.0-rc post-deploy check (DoD R5, R7, R8, #118)
+# Date: 2026-11-26/27 (ICT)   Release: PR #122 merged as f567fb7 by Chanat, tag v1.0.0-rc   URL: https://adviseslot-nfnam6jppq-as.a.run.app
+
+## R5 fresh clone (before the merge, reviewer Chanat, on PR #122)
+Fresh clone of sprint-3 at d12ecfd, README steps on an empty database: 6 migrations (add_notification last),
+seed 5 users / 15 slots, server 27 files / 377 passed, E2E 13 passed. Only docs/ and evidence/ changed after d12ecfd.
+Before the merge, sync PR #125 (main into sprint-3, no file change) made #122 up to date for the main ruleset.
+
+## R7 GCP deploy: run https://github.com/Chanat-888/AdviseSlot/actions/runs/45858377155 (success)
+test job: test-and-docker on f567fb7 (server 27 files / 377 passed; migrations applied on a clean CI database)
+image tag: f567fb76e4f40c049ab49090a7ce8f0f41eb3bc1
+image digest: sha256:fef02769efa422dd0bc0c3eb50d6fe6070563ca2f7341c48f0181c25ba170c7e
+migrate job: execution adviseslot-migrate-cg2fz completed (applies 20261126091653_add_notification, then the idempotent seed)
+Cloud Run revision: adviseslot-00008-8cj, 100% of traffic
+smoke test: PASS /api/health, /api/ready, /, /api/slots/bookable, /api/version (login SKIP: smoke credentials not configured)
+
+## R8 post-deploy (logged out)
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/version
+{"commit":"f567fb76e4f40c049ab49090a7ce8f0f41eb3bc1"}
+$ curl https://adviseslot-nfnam6jppq-as.a.run.app/api/ready
+{"status":"ready","db":"up"}
+$ curl .../api/summary?from=2026-11-16&to=2026-12-04    (logged out, expect 401; new in F-17)
+{"error":{"code":"UNAUTHENTICATED","message":"You are not logged in."}}  HTTP 401
+$ curl .../api/bookings/history                          (logged out, expect 401; new in F-18)
+{"error":{"code":"UNAUTHENTICATED","message":"You are not logged in."}}  HTTP 401
+$ curl .../api/notifications                             (logged out, expect 401; new in F-19)
+{"error":{"code":"UNAUTHENTICATED","message":"You are not logged in."}}  HTTP 401
+Footer on every page: "AdviseSlot version f567fb7" = /api/version above.
+
+## Sprint 3 paths on the live site (Jeerasak logged in; pages opened and captured by an AI agent)
+Seed users. Screenshots in evidence/post-deploy-v1-rc/, 1920x1080, each with the footer f567fb7.
+
+Student One:
+1-student-bookings-cancelled-by-you.png  My bookings: Passed Wed 25 Nov 10:00 (Advisor Two), Wed 25 Nov 09:00 (Advisor One),
+                                         Tue 17 Nov 13:30 (Advisor Two); Cancelled Tue 24 Nov 11:00 (Advisor One) with
+                                         "Cancelled by you" (F-18, AC-F18-06). These bookings were made before this release,
+                                         so the data survived the redeploy and the add_notification migration.
+2-student-notifications.png              Notifications link in the top bar and the /notifications page (F-19): "No
+                                         notifications." Expected: no late slot was created since F-19 went live.
+3-student-summary-403.png                /summary as a student: "Only advisors have an appointment summary."
+4-student-history-403.png                /history as a student: "Only advisors have a booking history."
+API in the same session (backend check, not only the UI):
+  GET /api/summary?from=2026-11-16&to=2026-12-04 -> 403 FORBIDDEN_ROLE: Only advisors have an appointment summary.
+  GET /api/bookings/history                      -> 403 FORBIDDEN_ROLE: Only advisors have a booking history.
+
+Advisor One:
+5-advisor-summary.png                    /summary?from=2026-11-16&to=2026-12-04 (F-17): Slots 34, Booked 5, Cancelled 1,
+                                         Open 9; Upcoming Fri 27 Nov 14:00-14:30 Student Two.
+6-advisor-history.png                    /history (F-18): Wed 25 Nov 09:00 Student One Passed; Tue 24 Nov 14:00 Student Two
+                                         Passed; Tue 24 Nov 11:00 Student One Cancelled "Cancelled by Student One";
+                                         Mon 23 Nov 09:00 and Mon 16 Nov 09:00 Student Two Passed. The cancelled row is the
+                                         same booking that Student One sees as "Cancelled by you" in screenshot 1.
+API in the same session:
+  GET /api/notifications -> 403 FORBIDDEN_ROLE: Only students have notifications.
+
+# Result: PASS (R7 deploy with migration, R8 version/footer, live F-17, F-18, F-19 paths, role checks on the backend)
