@@ -9,6 +9,7 @@ Theme: 1 Appointment & Scheduling — student office-hour advising.
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-27 | Jeerasak (drafted with an AI agent) | First version: Lab 6 cases UAT-01 to UAT-05 updated for BR-07 (D-31, Lab 7), new cases UAT-06 to UAT-10 for Sprint 2 and 3. |
+| 0.2 | 2026-11-27 | Jeerasak (drafted with an AI agent) | Review of PR #127 and findings #129 (Team Top 2): UAT-02 step 4, UAT-03 step 6 and UAT-07 step 5 now expect what the app does; section 2 notes the sheet assumes a fresh seed; section 5 lists the 2-booking limit and the booked-slot delete as covered by automated tests. |
 
 ## 1. Release under test
 
@@ -38,6 +39,8 @@ All data is synthetic. The shared demo password is sent privately; it is not in 
 | STU3 | student3@example.test | Student ("Student Three") |
 
 **Fresh data before the session:** on the morning of the test, the Product Team runs the `adviseslot-migrate` Cloud Run job (migrate + seed). The seed adds slots on the 3 weekdays starting 2 days later (ADV1 09:00, 09:30, 14:00; ADV2 10:00, 13:30) and gives STU2 one upcoming booking with Advisor One and STU3 one with Advisor Two. Then the Product Team checks that STU1 has **no** upcoming booking (cancel it in the app if needed).
+
+The cases assume this fresh seed. Without it, the seeded STU2 and STU3 bookings may already be in the past on the test day, so the Upcoming lists in UAT-02 and UAT-03 differ from the expected results.
 
 Date notation: **D** = the first weekday (Mon–Fri) that is at least 2 days after the test day. **D+1** = the next weekday after D. Write the actual dates in the result.
 
@@ -75,7 +78,7 @@ Times are Asia/Bangkok. Use two browsers (or one normal and one private window) 
 | 1 | Log in as STU2. Open **My bookings**, write down the Upcoming list. | 1 upcoming booking with Advisor One. |
 | 2 | Open **Slots**, choose Advisor = Advisor One, click **Book** on any row. | Red alert "You already have an upcoming booking with this advisor." |
 | 3 | Choose Advisor = Advisor Two, click **Book** on any row. | "Booking confirmed." (second booking, other advisor). |
-| 4 | Open **Slots**, clear the filters, click **Book** on any other row. | Red alert "You already have 2 upcoming bookings." |
+| 4 | Open **Slots**, clear the filters, click **Book** on any other row. | Red alert "You already have an upcoming booking with this advisor." No third booking. (Every slot belongs to Advisor One or Two, and the same-advisor check runs first, so the 2-booking message can't be reached in the UI; see section 5.) |
 | 5 | Open **My bookings**. | Exactly 2 Upcoming: the one from step 1 and the one from step 3. |
 | 6 | Open the step-3 booking, click **Cancel booking**, then **Yes**. | "Booking cancelled." My bookings shows it under Cancelled with "Cancelled by you". Upcoming is back to the step-1 list. |
 | 7 | Logout. Log in as ADV2, open **Schedule**. Under "Create a slot" choose Date = D, Start time = 10:00, click **Create**. | Red alert "This slot overlaps one of your slots." |
@@ -94,7 +97,7 @@ Times are Asia/Bangkok. Use two browsers (or one normal and one private window) 
 | 3 | As STU3, open `<URL>/schedule`. | "Only advisors can view their schedule." No slot list. |
 | 4 | As STU3, open `<URL>/summary` and `<URL>/history`. | "Only advisors have an appointment summary." and "Only advisors have a booking history." No data. |
 | 5 | Logout. Log in as ADV2 (not the slot's advisor). Open STU2's booking URL. | "Booking not found." |
-| 6 | As ADV2, open `<URL>/slots` and `<URL>/notifications`. | "Only students can view bookable slots." and "Only students have notifications." |
+| 6 | As ADV2, open `<URL>/slots` and `<URL>/notifications`. | "Only students can list advisors." (no slot data shown) and "Only students have notifications." |
 | 7 | Logout. Log in as STU2, open the booking. | Unchanged (same When, Advisor One, Upcoming). |
 
 ### UAT-04 Persistence and session (unchanged)
@@ -146,7 +149,7 @@ Times are Asia/Bangkok. Use two browsers (or one normal and one private window) 
 | 2 | Click **Edit** on D+1 15:30, change the start time to 16:30, **Save**. | "Slot updated: <D+1>, 16:30-17:00." |
 | 3 | Click **Delete** on D+1 16:30, then confirm **Delete**. | "Slot deleted." The row is gone after a reload. |
 | 4 | Logout. Log in as STU3, book D+1 15:00 with Advisor One. | "Booking confirmed." |
-| 5 | Logout. Log in as ADV1, try **Delete** on D+1 15:00 (now Booked). | Red alert "This slot has a booking. Cancel the booking first." The slot stays. |
+| 5 | Logout. Log in as ADV1, open **Schedule**, look at D+1 15:00 (now Booked). | The Booked row shows no **Edit** or **Delete** button, only the "Student Three" link. The slot stays. |
 | 6 | Click "Student Three" on D+1 15:00 → **Cancel booking**, leave the reason empty (or only spaces). | **Confirm** stays disabled; the booking stays Upcoming (the reason is required, BR-12). |
 | 7 | Type the reason "UAT: advisor away", **Confirm**. | "Booking cancelled." The reason is shown. |
 | 8 | Logout. Log in as STU3, **My bookings**. | D+1 15:00 under Cancelled with "Cancelled by Advisor One: UAT: advisor away". |
@@ -201,7 +204,7 @@ Times are Asia/Bangkok. Use two browsers (or one normal and one private window) 
 | Notifications | UAT-10 |
 | Extra | UAT-05 (authentication) |
 
-Not covered manually (time-dependent, covered by automated tests at `f567fb7`): the 2-hour session expiry, booking deadlines at 18:00 / 2 h, the 12-hour student cancel limit (BR-11), and concurrent bookings.
+Not covered manually (time-dependent, covered by automated tests at `f567fb7`): the 2-hour session expiry, booking deadlines at 18:00 / 2 h, the 12-hour student cancel limit (BR-11), and concurrent bookings. Also not reachable in the UI, covered by automated tests: the 2-upcoming-bookings limit (`ACTIVE_BOOKING_LIMIT`, `bookings.create.test.ts`) and deleting a booked slot (409, `slots.delete.test.ts`).
 
 ## 6. Result sheet (UAT Team fills)
 
