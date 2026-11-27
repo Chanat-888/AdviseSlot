@@ -31,7 +31,7 @@ docker-compose.yml   Local PostgreSQL 17 for development
    cd server
    cp .env.example .env
    cp .env.test.example .env.test
-   npm install
+   npm ci
    npx prisma migrate dev
    npx prisma db seed
    ```
@@ -59,7 +59,7 @@ docker-compose.yml   Local PostgreSQL 17 for development
    ```bash
    cd client
    cp .env.example .env
-   npm install
+   npm ci
    ```
 
 ## Run
@@ -71,7 +71,8 @@ cd server && npm run dev     # API on http://localhost:3000
 cd client && npm run dev     # UI on http://localhost:5173
 ```
 
-The page at http://localhost:5173 shows "API ok, database up" when everything is connected.
+Open http://localhost:5173. The login page appears; log in with one of the seeded accounts
+above and the `SEED_DEMO_PASSWORD` from `server/.env`.
 
 ## Test
 
@@ -92,7 +93,7 @@ The database container must be running and `server/.env.test` must exist (see Se
 
 ```bash
 cd e2e
-npm install
+npm ci
 npx playwright install chromium    # first time only
 npm test
 ```
@@ -136,8 +137,9 @@ cd ../server && npm ci && npm run build   # writes server/dist
 NODE_ENV=production DATABASE_URL=... node dist/index.js
 ```
 
-`CLIENT_DIST` overrides where the client build is read from (default `../client/dist`
-relative to `server/dist`). Sessions are stored in PostgreSQL (`Session` table), so any
+`CLIENT_DIST` overrides where the client build is read from (default: `client/dist` at the
+repository root, i.e. `../../client/dist` from the built `server/dist/app.js`).
+Sessions are stored in PostgreSQL (`Session` table), so any
 number of instances can serve the same user. `GET /api/health` is a liveness check and
 `GET /api/ready` returns 200 only when the database answers (503 otherwise).
 
