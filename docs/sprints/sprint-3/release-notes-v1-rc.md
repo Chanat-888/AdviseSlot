@@ -13,6 +13,7 @@
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-11-26 | Jeerasak (drafted with an AI agent) | First release notes for the Final Delivery release candidate. Awaiting team review. |
+| 0.2 | 2026-11-27 | Jeerasak (drafted with an AI agent) | Review of PR #119 and #122: section 1 lists #119, #121 and the sync PR #125; section 3 fills in R5 to R8 after the release (#122, `f567fb7`, tag `v1.0.0-rc`, `evidence/post-deploy-v1-rc.txt`) and adds R9 (rollback); section 5 uses the AI-use wording of the `v1.0.0` notes (#121). |
 
 ## 1. What is in this release
 
@@ -27,6 +28,9 @@ Sprint 3 features are now built, tested and merged into `sprint-3`.
 | F-18 Cancellation history: code, tests, E2E step | FR-18, BR-09, NFR-03 | #112 | #113 | Chanat | Jeerasak |
 | F-17 Appointment summary: code, tests, E2E step | FR-17, BR-08, BR-09, NFR-03, NFR-05, NFR-07 | #114 | #115 | Jeerasak | Chanat |
 | F-19 Late-slot notification: code, tests, E2E step | FR-19, BR-16 (notification), BR-09, NFR-03 | #116 | #117 | Chanat | Jeerasak |
+| These release notes and the RC evidence (R2, R3, R4) | | #118 | #119 | Jeerasak | Chanat |
+| Final SRS, features and SDS v1.0, F-16 to F-19 contracts, `v1.0.0` notes draft | | #120 | #121 | Chanat | Jeerasak |
+| Sync: `main` into `sprint-3`, so the release PR #122 is up to date (no file change) | | #118 | #125 | Jeerasak | Chanat |
 
 **Schema migration:** one new migration since `v0.3.0-rc`, `20261126091653_add_notification`
 (F-19, a new `Notification` table). `deploy.yml` applies it with the migrate job before the new
@@ -60,18 +64,19 @@ The Sprint 2 DoD release checks (section 3), applied to the candidate:
 | R2 | E2E journey passes | Passed (13/13), including the F-18, F-17 and F-19 steps | `evidence/release-v1-rc-tests.txt` |
 | R3 | Build and tests on the release commit | Passed on `d12ecfd` | `evidence/release-v1-rc-tests.txt` |
 | R4 | Restart check (TEST-R04-01) | Passed on a new, migrated, seeded database: a Cancelled booking with its `cancellation`, the advisor's history (F-18), the summary (F-17), a read notification (F-19) and the F-16 filtered list read the same before and after a server stop and a database container restart | `evidence/r04-restart-v1-rc.txt` |
-| R5 | Fresh clone follows the README | To be done by the reviewer (Chanat) on the release PR | Release PR review |
-| R6 | Release PR reviewed, CI green, merged by the teammate, tagged | After this PR | Section 6 |
-| R7 | GCP deploy | After the release PR merges (`deploy.yml`) | Deploy run link in the Final Delivery PDF |
-| R8 | Post-deploy check | After the deploy | Post-deploy evidence PR |
+| R5 | Fresh clone follows the README | Passed: Chanat, on the release PR #122 (6 migrations, seed, 377 passed, E2E 13) | Review of #122, `evidence/post-deploy-v1-rc.txt` |
+| R6 | Release PR reviewed, CI green, merged by the teammate, tagged | #122 approved and merged by Chanat as `f567fb7`; tag `v1.0.0-rc` | Section 6 |
+| R7 | GCP deploy | Passed: deploy run 45858377155, migrate job applied `add_notification`, revision `adviseslot-00008-8cj`, smoke test PASS | `evidence/post-deploy-v1-rc.txt` |
+| R8 | Post-deploy check | Passed: `/api/version` and the footer show `f567fb7`; F-17, F-18 and F-19 work on the live site; a student gets 403 on the advisor endpoints; bookings made before the release are still there | `evidence/post-deploy-v1-rc.txt`, `evidence/post-deploy-v1-rc/` |
+| R9 | A failed deploy is rolled back with `image_tag` | Not needed (the deploy passed). Rollback target: the `v0.3.0-rc` image `87be717…`; the rollback skips the migrate job and the old code ignores the `Notification` table | `docs/labs/lab-05/deployment.md` |
 | R10 | Participation and AI use | Both of us authored and reviewed PRs (section 1). AI use: section 5 | Final Delivery Part B |
 
 The R4 check inserts the notification row directly in the database, because a late slot can be
 made only in a short real-clock window (F-19 contract v0.3). Creating notifications is covered
 by TEST-F19-01 to TEST-F19-04 with a fake clock.
 
-After the deploy, Team Top 2 re-test this version (plan S6, 4 to 5 Dec): the Lab 6 UAT cases and
-the Sprint 2 and 3 journeys, with tester, expected and actual result, and version.
+Next, testers from another team (Team Top 2 in Lab 6) re-test this version (plan S6): the Lab 6
+UAT cases and the Sprint 2 and 3 journeys, with tester, expected and actual result, and version.
 
 ## 4. Known limitations
 
@@ -89,8 +94,9 @@ the Sprint 2 and 3 journeys, with tester, expected and actual result, and versio
 ## 5. AI use
 
 Code, tests and docs were drafted with AI agents (Claude Code) and reviewed, run and committed by
-us. Each version-history row that was AI-drafted says so. Agents did not merge PRs or post to
-GitHub without the author reading the text first (`docs/workflow.md`).
+us. Each version-history row that was AI-drafted says so. Every PR was merged by the teammate who
+reviewed it (section 1), and nothing was posted to GitHub without the author reading the text
+first (`docs/workflow.md`).
 
 ## 6. Release record
 
